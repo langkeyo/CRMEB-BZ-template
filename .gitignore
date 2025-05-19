@@ -1,0 +1,14 @@
+# 忽略大型PDF文件
+project.pdf
+团购-项目.pdf
+
+# 构建产物和日志
+unpackage/
+.trae/
+.cursor/
+
+# 依赖
+node_modules/
+
+# 日志文件
+*.stackdump
