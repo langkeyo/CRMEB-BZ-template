@@ -1,14 +1,18 @@
 <template>
 	<view class="chat-box" :style="colorStyle">
-		<!-- #ifdef MP -->
-		<!-- 		<view class="head-box">
-			<view class="system-head" :style="{ height: sysHead }"></view>
-			<view class="title-hd">
-				<view class="iconfont icon-fanhui" @click="goBack"></view>
-				<view>{{ titleName }}</view>
+		<!-- 头部导航 -->
+		<view class="header-section">
+			<view class="header-bg"></view>
+			<view class="header-content">
+				<view class="left-section" @click="goBack">
+					<image class="back-icon" src="/static/icons/back-arrow.svg" mode="aspectFit"></image>
+					<text class="back-text">返回</text>
+				</view>
+				<view class="title-section">
+					<text class="title-text">在线咨询</text>
+				</view>
 			</view>
-		</view> -->
-		<!-- #endif -->
+		</view>
 		<view class="broadcast-details_order">
 			<!-- 商品信息 -->
 			<view class="broadcast-details_box" v-if="productId && productInfo.id">
@@ -61,7 +65,7 @@
 					<view v-for="(item, index) in records" :key="index" :id="`msg-${item.id}`">
 						<view class="day-box" v-if="item.show">{{item._add_time}}</view>
 						<view class="chat-item" :class="{ 'right-box': item.uid == myUid }">
-							<image class="avatar" :src="item.avatar" mode=""></image>
+							<image class="avatar" :src="getValidAvatar(item.avatar)" mode="" @error="handleAvatarError"></image>
 							<!-- 消息 -->
 							<view class="msg-box" v-if="item.msn_type <= 2" v-html="item.msn"></view>
 							<!-- 图片 -->
@@ -98,13 +102,20 @@
 				</view>
 			</scroll-view>
 		</view>
-		<view class="footer-box">
-			<view class="words" @click="uploadImg"><text class="iconfont icon-tupian"></text></view>
-			<view class="input-box">
-				<input type="text" :placeholder="$t(`请输入内容`)" v-model="con" confirm-type="send" @confirm="sendText" />
-				<text class="iconfont icon-fasong" @click="sendText" :class="{ isSend: isSend }"></text>
+		<view class="chat-section">
+			<view class="chat-bg"></view>
+			<view class="input-container">
+				<input
+					class="input-field"
+					type="text"
+					:placeholder="$t(`请输入你想要咨询的问题`)"
+					v-model="con"
+					confirm-type="send"
+					@confirm="sendText"
+				/>
+				<image class="emoji-btn" src="/static/icons/emoji.svg" mode="aspectFit" @click="isSwiper = !isSwiper"></image>
+				<image class="more-btn" src="/static/icons/more-btn.svg" mode="aspectFit" @click="uploadImg"></image>
 			</view>
-			<view class="emoji" @click="isSwiper = !isSwiper"><span class="iconfont icon-biaoqing"></span></view>
 		</view>
 		<!-- 表情 -->
 		<view class="banner slider-banner" v-if="isSwiper">
@@ -191,6 +202,8 @@
 				canvasHeight: "",
 				canvasStatus: false,
 				httpUrl: '',
+				// 头像检查缓存
+				avatarCheckCache: new Map(),
 			};
 		},
 		mixins: [colors],
@@ -299,8 +312,9 @@
 					type: 'to_chat'
 				});
 				this.chatList.forEach(el => {
+					console.log(el)
 					if (el.uid != this.myUid) {
-						el.avatar = data.avatar
+						el.avatar = this.getValidAvatar(data.avatar)
 					}
 				})
 			});
@@ -573,6 +587,94 @@
 						this.getChatList();
 					}, 800);
 				}
+			},
+			// 获取有效的头像URL
+			getValidAvatar(avatar) {
+				// 检查头像是否为空或无效
+				if (!avatar || typeof avatar !== 'string' || avatar.trim() === '') {
+					console.log('头像为空或无效，使用默认头像');
+					return '/static/images/f.png';
+				}
+
+				// 清理URL
+				const cleanAvatar = avatar.trim();
+
+				// 检查缓存
+				if (this.avatarCheckCache.has(cleanAvatar)) {
+					const cacheResult = this.avatarCheckCache.get(cleanAvatar);
+					if (!cacheResult.exists) {
+						console.log('头像缓存显示文件不存在:', cleanAvatar);
+						return '/static/images/f.png';
+					}
+					return cleanAvatar;
+				}
+
+				// 对于HTTP/HTTPS的远程URL，直接返回让image组件处理
+				// 如果加载失败会触发@error事件
+				if (cleanAvatar.startsWith('http://') || cleanAvatar.startsWith('https://')) {
+					// 缓存远程URL为有效（让image组件处理加载失败）
+					this.avatarCheckCache.set(cleanAvatar, { exists: true, checked: true });
+					return cleanAvatar;
+				}
+
+				// 对于本地路径，进行文件存在性检查
+				if (cleanAvatar.startsWith('/')) {
+					// 异步检查文件是否存在
+					this.checkImageExists(cleanAvatar).then(exists => {
+						// 更新缓存
+						this.avatarCheckCache.set(cleanAvatar, { exists: exists, checked: true });
+
+						if (!exists) {
+							console.log('本地头像文件不存在:', cleanAvatar);
+							// 如果文件不存在，更新为默认头像
+							this.updateAvatarToDefault(cleanAvatar);
+						}
+					});
+
+					// 先返回原URL，让image组件尝试加载
+					return cleanAvatar;
+				}
+
+				// 如果不符合任何有效格式，返回默认头像
+				console.log('头像URL格式无效:', cleanAvatar);
+				this.avatarCheckCache.set(cleanAvatar, { exists: false, checked: true });
+				return '/static/images/f.png';
+			},
+
+			// 检查图片是否存在
+			async checkImageExists(imagePath) {
+				return new Promise((resolve) => {
+					// 创建一个临时的image元素来检查文件是否存在
+					// 注意：在uni-app中，我们使用uni.getImageInfo来检查
+					uni.getImageInfo({
+						src: imagePath,
+						success: () => {
+							resolve(true);
+						},
+						fail: () => {
+							resolve(false);
+						}
+					});
+				});
+			},
+
+			// 更新头像为默认头像
+			updateAvatarToDefault(originalAvatar) {
+				// 更新聊天列表中所有使用该头像的消息
+				this.chatList.forEach(item => {
+					if (item.avatar === originalAvatar) {
+						item.avatar = '/static/images/f.png';
+					}
+				});
+
+				// 强制更新视图
+				this.$forceUpdate();
+			},
+			// 头像加载失败处理
+			handleAvatarError(e) {
+				console.log('头像加载失败，使用默认头像');
+				// 设置默认头像
+				e.target.src = '/static/images/f.png';
 			}
 		}
 	};
@@ -598,6 +700,132 @@
 		height: 100vh;
 
 		/* #endif */
+
+		/* 头部样式 - 按设计规范 */
+		.header-section {
+			position: relative;
+			width: 100%;
+			height: 100rpx; /* 实际头部高度，不包含状态栏 */
+			flex-shrink: 0;
+		}
+
+		.header-bg {
+			position: absolute;
+			width: 100%;
+			height: 100rpx;
+			left: 0;
+			top: 0;
+			background: #FFFFFF;
+		}
+
+		.header-content {
+			position: relative;
+			width: 100%;
+			height: 100rpx;
+			display: flex;
+			align-items: center;
+			padding: 0 20rpx;
+		}
+
+		.left-section {
+			display: flex;
+			align-items: center;
+			height: 50rpx; /* 25px * 2 */
+			cursor: pointer;
+		}
+
+		.back-icon {
+			width: 30rpx; /* 24px * 2 */
+			height: 30rpx; /* 24px * 2 */
+			margin-right: 16rpx;
+		}
+
+		.back-text {
+			font-family: 'PingFang SC';
+			font-style: normal;
+			font-weight: 400;
+			font-size: 36rpx; /* 18px * 2 */
+			line-height: 50rpx; /* 25px * 2 */
+			color: #333333;
+		}
+
+		.title-section {
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
+			height: 50rpx;
+			display: flex;
+			align-items: center;
+		}
+
+		.title-text {
+			font-family: 'PingFang SC';
+			font-style: normal;
+			font-weight: 550;
+			font-size: 36rpx; /* 18px * 2 */
+			line-height: 50rpx; /* 25px * 2 */
+			color: #1A1A1A;
+		}
+
+		/* 聊天输入区域样式 - 按设计规范 */
+		.chat-section {
+			position: relative;
+			width: 100%;
+			height: 90rpx; /* 45px * 2 */
+			flex-shrink: 0;
+		}
+
+		.chat-bg {
+			position: absolute;
+			width: 100%;
+			height: 90rpx;
+			left: 0;
+			top: 0;
+			background: #FFFFFF;
+		}
+
+		.input-container {
+			position: relative;
+			width: 100%;
+			height: 90rpx;
+			display: flex;
+			align-items: center;
+			padding: 0 24rpx; /* 12px * 2 */
+		}
+
+		.input-field {
+			width: 632rpx; /* 316px * 2 */
+			height: 60rpx; /* 30px * 2 */
+			background: #F7F7F7;
+			border-radius: 8rpx; /* 4px * 2 */
+			padding: 0 14rpx; /* 7px * 2 */
+			font-family: 'PingFang SC';
+			font-style: normal;
+			font-weight: 400;
+			font-size: 24rpx; /* 12px * 2 */
+			line-height: 34rpx; /* 17px * 2 */
+			color: #333333;
+			border: none;
+			outline: none;
+		}
+
+		.input-field::placeholder {
+			color: #999999;
+		}
+
+		.emoji-btn {
+			width: 46rpx; /* 23px * 2 */
+			height: 46rpx; /* 23px * 2 */
+			margin-left: 20rpx;
+		}
+
+		.more-btn {
+			width: 48rpx; /* 24px * 2 */
+			height: 70rpx; /* 35px * 2 */
+			margin-left: 20rpx;
+		}
+
 		.head-box {
 			/* #ifdef H5 */
 			height: 86rpx;
@@ -635,23 +863,16 @@
 			flex: 1;
 		}
 
+		/* 旧的footer-box样式 - 已替换为chat-section */
+		/*
 		.footer-box {
 			display: flex;
 			align-items: center;
 			color: rgba(0, 0, 0, 0.8);
 			background: #f7f7f7;
-			/* #ifdef APP-PLUS */
 			padding: 0 30rpx;
 			height: 70rpx;
-			height: (70rpx + constant(safe-area-inset-bottom)); ///兼容 IOS<11.2/
-			height: calc(70rpx + env(safe-area-inset-bottom)); ///兼容 IOS>11.2/
-			/* #endif */
 
-			/* #ifndef APP-PLUS */
-			padding: 0 30rpx 15rpx 30rpx;
-			height: 115rpx;
-
-			/* #endif */
 			.words .icon-tupian {
 				font-size: 50rpx;
 			}
@@ -689,12 +910,8 @@
 				margin-left: 18rpx;
 				font-size: 50rpx;
 			}
-
-			.more .icon-gengduozhankai {
-				margin-left: 18rpx;
-				font-size: 50rpx;
-			}
 		}
+		*/
 	}
 
 	.tool-wrapper {
@@ -778,23 +995,43 @@
 			display: flex;
 			margin-bottom: 36rpx;
 			-webkit-user-select: auto;
+			align-items: flex-start;
 
 			.avatar {
 				width: 80rpx;
 				height: 80rpx;
 				border-radius: 50%;
+				flex-shrink: 0;
 			}
 
 			.msg-box {
-				display: flex;
-				align-items: center;
+				display: inline-block;
 				max-width: 452rpx;
 				margin-left: 22rpx;
-				padding: 10rpx 24rpx;
+				padding: 16rpx 24rpx;
 				background: #fff;
-				border-radius: 14rpx;
+				border-radius: 12rpx;
 				word-break: break-all;
 				-webkit-user-select: auto;
+				position: relative;
+				box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+				font-size: 30rpx;
+				line-height: 1.4;
+				color: #333;
+				z-index: 1;
+
+				/* 左侧气泡尖角 */
+				&::before {
+					content: '';
+					position: absolute;
+					left: -8rpx;
+					top: 50%;
+					transform: translateY(-50%) rotate(45deg);
+					width: 16rpx;
+					height: 16rpx;
+					background: #fff;
+					z-index: 0;
+				}
 			}
 
 			.img-box {
@@ -879,7 +1116,20 @@
 				.msg-box {
 					margin-left: 0;
 					margin-right: 22rpx;
-					background-color: #9cec60;
+					background-color: #007AFF;
+					color: #fff;
+
+					/* 右侧气泡尖角 */
+					&::before {
+						left: auto;
+						right: -8rpx;
+						top: 50%;
+						transform: translateY(-50%) rotate(45deg);
+						width: 16rpx;
+						height: 16rpx;
+						background: #007AFF;
+						z-index: 0;
+					}
 				}
 
 				.img-box {
