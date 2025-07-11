@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180px" height="180px" viewBox="0 0 180 180" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>审核未通过</title>
+    <g id="Status-Rejected" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="bg" fill="#FFF0F0" cx="90" cy="90" r="90"></circle>
+        <path d="M105,65 C119.359,65 131,76.6405 131,91 C131,105.359 119.359,117 105,117 C90.6405,117 79,105.359 79,91 C79,76.6405 90.6405,65 105,65 Z" id="circle" fill="#FFD6D6"></path>
+        <g id="icon" transform="translate(50.000000, 45.000000)">
+            <rect id="background" fill="#F44336" x="0" y="0" width="80" height="80" rx="40"></rect>
+            <path d="M52.7,28.3 C54.09,29.69 54.09,31.91 52.7,33.3 L52.7,33.3 L43.99,42 L52.7,50.7 C54.09,52.09 54.09,54.31 52.7,55.7 C51.31,57.09 49.09,57.09 47.7,55.7 L47.7,55.7 L39,47 L30.3,55.7 C28.91,57.09 26.69,57.09 25.3,55.7 C23.91,54.31 23.91,52.09 25.3,50.7 L25.3,50.7 L34,42 L25.3,33.3 C23.91,31.91 23.91,29.69 25.3,28.3 C26.69,26.91 28.91,26.91 30.3,28.3 L30.3,28.3 L39,37 L47.7,28.3 C49.09,26.91 51.31,26.91 52.7,28.3 Z" id="path" fill="#FFFFFF" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

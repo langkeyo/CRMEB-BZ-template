@@ -29,18 +29,18 @@
 				@click="jumpCon(item)">
 				<view class="item acea-row row-between-wrapper">
 					<view class='pictrue' :class="{gray:!item.is_valid}">
-						<image :src='item.productInfo.attrInfo.image' v-if="item.productInfo.attrInfo"></image>
-						<image :src='item.productInfo.image' v-else></image>
+						<image :src='item.productInfo.attrInfo.image' v-if="item.productInfo.attrInfo" mode="aspectFill"></image>
+						<image :src='item.productInfo.image' v-else mode="aspectFill"></image>
 					</view>
 					<view class='text'>
 						<view class='acea-row row-between-wrapper'>
-							<view class='name line2'>{{item.productInfo.store_name}}</view>
+							<view class='name line2' style="font-weight: 500;">{{item.productInfo.store_name}}</view>
 							<view class='num'>x {{item.cart_num}}</view>
 						</view>
-						<view class='attr line1' v-if="item.productInfo.attrInfo">{{item.productInfo.attrInfo.suk}}
+						<view class='attr line1' v-if="item.productInfo.attrInfo" style="color: #999999; font-size: 24rpx;">{{item.productInfo.attrInfo.suk}}
 						</view>
 						<view class='money font-color pic' v-if="item.productInfo.attrInfo">
-							<text v-show="is_gift != 2" :class="{gray:!item.is_valid}">
+							<text v-show="is_gift != 2" :class="{gray:!item.is_valid}" style="color: #FF840B; font-weight: bold;">
 								{{$t(`￥`)}}{{item.productInfo.attrInfo.price}}
 							</text>
 							<view class="refund" v-if="item.refund_num && statusType !=-2">{{item.refund_num}}{{$t(`件退款中`)}}
@@ -49,7 +49,7 @@
 							<text class="valid" v-if="!item.productInfo.store_mention && shipping_type === 1">{{$t(`不支持自提`)}}</text>
 						</view>
 						<view class='money font-color pic' v-else>
-							<text :class="{gray:!item.is_valid}">{{$t(`￥`)}}{{item.productInfo.price}}</text>
+							<text :class="{gray:!item.is_valid}" style="color: #FF840B; font-weight: bold;">{{$t(`￥`)}}{{item.productInfo.price}}</text>
 							<text class="valid" v-if="!item.is_valid && shipping_type === 0">{{$t(`仅支持到店`)}}</text>
 							<text class="valid" v-if="!item.productInfo.store_mention && shipping_type === 1">{{$t(`仅支持配送`)}}</text>
 						</view>
@@ -267,6 +267,9 @@
 
 	.orderGoods {
 		background-color: #fff;
+		margin: 20rpx;
+		border-radius: 12rpx;
+		overflow: hidden;
 	}
 
 	.orderGoods .total {
@@ -276,17 +279,18 @@
 		width: 100%;
 		// height: 86rpx;
 		padding: 0 30rpx;
-		border-bottom: 2rpx solid #f0f0f0;
-		font-size: 30rpx;
+		border-bottom: 1rpx solid #f7f7f7;
+		font-size: 28rpx;
 		color: #333;
 		line-height: 86rpx;
 		box-sizing: border-box;
+		font-weight: 500;
 	}
 	.botton-btn {
 		display: flex;
-		align-items: right;
+		align-items: center;
 		justify-content: flex-end;
-		padding: 0rpx 20rpx 20rpx 20rpx;
+		padding: 0rpx 30rpx 25rpx 30rpx;
 	}
 
 	.rig-btn {
@@ -308,16 +312,16 @@
 		// height: 46rpx;
 		line-height: 30rpx;
 		color: #666666;
-		font-size: 20rpx;
-		border: 1px solid #CCCCCC;
+		font-size: 24rpx;
+		border: 1px solid #DDDDDD;
 		border-radius: 30rpx;
 		padding: 8rpx 22rpx;
-		margin-left: 10rpx;
+		margin-left: 15rpx;
 	}
 
 	.sure {
-		color: #e93323;
-		border: 1px solid #e93323;
+		color: #FF840B;
+		border: 1px solid #FF840B;
 	}
 
 	.more-operation {
@@ -369,12 +373,13 @@
 	}
 
 	.pay-price {
-		color: #E93323;
+		color: #FF840B;
+		font-weight: bold;
 	}
 
 	.refund {
 		text-align: right;
 		font-size: 26rpx;
-		color: var(--view-theme);
+		color: #FF840B;
 	}
 </style>

@@ -1,0 +1,294 @@
+<template>
+  <view class="list">
+    <checkbox-group @change="onCheckboxChange">
+      <block v-for="(item, index) in cartItems" :key="index">
+        <view class="item acea-row row-between-wrapper">
+          <!-- #ifndef MP -->
+          <view class="custom-checkbox-container">
+            <checkbox
+              :value="item.id.toString()"
+              :checked="item.checked"
+              :disabled="!item.attrStatus && isEditing"
+              class="round-checkbox"
+            />
+            <image 
+              v-if="item.checked" 
+              class="custom-checkbox-image" 
+              src="/static/common/placeholders/products/vegetable_image.png"
+            />
+            <image 
+              v-else 
+              class="custom-checkbox-image" 
+              src="/static/common/placeholders/products/chicken_image.png"
+            />
+          </view>
+          <!-- #endif -->
+          <!-- #ifdef MP -->
+          <view class="custom-checkbox-container">
+            <checkbox
+              :value="item.id"
+              :checked="item.checked"
+              :disabled="!item.attrStatus && isEditing"
+              class="round-checkbox"
+            />
+            <image 
+              v-if="item.checked" 
+              class="custom-checkbox-image" 
+              src="/static/common/placeholders/products/vegetable_image.png"
+            />
+            <image 
+              v-else 
+              class="custom-checkbox-image" 
+              src="/static/common/placeholders/products/chicken_image.png"
+            />
+          </view>
+          <!-- #endif -->
+          <navigator
+            :url="'/pages/goods_details/index?id=' + item.product_id"
+            hover-class="none"
+            class="picTxt acea-row row-between-wrapper"
+          >
+            <view class="pictrue">
+              <image
+                v-if="item.productInfo.attrInfo"
+                :src="item.productInfo.attrInfo.image"
+                mode="aspectFill"
+              ></image>
+              <image v-else :src="item.productInfo.image" mode="aspectFill"></image>
+            </view>
+            <view class="text">
+              <view
+                class="line2 product-name"
+                :class="item.attrStatus ? '' : 'reColor'"
+              >
+                {{ item.productInfo.store_name }}
+              </view>
+              <view class="infor line1" v-if="item.productInfo.attrInfo"
+                >{{ $t(`属性`) }}：{{ item.productInfo.attrInfo.suk }}</view
+              >
+              <view class="money product-price" v-if="item.attrStatus"
+                >{{ $t(`￥`) }}{{ item.truePrice }}</view
+              >
+              <view
+                class="reElection acea-row row-between-wrapper"
+                v-else
+              >
+                <view class="title">{{ $t(`请重新选择商品规格`) }}</view>
+                <view
+                  class="reBnt cart-color acea-row row-center-wrapper"
+                  @click.stop="onReElection(item)"
+                  >{{ $t(`重选`) }}</view
+                >
+              </view>
+            </view>
+            <view
+              class="carnum acea-row row-center-wrapper"
+              v-if="item.attrStatus"
+            >
+              <view
+                class="reduce round-btn"
+                :class="item.numSub && !disabledChangeNumber ? 'on' : ''"
+                @click.stop="onSubCart(index)"
+                >-</view
+              >
+              <view class="num">
+                <input
+                  type="number"
+                  v-model="item.cart_num"
+                  @click.stop
+                  @input="onIptCartNum(index)"
+                  @blur="onBlurInput(index)"
+                />
+              </view>
+              <view
+                class="plus round-btn"
+                :class="item.numAdd && !disabledChangeNumber ? 'on' : ''"
+                @click.stop="onAddCart(index)"
+                >+</view
+              >
+            </view>
+          </navigator>
+        </view>
+      </block>
+    </checkbox-group>
+  </view>
+</template>
+
+<script>
+export default {
+  name: 'ValidCartItems',
+  props: {
+    cartItems: {
+      type: Array,
+      default: () => []
+    },
+    isEditing: {
+      type: Boolean,
+      default: true
+    },
+    disabledChangeNumber: {
+      type: Boolean,
+      default: false
+    }
+  },
+  methods: {
+    onCheckboxChange(e) {
+      this.$emit('checkbox-change', e);
+    },
+    onReElection(item) {
+      this.$emit('re-election', item);
+    },
+    onSubCart(index) {
+      this.$emit('sub-cart', index);
+    },
+    onAddCart(index) {
+      this.$emit('add-cart', index);
+    },
+    onIptCartNum(index) {
+      this.$emit('ipt-cart-num', index);
+    },
+    onBlurInput(index) {
+      this.$emit('blur-input', index);
+    }
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.list {
+  background-color: #fff;
+  margin-bottom: 20rpx;
+  
+  .item {
+    padding: 25rpx 30rpx;
+    border-bottom: 0.5px solid #f0f0f0;
+    background-color: #FFFFFF;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    .custom-checkbox-container {
+      position: relative;
+      margin-right: 15rpx;
+      width: 40rpx;
+      height: 40rpx;
+      
+      .round-checkbox {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        z-index: 2;
+      }
+      
+      .custom-checkbox-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40rpx;
+        height: 40rpx;
+        z-index: 1;
+      }
+    }
+    
+    .picTxt {
+      width: 100%;
+      
+      .pictrue {
+        width: 160rpx;
+        height: 160rpx;
+        border-radius: 8rpx;
+        overflow: hidden;
+        
+        image {
+          width: 100%;
+          height: 100%;
+          border-radius: 0;
+        }
+      }
+      
+      .text {
+        flex: 1;
+        margin-left: 20rpx;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        
+        .product-name {
+          font-size: 28rpx;
+          color: #1A1A1A;
+          font-weight: 500;
+          margin-bottom: 8rpx;
+        }
+        
+        .infor {
+          font-size: 24rpx;
+          color: #999;
+          margin: 10rpx 0;
+        }
+        
+        .product-price {
+          font-size: 30rpx;
+          color: #FF840B;
+          font-weight: 500;
+        }
+        
+        .reColor {
+          color: #999;
+        }
+        
+        .reElection {
+          .title {
+            font-size: 24rpx;
+            color: #999;
+          }
+          
+          .reBnt {
+            width: 120rpx;
+            height: 48rpx;
+            border-radius: 24rpx;
+            font-size: 24rpx;
+            color: #fff;
+            background-color: #FF840B;
+            text-align: center;
+            line-height: 48rpx;
+          }
+        }
+      }
+      
+      .carnum {
+        margin-left: 20rpx;
+        
+        .reduce, .plus {
+          width: 40rpx;
+          height: 40rpx;
+          background-color: #f7f7f7;
+          text-align: center;
+          line-height: 40rpx;
+          border-radius: 50%;
+          font-size: 28rpx;
+          
+          &.on {
+            background-color: #FF840B;
+            color: #fff;
+          }
+        }
+        
+        .num {
+          width: 60rpx;
+          text-align: center;
+          margin: 0 10rpx;
+          
+          input {
+            width: 100%;
+            height: 40rpx;
+            text-align: center;
+            font-size: 28rpx;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

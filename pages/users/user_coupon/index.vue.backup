@@ -1,0 +1,511 @@
+<template>
+	<view class="coupon-container" :style="colorStyle">
+		<view class="navbar acea-row row-around">
+			<view class="item acea-row row-center-wrapper" :class="{ on: navOn === 1 }" @click="onNav(1)">{{$t(`未使用`)}}
+			</view>
+			<view class="item acea-row row-center-wrapper" :class="{ on: navOn === 2 }" @click="onNav(2)">
+				{{$t(`已使用/过期`)}}
+			</view>
+		</view>
+		<view class='coupon-list' v-if="couponsList.length">
+			<view class='item' v-for='(item,index) in couponsList' :key="index"
+				:class="{svip: item.receive_type === 4, expired: item._type == 0}" @click="useCoupon(item)">
+				<image class="coupon-bg" :src="item._type == 0 ? '/static/images/coupon/coupon_bg_gray.png' : '/static/images/coupon/coupon_bg.png'"></image>
+				<view class="coupon-content">
+					<view class="moneyCon">
+						<view class='money' :class='item._type == 0 ? "moneyGray" : ""'>
+							<view class="price-box">{{$t(`￥`)}}<text class='num'>{{item.coupon_price}}</text></view>
+							<view class="pic-num" v-if="item.use_min_price > 0">
+								{{$t(`满`)}}{{item.use_min_price}}{{$t(`元可用`)}}
+							</view>
+							<view class="pic-num" v-else>{{$t(`无门槛券`)}}</view>
+						</view>
+					</view>
+					<view class='text'>
+						<view class='condition'>
+							<view class="name line2">
+								<view class="line-title" :class="item._type === 0 ? 'bg-color-huic' : 'bg-color-check'"
+									v-if="item.applicable_type === 0">{{$t(`通用劵`)}}</view>
+								<view class="line-title" :class="item._type === 0 ? 'bg-color-huic' : 'bg-color-check'"
+									v-else-if="item.applicable_type === 1">{{$t(`品类券`)}}</view>
+								<view class="line-title" :class="item._type === 0 ? 'bg-color-huic' : 'bg-color-check'"
+									v-else>{{$t(`商品券`)}}</view>
+								<image src="../../../static/images/fvip.png" class="pic" v-if="item.receive_type===4">
+								</image>
+								<text class="coupon-title">{{$t(item.coupon_title)}}</text>
+							</view>
+						</view>
+						<view class='data'>
+							<view class="date-info">{{item.add_time}}-{{item.end_time}}</view>
+							<view class='bnt gray' v-if="item._type==0">{{$t(item._msg)}}</view>
+							<view class='bnt bg-color' v-else>{{$t(item._msg)}}</view>
+						</view>
+						<view class="coupon-info" v-if="showInfoIndex === index">
+							<image class="info-bg" src="/static/images/coupon/coupon_info_bg.png"></image>
+							<view class="info-content">
+								<view class="info-title">使用说明</view>
+								<view class="info-text">{{item.coupon_title}}使用说明内容，仅适用于指定商品。</view>
+							</view>
+							<view class="info-close" @click.stop="hideInfo">×</view>
+						</view>
+						<view class="show-info-btn" @click.stop="showInfo(index)">使用说明</view>
+					</view>
+				</view>
+			</view>
+		</view>
+		<view class='noCommodity' v-if="!couponsList.length && page === 2">
+			<view class='pictrue'>
+				<image :src="imgHost + '/statics/images/noCoupon.png'"></image>
+			</view>
+			<view class="no-data-text">暂无优惠券数据</view>
+		</view>
+		<!-- #ifdef MP -->
+		<!-- <authorize @onLoadFun="onLoadFun" :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
+		<!-- #endif -->
+		<!-- #ifndef MP -->
+		<home></home>
+		<!-- #endif -->
+	</view>
+</template>
+
+<script>
+	import {
+		getUserCoupons
+	} from '@/api/api.js';
+	import {
+		toLogin
+	} from '@/libs/login.js';
+	import {
+		mapGetters
+	} from "vuex";
+	// #ifdef MP
+	import authorize from '@/components/Authorize';
+	// #endif
+	import home from '@/components/home';
+	import colors from '@/mixins/color.js';
+	import {
+		HTTP_REQUEST_URL
+	} from '@/config/app';
+	export default {
+		components: {
+			// #ifdef MP
+			authorize,
+			// #endif
+			home
+		},
+		mixins: [colors],
+		data() {
+			return {
+				imgHost: HTTP_REQUEST_URL,
+				couponsList: [],
+				loading: false,
+				isAuto: false, //没有授权的不会自动授权
+				isShowAuth: false, //是否隐藏授权
+				navOn: 1,
+				page: 1,
+				limit: 15,
+				finished: false,
+				showInfoIndex: -1 // 显示使用说明的优惠券索引，-1表示不显示
+			};
+		},
+		computed: mapGetters(['isLogin']),
+		watch: {
+			isLogin: {
+				handler: function(newV, oldV) {
+					if (newV) {
+						this.getUseCoupons();
+					}
+				},
+				deep: true
+			}
+		},
+		onLoad() {
+			if (this.isLogin) {
+				this.getUseCoupons();
+			} else {
+				toLogin();
+			}
+		},
+		onReachBottom() {
+			this.getUseCoupons();
+		},
+		methods: {
+			showInfo(index) {
+				this.showInfoIndex = index;
+			},
+			hideInfo() {
+				this.showInfoIndex = -1;
+			},
+			onNav: function(type) {
+				this.navOn = type;
+				this.couponsList = [];
+				this.page = 1;
+				this.finished = false;
+				this.getUseCoupons();
+			},
+			useCoupon(item) {
+				if (this.navOn == 2) return
+				let url = '';
+				if (item.category_id == 0 && item.product_id == '') {
+					url = '/pages/goods/goods_list/index?title=默认'
+				}
+				if (item.category_id != 0) {
+					url = `/pages/goods/goods_list/index?title=${item.coupon_title}&coupon_category_id=${item.category_id}`
+				}
+				if (item.product_id != '') {
+					let arr = item.product_id.split(',');
+					let num = arr.length;
+					if (num == 1) {
+						url = '/pages/goods_details/index?id=' + item.product_id
+					} else {
+						url = '/pages/goods/goods_list/index?productId=' + item.product_id + '&title=默认'
+					}
+				}
+				uni.navigateTo({
+					url: url
+				});
+			},
+			/**
+			 * 授权回调
+			 */
+			onLoadFun: function() {
+				this.getUseCoupons();
+			},
+			// 授权关闭
+			authColse: function(e) {
+				this.isShowAuth = e
+			},
+			/**
+			 * 获取领取优惠券列表
+			 */
+			getUseCoupons: function() {
+				let that = this;
+				if (that.loading || that.finished) {
+					return;
+				}
+				that.loading = true;
+				uni.showLoading({
+					title: that.$t(`正在加载…`)
+				});
+				getUserCoupons(this.navOn, {
+					page: this.page,
+					limit: this.limit
+				}).then(res => {
+					that.loading = false;
+					uni.hideLoading();
+					that.couponsList = that.couponsList.concat(res.data);
+					that.finished = res.data.length < that.limit;
+					that.page += 1;
+				}).catch(err => {
+					that.loading = false;
+					uni.showToast({
+						title: err,
+						icon: 'none'
+					});
+				});
+			}
+		}
+	}
+</script>
+
+<style>
+	.coupon-container {
+		background: #F7F7F7;
+		min-height: 100vh;
+	}
+	
+	.money {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		width: 180rpx;
+		height: 100%;
+		text-align: center;
+	}
+	
+	.money .price-box {
+		color: #FFFFFF;
+		font-size: 28rpx;
+		font-weight: bold;
+	}
+	
+	.money .num {
+		font-size: 48rpx;
+		font-weight: bold;
+	}
+
+	.pic-num {
+		color: #ffffff;
+		font-size: 24rpx;
+		margin-top: 5rpx;
+	}
+	
+	.coupon-list {
+		padding: 30rpx 20rpx;
+	}
+	
+	.coupon-list .item{
+		position: relative;
+		margin-bottom: 30rpx;
+		background: transparent;
+		box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.coupon-bg {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		left: 0;
+		top: 0;
+		z-index: 1;
+	}
+	
+	.coupon-content {
+		position: relative;
+		z-index: 2;
+		height: 180rpx;
+		display: flex;
+	}
+	
+	.moneyCon {
+		width: 180rpx;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background: rgba(255, 255, 255, 0.1);
+	}
+	
+	.coupon-list .item .text{
+		flex: 1;
+		padding: 20rpx;
+		position: relative;
+	}
+	
+	.coupon-list .item .text .condition {
+		display: flex;
+		margin-bottom: 15rpx;
+	}
+
+	.coupon-list .item .text .condition .name {
+		font-size: 28rpx;
+		font-weight: bold;
+		line-height: 40rpx;
+		color: #333333;
+	}
+	
+	.coupon-title {
+		display: inline-block;
+		vertical-align: middle;
+		width: calc(100% - 100rpx);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.coupon-list .item .text .condition .pic {
+		width: 30rpx;
+		height: 30rpx;
+		display: block;
+		margin-right: 10rpx;
+		display: inline-block;
+		vertical-align: middle;
+	}
+
+	.condition .line-title {
+		height: 36rpx !important;
+		padding: 0 10rpx;
+		line-height: 32rpx;
+		text-align: center;
+		box-sizing: border-box;
+		background: #FFF4F3;
+		border: 1px solid #FC1F03;
+		opacity: 1;
+		border-radius: 20rpx;
+		font-size: 20rpx !important;
+		color: #FC1F03;
+		margin-right: 12rpx;
+		text-align: center;
+		display: inline-block;
+		vertical-align: middle;
+	}
+
+	.condition .line-title.bg-color-huic {
+		border-color: #BBB !important;
+		color: #bbb !important;
+		background-color: #F5F5F5 !important;
+	}
+	
+	.data {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	
+	.date-info {
+		color: #999999;
+		font-size: 24rpx;
+	}
+	
+	.bnt {
+		display: inline-block;
+		padding: 5rpx 20rpx;
+		border-radius: 30rpx;
+		font-size: 24rpx;
+	}
+	
+	.bnt.bg-color {
+		background: #FC1F03;
+		color: #FFFFFF;
+	}
+	
+	.bnt.gray {
+		background: #CCCCCC;
+		color: #FFFFFF;
+	}
+	
+	.show-info-btn {
+		position: absolute;
+		right: 20rpx;
+		bottom: 20rpx;
+		color: #FC1F03;
+		font-size: 24rpx;
+		text-decoration: underline;
+	}
+	
+	.coupon-info {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		width: 100%;
+		padding: 20rpx;
+		z-index: 10;
+	}
+	
+	.info-bg {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 0;
+	}
+	
+	.info-content {
+		position: relative;
+		z-index: 1;
+		padding: 20rpx;
+	}
+	
+	.info-title {
+		font-size: 28rpx;
+		font-weight: bold;
+		color: #333333;
+		margin-bottom: 10rpx;
+	}
+	
+	.use-info-content {
+		padding: 20rpx;
+		font-size: 24rpx;
+		color: #666;
+		line-height: 1.5;
+		text-align: justify;
+		word-break: break-all;
+		overflow-wrap: break-word;
+	}
+	
+	.info-text {
+		font-size: 24rpx;
+		color: #666666;
+		line-height: 1.5;
+	}
+	
+	.info-close {
+		position: absolute;
+		top: 10rpx;
+		right: 10rpx;
+		width: 40rpx;
+		height: 40rpx;
+		line-height: 36rpx;
+		text-align: center;
+		font-size: 36rpx;
+		color: #999;
+		z-index: 2;
+	}
+	
+	.no-data-text {
+		text-align: center;
+		color: #999;
+		font-size: 28rpx;
+		margin-top: 20rpx;
+	}
+	
+	.item.expired .money {
+		background-color: #CCCCCC;
+	}
+</style>
+
+<style lang="scss" scoped>
+	.navbar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 90rpx;
+		background-color: #FFFFFF;
+		z-index: 9;
+		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+
+		.item {
+			border-top: 5rpx solid transparent;
+			border-bottom: 5rpx solid transparent;
+			font-size: 32rpx;
+			color: #999999;
+			height: 100%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: relative;
+			
+			&.on {
+				color: #FC1F03;
+				font-weight: bold;
+				
+				&:after {
+					content: '';
+					position: absolute;
+					bottom: 0;
+					left: 50%;
+					transform: translateX(-50%);
+					width: 60rpx;
+					height: 6rpx;
+					background: linear-gradient(90deg, #FEE3E3 0%, #FFF4F3 100%);
+					border-radius: 3rpx;
+				}
+			}
+		}
+	}
+
+	.coupon-list {
+		margin-top: 122rpx;
+	}
+
+	.noCommodity {
+		margin-top: 300rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		
+		.pictrue {
+			width: 240rpx;
+			height: 240rpx;
+			
+			image {
+				width: 100%;
+				height: 100%;
+			}
+		}
+	}
+</style>

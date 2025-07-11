@@ -17,6 +17,7 @@ module.exports = {
 		'content-type': 'application/json',
 		//#ifdef H5
 		'Form-type': navigator.userAgent.toLowerCase().indexOf("micromessenger") !== -1 ? 'wechat' : 'h5',
+		'X-Requested-With': 'XMLHttpRequest', // 用于识别AJAX请求
 		//#endif
 		//#ifdef MP
 		'Form-type': 'routine',

@@ -1,0 +1,530 @@
+<template>
+    <view class="hot-group-detail">
+        <!-- 顶部图片和返回/分享按钮 -->
+        <view class="top-image-box">
+            <image class="main-image" src="/static/images/index/hot_group/detail/product_image.png" mode="aspectFill" />
+            <view class="nav-btns">
+                <image class="back-btn" src="/static/images/index/hot_group/detail/back_arrow.svg" @click="goBack" />
+                <image class="share-btn" src="/static/images/index/hot_group/detail/share_icon.svg" />
+            </view>
+            <view class="image-indicator">
+                <view class="dot active"></view>
+                <view class="dot"></view>
+                <view class="dot"></view>
+            </view>
+        </view>
+
+        <!-- 商品信息区 -->
+        <view class="info-section">
+            <view class="price-row">
+                <text class="price-symbol">￥</text>
+                <text class="price-main">78</text>
+                <text class="price-range">~88</text>
+            </view>
+            <view class="product-title">阳澄湖大闸蟹/一盒300g-450g</view>
+            <view class="tags-row">
+                <view class="origin-tag">产地丨江苏</view>
+            </view>
+            <view class="sales-row">
+                <text class="sales-info">已售200+</text>
+            </view>
+            <view class="group-buyers-row">
+                <text class="group-text">共201人团购了此商品</text>
+                <view class="avatars">
+                    <image class="avatar" src="/static/images/index/hot_group/detail/user_avatar3.png" />
+                    <image class="avatar" src="/static/images/index/hot_group/detail/user_avatar4.png" />
+                    <image class="avatar" src="/static/images/index/hot_group/detail/user_avatar5.png" />
+                </view>
+            </view>
+        </view>
+
+        <!-- 评价区 -->
+        <view class="review-section">
+            <view class="section-header">
+                <text class="title">评价（99+）</text>
+                <text class="rating-score">好评99.8%</text>
+                <view class="more-btn">全部<text class="arrow">&gt;</text></view>
+            </view>
+            <view class="review-list">
+                <view class="review-item">
+                    <image class="user-avatar" src="/static/images/index/hot_group/detail/user_avatar1.png" />
+                    <view class="review-content">
+                        <text class="user-name">匿名买家</text>
+                        <text class="review-text">非常好吃很鲜美，还会复购</text>
+                    </view>
+                </view>
+                <view class="review-item">
+                    <image class="user-avatar" src="/static/images/index/hot_group/detail/user_avatar2.png" />
+                    <view class="review-content">
+                        <text class="user-name">匿名买家</text>
+                        <text class="review-text">味道不错孩子非常喜欢吃！</text>
+                    </view>
+                </view>
+            </view>
+        </view>
+
+        <!-- 问大家区 -->
+        <view class="qa-section">
+            <view class="section-header">
+                <text class="title">问大家（99+）</text>
+                <view class="more-btn">全部<text class="arrow">&gt;</text></view>
+            </view>
+            <view class="qa-list">
+                <view class="qa-item">
+                    <text class="question">口感咋样啊？</text>
+                    <text class="answer-count">5个回答</text>
+                </view>
+                <view class="qa-item">
+                    <text class="question">蟹黄多么？</text>
+                    <text class="answer-count">10个回答</text>
+                </view>
+            </view>
+        </view>
+
+        <!-- 产品介绍/买家秀区 -->
+        <view class="product-detail-section">
+            <view class="section-header">
+                <text class="title">产品介绍</text>
+            </view>
+            <view class="detail-content">
+                <text class="detail-text">
+                    大闸蟹到货超快，冷链包装专业，拆箱时每只都活蹦乱跳！蟹壳油亮饱满，蟹黄多到溢出，蟹肉鲜甜带丝回甘，清蒸后满屋都是蟹香！附赠的拆蟹工具和姜茶很贴心，店家还提醒了蒸制时间，服务满分！这个价位能吃到如此品质真的惊喜，已推荐给闺蜜，秋天还要再囤几箱
+                </text>
+            </view>
+            <view class="buyer-showcase">
+                <view class="showcase-images">
+                    <image class="showcase-img" src="/static/images/index/hot_group/detail/product_thumb1.png" />
+                    <image class="showcase-img" src="/static/images/index/hot_group/detail/product_thumb2.png" />
+                    <image class="showcase-img" src="/static/images/index/hot_group/detail/product_thumb3.png" />
+                    <image class="showcase-img" src="/static/images/index/hot_group/detail/product_thumb4.png" />
+                    <view class="showcase-label"><text>买家秀</text></view>
+                </view>
+            </view>
+        </view>
+
+        <!-- 底部操作栏 -->
+        <view class="bottom-bar">
+            <view class="bar-divider"></view>
+            <view class="bar-btns">
+                <view class="bar-btn not-want">
+                    <image class="action-icon" src="/static/images/index/hot_group/not_want_icon.svg" />
+                    <text>不想买(2)</text>
+                </view>
+                <view class="bar-btn want">
+                    <image class="action-icon" src="/static/images/index/hot_group/want_icon.svg" />
+                    <text>想买(66)</text>
+                </view>
+            </view>
+        </view>
+    </view>
+</template>
+
+<script>
+export default {
+    name: 'HotGroupDetail',
+    data () {
+        return {
+            statusBarHeight: 20, // 默认状态栏高度
+            productInfo: {
+                id: 1,
+                name: '阳澄湖大闸蟹/一盒300g-450g',
+                price: '78~88',
+                origin: '江苏',
+                sales: '200+',
+                groupBuyers: 201,
+                wantCount: 66,
+                notWantCount: 2,
+                rating: '99.8%',
+                description: '大闸蟹到货超快，冷链包装专业，拆箱时每只都活蹦乱跳！蟹壳油亮饱满，蟹黄多到溢出，蟹肉鲜甜带丝回甘，清蒸后满屋都是蟹香！附赠的拆蟹工具和姜茶很贴心，店家还提醒了蒸制时间，服务满分！这个价位能吃到如此品质真的惊喜，已推荐给闺蜜，秋天还要再囤几箱'
+            }
+        }
+    },
+    onLoad (options) {
+        // 获取状态栏高度
+        const systemInfo = uni.getSystemInfoSync()
+        this.statusBarHeight = systemInfo.statusBarHeight || 20
+
+        // 获取商品ID，从服务器获取商品详情
+        if (options.id) {
+            // 这里应该调用API获取商品详情
+            console.log('商品ID:', options.id)
+        }
+    },
+    methods: {
+        goBack () {
+            uni.navigateBack()
+        },
+        shareProduct () {
+            uni.showToast({
+                title: '分享功能开发中',
+                icon: 'none',
+                duration: 2000
+            })
+        },
+        wantToBuy () {
+            uni.showToast({
+                title: '已标记为想买',
+                icon: 'success',
+                duration: 2000
+            })
+            this.productInfo.wantCount++
+        },
+        notWantToBuy () {
+            uni.showToast({
+                title: '已标记为不想买',
+                icon: 'success',
+                duration: 2000
+            })
+            this.productInfo.notWantCount++
+        }
+    }
+}
+</script>
+
+<style scoped lang="scss">
+.hot-group-detail {
+    background: #f7f7f7;
+    min-height: 100vh;
+    font-family: 'PingFang SC', Arial, sans-serif;
+
+    .top-image-box {
+        position: relative;
+        width: 100vw;
+        height: 375rpx;
+
+        .main-image {
+            width: 100vw;
+            height: 375rpx;
+            object-fit: cover;
+            display: block;
+        }
+
+        .nav-btns {
+            position: absolute;
+            top: 32rpx;
+            left: 0;
+            width: 100vw;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30rpx;
+            z-index: 2;
+
+            .back-btn,
+            .share-btn {
+                width: 60rpx;
+                height: 60rpx;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 50%;
+                padding: 10rpx;
+            }
+        }
+
+        .image-indicator {
+            position: absolute;
+            bottom: 20rpx;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+
+            .dot {
+                width: 16rpx;
+                height: 16rpx;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.5);
+                margin: 0 8rpx;
+
+                &.active {
+                    background: #eb5f2f;
+                }
+            }
+        }
+    }
+
+    .info-section {
+        background: #fff;
+        border-radius: 0 0 24rpx 24rpx;
+        margin: -24rpx 20rpx 0 20rpx;
+        padding: 30rpx 24rpx 0 24rpx;
+        box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.03);
+
+        .price-row {
+            display: flex;
+            align-items: baseline;
+
+            .price-symbol {
+                font-size: 24rpx;
+                color: #1a1a1a;
+            }
+
+            .price-main {
+                font-size: 48rpx;
+                color: #1a1a1a;
+                margin: 0 4rpx;
+            }
+
+            .price-range {
+                font-size: 32rpx;
+                color: #1a1a1a;
+            }
+        }
+
+        .product-title {
+            font-size: 32rpx;
+            color: #333;
+            margin: 16rpx 0 12rpx 0;
+            font-weight: 500;
+        }
+
+        .tags-row {
+            margin-bottom: 16rpx;
+
+            .origin-tag {
+                display: inline-block;
+                border: 1rpx solid #999;
+                border-radius: 2rpx;
+                font-size: 24rpx;
+                color: #999;
+                padding: 4rpx 12rpx;
+            }
+        }
+
+        .sales-row {
+            margin-bottom: 12rpx;
+
+            .sales-info {
+                font-size: 28rpx;
+                color: #999;
+            }
+        }
+
+        .group-buyers-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            padding: 20rpx 0;
+            border-radius: 8rpx;
+
+            .group-text {
+                font-size: 28rpx;
+                color: #000;
+            }
+
+            .avatars {
+                display: flex;
+
+                .avatar {
+                    width: 50rpx;
+                    height: 50rpx;
+                    border-radius: 50%;
+                    margin-left: -15rpx;
+                    border: 2rpx solid #fff;
+
+                    &:first-child {
+                        margin-left: 0;
+                    }
+                }
+            }
+        }
+    }
+
+    .review-section,
+    .qa-section {
+        background: #fff;
+        margin: 20rpx 20rpx 0 20rpx;
+        border-radius: 16rpx;
+        padding: 30rpx 24rpx;
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30rpx;
+
+            .title {
+                font-size: 32rpx;
+                color: #1a1a1a;
+                font-weight: 400;
+                flex: 1;
+            }
+
+            .rating-score {
+                font-size: 24rpx;
+                color: #e75e34;
+                margin-right: 20rpx;
+            }
+
+            .more-btn {
+                display: flex;
+                align-items: center;
+                font-size: 28rpx;
+                color: #999;
+
+                .arrow {
+                    margin-left: 10rpx;
+                }
+            }
+        }
+
+        .review-list {
+            .review-item {
+                display: flex;
+                margin-bottom: 30rpx;
+
+                .user-avatar {
+                    width: 70rpx;
+                    height: 70rpx;
+                    border-radius: 50%;
+                    margin-right: 20rpx;
+                }
+
+                .review-content {
+                    flex: 1;
+
+                    .user-name {
+                        font-size: 32rpx;
+                        color: #999;
+                        margin-bottom: 10rpx;
+                        display: block;
+                    }
+
+                    .review-text {
+                        font-size: 32rpx;
+                        color: #1a1a1a;
+                        line-height: 1.4;
+                    }
+                }
+            }
+        }
+
+        .qa-list {
+            .qa-item {
+                margin-bottom: 20rpx;
+
+                .question {
+                    font-size: 28rpx;
+                    color: #1a1a1a;
+                    margin-bottom: 10rpx;
+                    display: block;
+                }
+
+                .answer-count {
+                    font-size: 24rpx;
+                    color: #999;
+                }
+            }
+        }
+    }
+
+    .product-detail-section {
+        background: #fff;
+        margin: 20rpx 20rpx 0 20rpx;
+        border-radius: 16rpx;
+        padding: 30rpx 24rpx;
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30rpx;
+
+            .title {
+                font-size: 32rpx;
+                color: #393d48;
+                font-weight: 400;
+            }
+        }
+
+        .detail-content {
+            padding-bottom: 30rpx;
+
+            .detail-text {
+                font-size: 32rpx;
+                color: #808080;
+                line-height: 1.5;
+            }
+        }
+
+        .buyer-showcase {
+            margin-top: 20rpx;
+
+            .showcase-images {
+                display: flex;
+                flex-wrap: wrap;
+                position: relative;
+
+                .showcase-img {
+                    width: 160rpx;
+                    height: 160rpx;
+                    margin-right: 10rpx;
+                    margin-bottom: 10rpx;
+                    border-radius: 8rpx;
+                }
+
+                .showcase-label {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    background: rgba(0, 0, 0, 0.35);
+                    color: #fff;
+                    padding: 4rpx 15rpx;
+                    border-radius: 0 8rpx 0 8rpx;
+
+                    text {
+                        font-size: 20rpx;
+                    }
+                }
+            }
+        }
+    }
+
+    .bottom-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #fff;
+        z-index: 99;
+        box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.03);
+
+        .bar-divider {
+            width: 100vw;
+            height: 1px;
+            background: #f2f2f2;
+        }
+
+        .bar-btns {
+            display: flex;
+            width: 100vw;
+            padding: 0 24rpx 24rpx 24rpx;
+            box-sizing: border-box;
+
+            .bar-btn {
+                flex: 1;
+                height: 80rpx;
+                border-radius: 52rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 32rpx;
+                font-weight: 500;
+                margin: 24rpx 10rpx 0 10rpx;
+
+                .action-icon {
+                    width: 36rpx;
+                    height: 36rpx;
+                    margin-right: 10rpx;
+                }
+
+                &.not-want {
+                    background: #f7f7f7;
+                    color: #ff840b;
+                }
+
+                &.want {
+                    background: #ff840b;
+                    color: #fff;
+                }
+            }
+        }
+    }
+}
+</style>

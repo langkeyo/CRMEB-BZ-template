@@ -117,6 +117,8 @@ import authorize from '@/components/Authorize';
 // #endif
 import colors from '@/mixins/color';
 import { HTTP_REQUEST_URL } from '@/config/app';
+import { navigateToHome, navigateToOrderDetails, navigateToPaymentSuccess, navigateToOrderCancelled } from '@/utils/orderNavigation.js';
+
 export default {
 	components: {
 		lotteryModel,
@@ -316,9 +318,7 @@ export default {
 		 * 去首页关闭当前所有页面
 		 */
 		goIndex: function (e) {
-			uni.switchTab({
-				url: '/pages/index/index'
-			});
+			navigateToHome();
 		},
 		// 去参团页面；
 		goPink: function (id) {
@@ -331,27 +331,19 @@ export default {
 		 * 去订单详情页面
 		 */
 		goOrderDetails: function (e) {
-			let that = this;
-			// #ifdef MP
-			uni.showLoading({
-				title: that.$t(`正在加载中`)
-			});
-			openOrderSubscribe()
-				.then((res) => {
-					uni.hideLoading();
-					uni.redirectTo({
-						url: '/pages/goods/order_details/index?order_id=' + that.orderId
-					});
-				})
-				.catch(() => {
-					nui.hideLoading();
-				});
-			// #endif
-			// #ifndef MP
-			uni.redirectTo({
-				url: '/pages/goods/order_details/index?order_id=' + that.orderId
-			});
-			// #endif
+			if (this.orderId) {
+				// 根据订单状态决定跳转到哪个页面
+				if (this.order_pay_info.paid === 1) {
+					// 如果已支付，跳转到支付成功页
+					navigateToPaymentSuccess(this.orderId);
+				} else if (this.order_pay_info.status === -1) {
+					// 如果订单已取消，跳转到交易取消页
+					navigateToOrderCancelled(this.orderId);
+				} else {
+					// 否则跳转到订单详情页
+					navigateToOrderDetails(this.orderId);
+				}
+			}
 		}
 	}
 };

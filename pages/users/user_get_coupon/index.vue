@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import { getCoupons, setCouponReceive } from '@/api/api.js';
+import { getAvailableCoupons, getMyCoupons, receiveCoupon } from '@/api/public.js';
 import { toLogin } from '@/libs/login.js';
 import { mapGetters } from 'vuex';
 // #ifdef MP
@@ -154,7 +154,9 @@ export default {
 			let that = this;
 			this.receiveLoading = true;
 			//领取优惠券
-			setCouponReceive(id)
+			receiveCoupon({
+				coupon_id: id
+			})
 				.then((res) => {
 					item.is_use += 1;
 					that.$util.Tips({
@@ -180,10 +182,10 @@ export default {
 			if (this.loading) return false;
 			that.loading = true;
 			that.loadTitle = that.$t(`加载更多`);
-			getCoupons({
-				type: that.type,
+			getAvailableCoupons({
 				page: that.page,
-				limit: that.limit
+				limit: that.limit,
+				name: that.searchValue
 			})
 				.then((res) => {
 					let list = res.data.list,

@@ -1,0 +1,246 @@
+<template>
+  <view class="user-header">
+    <!-- 背景 -->
+    <view class="background-header"></view>
+
+    <!-- 顶部导航/状态栏占位 -->
+    <view class="status-bar-placeholder"></view>
+    <view class="navigation-bar">
+      <view class="nav-icons">
+        <view class="icon-notification" @click="onNotificationClick">
+          <!-- 通知图标 -->
+          <image class="icon-bell" src="/static/images/user/bell_icon.svg" />
+          <view class="notification-badge">2</view>
+        </view>
+        <view class="icon-settings" @click="onSettingsClick">
+          <!-- 设置图标 -->
+          <image class="icon-gear" src="/static/images/user/settings_icon.svg" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 用户信息 -->
+    <view class="user-info-section">
+      <image class="avatar" :src="userInfo.avatar || '/static/images/user/avatar.png'" />
+      <view class="user-details">
+        <text class="user-name">{{ userInfo.nickname || '加载中....' }}</text>
+        <view class="edit-profile" @click="onEditProfile">
+          <text class="edit-profile-text">编辑资料</text>
+          <image class="arrow-right" src="/static/common/icons/navigation/arrow_right.svg" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 统计信息：商品券、关注、点赞 -->
+    <view class="stats-section">
+      <view class="stat-item" @click="onStatClick('coupon')">
+        <text class="stat-value">{{ stats.coupon }}</text>
+        <text class="stat-label">商品券</text>
+      </view>
+      <view class="stat-item" @click="onStatClick('follow')">
+        <text class="stat-value">{{ stats.follow }}</text>
+        <text class="stat-label">关注</text>
+      </view>
+      <view class="stat-item" @click="onStatClick('like')">
+        <text class="stat-value">{{ stats.like }}</text>
+        <text class="stat-label">点赞</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  name: 'UserHeader',
+  props: {
+    userInfo: {
+      type: Object,
+      default: () => ({
+        avatar: '',
+        nickname: ''
+      })
+    },
+    stats: {
+      type: Object,
+      default: () => ({
+        coupon: 3,
+        follow: 10,
+        like: 10
+      })
+    }
+  },
+  methods: {
+    onNotificationClick() {
+      this.$emit('notification-click');
+    },
+    onSettingsClick() {
+      this.$emit('settings-click');
+    },
+    onEditProfile() {
+      this.$emit('edit-profile');
+    },
+    onStatClick(type) {
+      this.$emit('stat-click', type);
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.user-header {
+  position: relative;
+}
+
+.background-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 400rpx;
+  background: linear-gradient(to bottom, #FEF3DF, #F0F0F0);
+  z-index: 0;
+}
+
+.status-bar-placeholder {
+  height: var(--status-bar-height);
+  background-color: transparent;
+}
+
+.navigation-bar {
+  position: relative;
+  z-index: 1;
+  height: 88rpx;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 22rpx;
+}
+
+.nav-icons {
+  display: flex;
+  align-items: center;
+}
+
+.icon-settings {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.icon-notification {
+  width: 48rpx;
+  height: 54rpx;
+  margin-right: 40rpx;
+  position: relative;
+}
+
+.icon-bell {
+  width: 36rpx;
+  height: 42rpx;
+}
+
+.icon-gear {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -16rpx;
+  right: -16rpx;
+  background-color: #E10000;
+  color: white;
+  border-radius: 50%;
+  min-width: 28rpx;
+  height: 28rpx;
+  font-size: 20rpx;
+  line-height: 28rpx;
+  padding: 0 10rpx;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1rpx solid white;
+}
+
+.user-info-section {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  margin-top: 20rpx;
+}
+
+.avatar {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 50%;
+}
+
+.user-details {
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 36rpx;
+  line-height: 50rpx;
+  color: #000000;
+}
+
+.edit-profile {
+  display: flex;
+  align-items: center;
+  margin-top: 8rpx;
+}
+
+.edit-profile-text {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 25rpx;
+  line-height: 36rpx;
+  color: #666666;
+}
+
+.arrow-right {
+  width: 16rpx;
+  height: 28rpx;
+  margin-left: 8rpx;
+}
+
+.stats-section {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 60rpx;
+  margin-top: 48rpx;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 36rpx;
+  line-height: 50rpx;
+  color: #1A1A1A;
+}
+
+.stat-label {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 22rpx;
+  line-height: 31rpx;
+  color: #808080;
+  margin-top: 8rpx;
+}
+</style>

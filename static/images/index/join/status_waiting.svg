@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180px" height="180px" viewBox="0 0 180 180" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>提交成功待审核</title>
+    <g id="Status-Waiting" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="bg" fill="#FFF8EE" cx="90" cy="90" r="90"></circle>
+        <path d="M105,65 C119.359,65 131,76.6405 131,91 C131,105.359 119.359,117 105,117 C90.6405,117 79,105.359 79,91 C79,76.6405 90.6405,65 105,65 Z" id="circle" fill="#FFE8CC"></path>
+        <g id="icon" transform="translate(50.000000, 45.000000)">
+            <rect id="background" fill="#FE8D00" x="0" y="0" width="80" height="80" rx="40"></rect>
+            <path d="M40,25 C41.105,25 42,25.895 42,27 L42,27 L42,39 L54,39 C55.105,39 56,39.895 56,41 C56,42.105 55.105,43 54,43 L54,43 L42,43 L42,55 C42,56.105 41.105,57 40,57 C38.895,57 38,56.105 38,55 L38,55 L38,43 L26,43 C24.895,43 24,42.105 24,41 C24,39.895 24.895,39 26,39 L26,39 L38,39 L38,27 C38,25.895 38.895,25 40,25 Z" id="path" fill="#FFFFFF" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

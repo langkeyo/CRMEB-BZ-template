@@ -1,0 +1,235 @@
+<template>
+  <view
+    class="footer acea-row row-between-wrapper"
+    :class="isDiySet ? 'on' : ''"
+  >
+    <view class="select-all">
+      <checkbox-group @change="onCheckboxAllChange">
+        <!-- #ifndef MP -->
+        <view class="custom-checkbox-container">
+          <checkbox
+            value="all"
+            :checked="isAllSelect"
+            class="round-checkbox"
+          ></checkbox>
+          <image 
+            v-if="isAllSelect" 
+            class="custom-checkbox-image" 
+            src="/static/common/placeholders/products/vegetable_image.png"
+          />
+          <image 
+            v-else 
+            class="custom-checkbox-image" 
+            src="/static/common/placeholders/products/chicken_image.png"
+          />
+        </view>
+        <!-- #endif -->
+        <!-- #ifdef MP -->
+        <view class="custom-checkbox-container">
+          <checkbox
+            value="all"
+            :checked="isAllSelect"
+            class="round-checkbox"
+          ></checkbox>
+          <image 
+            v-if="isAllSelect" 
+            class="custom-checkbox-image" 
+            src="/static/common/placeholders/products/vegetable_image.png"
+          />
+          <image 
+            v-else 
+            class="custom-checkbox-image" 
+            src="/static/common/placeholders/products/chicken_image.png"
+          />
+        </view>
+        <!-- #endif -->
+        <view class="checkAll"
+          >{{ $t(`全选`) }} ({{ selectedCount }})
+        </view>
+      </checkbox-group>
+    </view>
+    <view class="money acea-row row-middle" v-if="isEditing">
+      <view class="total-price">
+        <view class="label">{{ $t(`合计`) }}：</view>
+        <view class="price">{{ $t(`￥`) }}{{ totalPrice }}</view>
+      </view>
+      <form @submit="onSubmitOrder">
+        <button class="placeOrder bg-color" formType="submit">
+          {{ $t(`结算`) }}
+        </button>
+      </form>
+    </view>
+    <view class="button acea-row row-middle" v-else>
+      <form @submit="onSubmitCollect">
+        <button class="bnt cart-color" formType="submit">
+          {{ $t(`收藏`) }}
+        </button>
+      </form>
+      <form @submit="onSubmitDelete">
+        <button class="bnt" formType="submit">{{ $t(`删除`) }}</button>
+      </form>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  name: 'CartFooter',
+  props: {
+    isAllSelect: {
+      type: Boolean,
+      default: false
+    },
+    selectedCount: {
+      type: Number,
+      default: 0
+    },
+    totalPrice: {
+      type: String,
+      default: '0.00'
+    },
+    isEditing: {
+      type: Boolean,
+      default: true
+    },
+    isDiySet: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      // 额外状态数据
+    }
+  },
+  methods: {
+    onCheckboxAllChange(e) {
+      this.$emit('checkbox-all-change', e);
+    },
+    onSubmitOrder() {
+      this.$emit('submit-order');
+    },
+    onSubmitCollect() {
+      this.$emit('submit-collect');
+    },
+    onSubmitDelete() {
+      this.$emit('submit-delete');
+    }
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  height: 100rpx;
+  background-color: #fff;
+  padding: 0 30rpx;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  &.on {
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .select-all {
+    display: flex;
+    align-items: center;
+    
+    .custom-checkbox-container {
+      position: relative;
+      margin-right: 12rpx;
+      width: 40rpx;
+      height: 40rpx;
+      
+      .round-checkbox {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        z-index: 2;
+      }
+      
+      .custom-checkbox-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40rpx;
+        height: 40rpx;
+        z-index: 1;
+      }
+    }
+    
+    .checkAll {
+      font-size: 28rpx;
+      color: #333333;
+    }
+  }
+  
+  .money {
+    display: flex;
+    align-items: center;
+    
+    .total-price {
+      display: flex;
+      align-items: center;
+      margin-right: 20rpx;
+      
+      .label {
+        font-size: 26rpx;
+        color: #282828;
+      }
+      
+      .price {
+        font-size: 30rpx;
+        color: #FF840B;
+        font-weight: bold;
+      }
+    }
+    
+    .placeOrder {
+      width: 180rpx;
+      height: 70rpx;
+      background: linear-gradient(90deg, #FF7E00 0%, #FDA44D 100%);
+      color: #fff;
+      font-size: 28rpx;
+      border-radius: 35rpx;
+      text-align: center;
+      line-height: 70rpx;
+      box-shadow: 0 4rpx 8rpx rgba(255, 132, 11, 0.2);
+    }
+  }
+  
+  .button {
+    display: flex;
+    align-items: center;
+    
+    .bnt {
+      width: 160rpx;
+      height: 60rpx;
+      border-radius: 30rpx;
+      text-align: center;
+      line-height: 60rpx;
+      font-size: 26rpx;
+      margin-left: 20rpx;
+      
+      &.cart-color {
+        background-color: #ff3b0d;
+        color: #fff;
+      }
+      
+      &:not(.cart-color) {
+        background-color: #f5f5f5;
+        color: #999;
+      }
+    }
+  }
+}
+</style>

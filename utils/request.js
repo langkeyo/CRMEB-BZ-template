@@ -41,6 +41,11 @@ function baseRequest(url, method, data, {
 		}
 	}
 	if (store.state.app.token) header[TOKENNAME] = 'Bearer ' + store.state.app.token;
+	
+	// 解决CORS问题，确保在H5环境下添加正确的跨域头
+	// #ifdef H5
+	header['X-Requested-With'] = 'XMLHttpRequest';
+	// #endif
 
 	return new Promise((reslove, reject) => {
 		if (uni.getStorageSync('locale')) {

@@ -58,9 +58,11 @@
 
 <script>
 	import {
-		getCollectUserList,
-		getProductHot,
-		collectDel
+		getCollectList,
+		deleteCollect
+	} from '@/api/group.js';
+	import {
+		getProductHot
 	} from '@/api/store.js';
 	import {
 		mapGetters
@@ -145,15 +147,27 @@
 			subDel() {
 				let that = this
 				if (this.ids.length) {
-					collectDel(that.ids).then(res => {
+					// 批量取消收藏
+					const deletePromises = this.ids.map(id => {
+						return deleteCollect({
+							fav_id: id,
+							type: '0' // 假设0是商品收藏类型
+						});
+					});
+					
+					Promise.all(deletePromises).then(() => {
 						that.loadend = false;
 						that.$util.Tips({
-							title: res.msg
+							title: that.$t(`取关成功`)
 						});
 						that.page = 1;
 						that.collectProductList = [];
-						this.getUserCollectProduct();
-						this.ids.length = '';
+						that.getUserCollectProduct();
+						that.ids = [];
+					}).catch(err => {
+						that.$util.Tips({
+							title: that.$t(`操作失败`)
+						});
 					});
 				} else {
 					return that.$util.Tips({
@@ -178,7 +192,7 @@
 					let newValid = valid.map(item => {
 						if (status) {
 							item.checked = true;
-							selectValue.push(item.pid);
+							selectValue.push(item.pid || item.id);
 							that.isAllSelect = true;
 						} else {
 							item.checked = false;
@@ -193,68 +207,88 @@
 			jump(item) {
 				if (item.is_show) {
 					uni.navigateTo({
-						url: "/pages/goods_details/index?id=" + item.pid
+						url: "/pages/goods_details/index?id=" + (item.pid || item.id)
 					})
 				} else {
 					this.$util.Tips({
 						title: this.$t(`该商品已下架`)
-					})
+					});
 				}
-
 			},
 			/**
-			 * 授权回调
+			 * 删除收藏
 			 */
-			onLoadFun: function() {
-				this.loadend = false;
-				this.page = 1;
-				this.$set(this, 'collectProductList', []);
-				this.getUserCollectProduct();
-				// this.get_host_product();
-			},
-			// 授权关闭
-			authColse(e) {
-				this.isShowAuth = e
+			delCollection(pid, index) {
+				let that = this;
+				deleteCollect({
+					fav_id: pid.toString(),
+					type: '0' // 假设0是商品收藏类型
+				}).then(res => {
+					that.collectProductList.splice(index, 1);
+					that.count = that.collectProductList.length;
+					that.$util.Tips({
+						title: res.msg
+					})
+				});
 			},
 			/**
 			 * 获取收藏产品
 			 */
-			getUserCollectProduct() {
+			getUserCollectProduct: function() {
 				let that = this;
-				if (this.loading) return;
-				if (this.loadend) return;
+				if (that.loading) return;
+				if (that.loadend) return;
 				that.loading = true;
-				that.loadTitle = "";
-				getCollectUserList({
+				that.loadTitle = '';
+				getCollectList({
+					type: '0', // 假设0是商品收藏类型
 					page: that.page,
 					limit: that.limit
 				}).then(res => {
-					this.count = res.data.count;
-					let collectProductList = res.data.list;
-					collectProductList.map(e => {
-						e.checked = false
-					})
-
-					let loadend = collectProductList.length < that.limit;
-					that.collectProductList = that.$util.SplitArray(collectProductList, that
-						.collectProductList);
-					that.$set(that, 'collectProductList', that.collectProductList);
-					that.loadend = loadend;
-					that.loadTitle = loadend ? that.$t(`我也是有底线的`) : that.$t(`加载更多`);
-					if (!that.collectProductList.length && that.page == 1) this.get_host_product();
-					that.page = that.page + 1;
-					that.loading = false;
+					if (res.code === 200) {
+						let list = res.data.list || [];
+						let productList = list.map(item => {
+							return {
+								pid: item.id || item.fav_id,
+								id: item.id || item.fav_id,
+								store_name: item.title || item.name,
+								price: item.price || '0.00',
+								image: item.image,
+								is_show: item.is_show !== undefined ? item.is_show : true,
+								checked: false
+							}
+						});
+						
+						let collectProductList = that.$util.SplitArray(productList, that.collectProductList);
+						that.$set(that, 'collectProductList', collectProductList);
+						that.count = res.data.count || collectProductList.length;
+						that.loadend = list.length < that.limit;
+						that.loadTitle = that.loadend ? that.$t(`我也是有底线的`) : that.$t(`加载更多`);
+						that.page = that.page + 1;
+						that.loading = false;
+						
+						if (!that.collectProductList.length && res.data.count) that.getUserCollectProduct();
+					} else {
+						that.loading = false;
+						that.loadTitle = that.$t(`加载更多`);
+						that.$util.Tips({
+							title: res.msg
+						});
+					}
 				}).catch(err => {
 					that.loading = false;
 					that.loadTitle = that.$t(`加载更多`);
+					that.$util.Tips({
+						title: that.$t(`网络错误`)
+					});
 				});
 			},
 			/**
 			 * 获取我的推荐
 			 */
-			get_host_product() {
+			get_host_product: function() {
 				let that = this;
-				if (that.hotScroll) return
+				if (that.hotScroll) return;
 				getProductHot(
 					that.hotPage,
 					that.hotLimit,
@@ -263,17 +297,20 @@
 					that.hotScroll = res.data.length < that.hotLimit
 					that.hostProduct = that.hostProduct.concat(res.data)
 				});
+			},
+			/**
+			 * 授权回调
+			 */
+			onLoadFun: function() {
+				this.getUserCollectProduct();
+				this.get_host_product();
+			},
+			// 授权关闭
+			authColse: function(e) {
+				this.isShowAuth = e
 			}
-		},
-		onReachBottom() {
-			this.getUserCollectProduct();
-		},
-		// 滚动监听
-		onPageScroll(e) {
-			// 传入scrollTop值并触发所有easy-loadimage组件下的滚动监听事件
-			uni.$emit('scroll');
-		},
-	}
+		}
+	};
 </script>
 
 <style scoped lang="scss">

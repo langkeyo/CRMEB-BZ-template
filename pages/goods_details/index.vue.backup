@@ -1,0 +1,1499 @@
+<template>
+	<view class="product-con">
+		<!-- Banner区域 - 按照Figma设计 -->
+		<view class="banner-section">
+			<!-- 背景轮播图 -->
+			<swiper class="banner-swiper" autoplay="true" interval="3000" duration="500" circular @change="swiperChange">
+				<swiper-item v-for="(image, index) in goodsInfo.images" :key="index">
+					<image :src="image" mode="aspectFill" class="banner-image"></image>
+				</swiper-item>
+			</swiper>
+
+			<!-- 返回按钮 -->
+			<view class="back-icon" @tap="goBack">
+				<image src="/static/images/goods_details/back_icon.svg"></image>
+			</view>
+
+			<!-- 分享按钮 - 保持现有资源 -->
+			<view class="share-button" @tap="shareGoods">
+				<image src="/static/images/goods_details/share_icon.svg"></image>
+			</view>
+
+			<!-- 图片计数器 -->
+			<view class="image-counter">{{ currentIndex + 1 }}/{{ goodsInfo.images.length }}</view>
+
+			<!-- 图片/视频标签 -->
+			<view class="media-label">图片/视频</view>
+		</view>
+
+		<!-- 商品卡片区域 - 按照Figma设计 -->
+		<view class="goods-card-section">
+			<!-- 卡片背景 -->
+			<view class="card-background"></view>
+
+			<!-- 价格信息 -->
+			<text class="price-text">￥0~5</text>
+
+			<!-- 销量信息 -->
+			<text class="sold-text">已售200+</text>
+
+			<!-- 商品标题 -->
+			<text class="goods-title-text">乐事薯片（黄瓜味）</text>
+
+			<!-- 产地信息 -->
+			<view class="origin-container">
+				<view class="origin-border"></view>
+				<text class="origin-text">产地丨山东</text>
+			</view>
+		</view>
+
+		<!-- 团购用户区域 - 不可购买时显示（分类/热门团购） -->
+		<view v-if="!canBuy" class="goods-group-buyers-section">
+			<!-- 标题 -->
+			<text class="group-buyers-title">共{{ groupBuyersData.length }}人团购了此商品</text>
+
+			<!-- 轮播容器 -->
+			<view class="buyers-carousel-container">
+				<view class="buyers-carousel" :style="{ transform: `translateY(${carouselOffset}px)` }">
+					<!-- 重复用户数据以实现无缝轮播 -->
+					<view
+						v-for="(user, index) in extendedBuyersData"
+						:key="index"
+						class="user-item"
+						:class="{ 'user-center': index === centerIndex }"
+					>
+						<image
+							:class="index === centerIndex ? 'user-avatar-large' : 'user-avatar-small'"
+							:src="user.avatar"
+						></image>
+						<text
+							:class="index === centerIndex ? 'user-name-large' : 'user-name-small'"
+						>
+							{{ user.name }}
+						</text>
+						<text
+							:class="index === centerIndex ? 'purchase-status-large' : 'purchase-status-small'"
+						>
+							{{ user.status }}
+						</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<!-- 物流信息区域 - 可购买时显示 -->
+		<view v-if="canBuy" class="delivery-info-section">
+			<!-- 自提点信息 -->
+			<view class="pickup-info">
+				<text class="pickup-text">自提点：北京尚德井小区菜鸟驿站丨免运费</text>
+			</view>
+
+			<!-- 预计送达时间 -->
+			<view class="predict-time">
+				<view class="time-icon-wrapper">
+					<image class="time-icon" src="/static/images/goods_details/time_icon.svg"></image>
+					<text class="colon">：</text>
+				</view>
+				<text class="time-text">预计明日16：30前送达</text>
+			</view>
+
+			<!-- 送达地址 -->
+			<view class="destination">
+				<image class="location-icon" src="/static/images/goods_details/location_icon.svg"></image>
+				<text class="destination-text">送至 北京尚德井小区菜鸟驿站</text>
+			</view>
+
+			<!-- 保障信息 -->
+			<view class="guarantee-footer">
+				<text class="guarantee-text">保障 品质保证，无忧售后</text>
+			</view>
+		</view>
+
+		<!-- 评价区域 - 按照Figma设计 -->
+		<view class="goods-review-section">
+			<!-- 评价头部 -->
+			<view class="review-header">
+				<!-- 左侧 -->
+				<view class="review-left">
+					<text class="review-title">评价（99+）</text>
+					<text class="review-rate">好评99.8%</text>
+				</view>
+
+				<!-- 右侧 -->
+				<view class="review-right" @tap="viewAllReviews">
+					<text class="view-all-text">全部</text>
+					<image class="right-arrow-icon" src="/static/images/goods/right-icon.svg"></image>
+				</view>
+			</view>
+
+			<!-- 评价卡片1 -->
+			<view class="review-card1">
+				<image class="review-avatar" src="/static/images/avatar.png"></image>
+				<view class="review-content">
+					<text class="reviewer-name">匿名买家</text>
+					<text class="review-text">非常好吃很喜欢这个味儿，还会复购！</text>
+				</view>
+			</view>
+
+			<!-- 评价卡片2 -->
+			<view class="review-card2">
+				<image class="review-avatar" src="/static/images/avatar.png"></image>
+				<view class="review-content">
+					<text class="reviewer-name">匿名买家</text>
+					<text class="review-text">味道不错孩子非常喜欢吃！</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 买家秀区域 - 按照Figma设计 -->
+		<view class="goods-buyer-show-section">
+			<!-- 买家秀图片 -->
+			<view class="buyer-show-image-wrapper">
+				<image class="buyer-show-image" src="/static/images/goods_details/buyer_show1.png"></image>
+			</view>
+			<view class="buyer-show-image-wrapper">
+				<image class="buyer-show-image" src="/static/images/goods_details/buyer_show2.png"></image>
+			</view>
+			<view class="buyer-show-image-wrapper">
+				<image class="buyer-show-image" src="/static/images/goods_details/buyer_show3.png"></image>
+			</view>
+			<view class="buyer-show-image-wrapper">
+				<image class="buyer-show-image" src="/static/images/goods_details/buyer_show4.png"></image>
+			</view>
+
+			<!-- 买家秀标签 -->
+			<view class="buyer-show-label">
+				<text class="buyer-show-text">买家秀</text>
+			</view>
+		</view>
+
+		<!-- 问大家区域 - 按照Figma设计 -->
+		<view class="goods-qa-section">
+			<!-- 头部 -->
+			<view class="qa-header">
+				<text class="qa-title">问大家（99+）</text>
+				<view class="qa-header-right">
+					<text class="qa-all-text">全部</text>
+					<text class="qa-arrow">></text>
+				</view>
+			</view>
+
+			<!-- 问题列表 -->
+			<view class="qa-questions">
+				<!-- row1 - 问题1 -->
+				<view class="qa-question-item">
+					<text class="qa-question-text">会不会很酸啊？</text>
+					<text class="qa-answer-count">10个回答</text>
+				</view>
+
+				<!-- row2 - 问题2 -->
+				<view class="qa-question-item">
+					<text class="qa-question-text">口感咋样啊？</text>
+					<text class="qa-answer-count">5个回答</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 产品介绍区域 - 按照Figma设计 -->
+		<view class="goods-intro-section">
+			<!-- 标题 -->
+			<view class="intro-title">
+				<text class="intro-title-text">产品介绍</text>
+			</view>
+
+			<!-- 内容 -->
+			<view class="intro-content">
+				<text class="intro-content-text">刚收到快递就迫不及待拆开，包装严实，薯片完整无损，必须给物流点赞！选了经典原味和青柠味，每一片都薄脆透光，咬下去"咔嚓"一声，土豆的香气瞬间在嘴里蔓延，原味的纯粹咸香让人停不下来，青柠味更是清新解腻，酸甜比例拿捏得刚刚好！ 分量也很足，追剧时抱着一大包吃简直幸福感爆棚！</text>
+			</view>
+		</view>
+
+		<!-- 购买意向区域 - 所有商品都只能看不能买，只收集意向 -->
+		<view class="purchase-intent-section">
+			<!-- 不想买按钮 -->
+			<view class="no-want-buy-btn">
+				<image class="btn-icon" src="/static/images/goods_details/thumbs_down.svg"></image>
+				<text class="btn-text">不想买</text>
+			</view>
+
+			<!-- 想买按钮 -->
+			<view class="want-buy-btn">
+				<image class="btn-icon" src="/static/images/goods_details/thumbs_up.svg"></image>
+				<text class="btn-text">想买</text>
+			</view>
+		</view>
+
+
+	</view>
+</template>
+
+<script>
+export default {
+	data () {
+		return {
+			pageType: 'category', // 页面类型：'category'(分类页面进来) 或 'group'(今日开团页面进来)
+			canBuy: false, // 是否可以购买，默认false确保安全
+			currentIndex: 0,
+			// 轮播相关数据
+			carouselOffset: 0,
+			centerIndex: 1, // 中间显示的用户索引
+			carouselTimer: null,
+			// 团购用户数据
+			groupBuyersData: [
+				{ name: '开心鸭', avatar: '/static/images/avatar.png', status: '已购买此商品' },
+				{ name: '加载中...', avatar: '/static/images/avatar.png', status: '已购买此商品' },
+				{ name: 'Raychan', avatar: '/static/images/avatar.png', status: '已购买此商品' },
+				{ name: '小明', avatar: '/static/images/avatar.png', status: '已购买此商品' },
+				{ name: '小红', avatar: '/static/images/avatar.png', status: '已购买此商品' },
+				{ name: '小李', avatar: '/static/images/avatar.png', status: '已购买此商品' }
+			],
+			goodsInfo: {
+				id: 1,
+				price: '45',
+				sales: '200',
+				title: '山东青苹果/一盒300g-450g',
+				origin: '山东',
+				pickupLocation: '北京尚德井小区菜鸟驿站',
+				deliveryTime: '16：30前',
+				deliveryAddress: '北京尚德井小区菜鸟驿站',
+				guarantee: '品质保证，无忧售后',
+				evaluationCount: '99',
+				goodRate: '99.8%',
+				// 轮播图片数组 - 使用同一张图片重复，方便以后对接API
+				images: [
+					'/static/images/goods_details/banner.png',
+					'/static/images/goods_details/banner.png',
+					'/static/images/goods_details/banner.png',
+					'/static/images/goods_details/banner.png',
+					'/static/images/goods_details/banner.png'
+				],
+				content: `
+				<p>【果园直供·脆甜青苹果】新鲜采摘的青苹果来啦！果皮翠绿透亮，果肉脆爽多汁，酸甜比例完美融合，入口先尝到清新酸意，细品回甘绵长，夏日冰镇更添凉爽！每颗苹果坚持自然成熟，富含维生素C和膳食纤维，低热量高营养，无论是直接鲜食、制作果切沙拉、还是榨汁烘焙都风味俱佳！</p>
+				<p>✓ 现摘现发，严选包装，坏果包赔，点击切沙拉单，让这份天然酸甜点亮你的味蕾，解锁健康轻生活！</p>
+				`
+			},
+			evaluations: [
+				{
+					avatar: '/static/images/avatar.png',
+					nickname: '匿名买家',
+					content: '非常好吃很甜很脆，还会复购'
+				},
+				{
+					avatar: '/static/images/avatar.png',
+					nickname: '匿名买家',
+					content: '味道不错孩子非常喜欢吃！不酸！'
+				}
+			],
+			qaList: [
+				{
+					question: '口感咋样啊?',
+					answerCount: 5
+				},
+				{
+					question: '会不会很酸啊?',
+					answerCount: 10
+				}
+			]
+		}
+	},
+	computed: {
+		// 扩展用户数据以实现无缝轮播
+		extendedBuyersData() {
+			const data = this.groupBuyersData;
+			// 前后各添加一份数据实现无缝轮播
+			return [...data, ...data, ...data];
+		}
+	},
+	methods: {
+		// 返回上一页
+		goBack () {
+			uni.navigateBack()
+		},
+
+		// 分享商品
+		shareGoods () {
+			uni.showToast({
+				title: '分享功能开发中',
+				icon: 'none'
+			})
+		},
+
+		// 滑动轮播图
+		swiperChange (e) {
+			this.currentIndex = e.detail.current
+		},
+
+		// 查看全部评价
+		viewAllEvaluations () {
+			uni.navigateTo({
+				url: '/pages/goods_details/evaluate_list'
+			})
+		},
+
+		// 查看全部问答
+		viewAllQA () {
+			uni.navigateTo({
+				url: '/pages/goods_details/qa_list'
+			})
+		},
+
+		// 加入购物车
+		addToCart () {
+			uni.showToast({
+				title: '已加入购物车',
+				icon: 'success'
+			})
+		},
+
+		// 立即购买
+		buyNow () {
+			uni.navigateTo({
+				url: '/pages/goods/order_confirm/new_order_confirm?id=' + this.goodsInfo.id
+			})
+		},
+
+		// 启动轮播
+		startCarousel() {
+			this.carouselTimer = setInterval(() => {
+				this.nextUser();
+			}, 2000); // 每2秒切换一次
+		},
+
+		// 停止轮播
+		stopCarousel() {
+			if (this.carouselTimer) {
+				clearInterval(this.carouselTimer);
+				this.carouselTimer = null;
+			}
+		},
+
+		// 切换到下一个用户
+		nextUser() {
+			this.centerIndex++;
+			if (this.centerIndex >= this.extendedBuyersData.length - 1) {
+				// 重置到开始位置实现无缝轮播
+				this.centerIndex = this.groupBuyersData.length;
+			}
+			this.updateCarouselOffset();
+		},
+
+		// 更新轮播偏移量
+		updateCarouselOffset() {
+			// 每个用户项高度约22px，居中显示
+			this.carouselOffset = -(this.centerIndex - 1) * 22;
+		},
+
+		// 查看全部评价
+		viewAllReviews() {
+			uni.navigateTo({
+				url: '/pages/goods_details/review_list'
+			})
+		}
+	},
+	onLoad (options) {
+		// 获取页面类型参数
+		if (options.type) {
+			this.pageType = options.type; // 'category' 或 'group'
+		}
+
+		// 安全机制：只有明确传入canBuy=true且来源是group时才允许购买
+		if (options.canBuy === 'true' && options.type === 'group') {
+			this.canBuy = true;
+		} else {
+			this.canBuy = false; // 默认不可购买，确保安全
+		}
+
+		// 这里应该请求后台数据
+		// this.getGoodsDetails(options.id);
+
+		// 只有不可购买时（显示团购用户区域）才启动轮播
+		if (!this.canBuy) {
+			this.startCarousel();
+		}
+	},
+	onUnload() {
+		// 页面卸载时停止轮播
+		this.stopCarousel();
+	}
+}
+</script>
+
+<style lang="scss" scoped>
+.product-con {
+	width: 100%;
+	background-color: #f5f5f5;
+	padding-bottom: 80px;
+
+	/* Banner区域 - 填满屏幕 */
+	.banner-section {
+		position: relative;
+		width: 100vw;
+		height: 254px;
+		left: 0;
+		top: 0;
+	}
+
+
+
+	/* 背景轮播图 */
+	.banner-swiper {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		left: 0;
+		top: 0;
+	}
+
+	.banner-image {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	/* 返回按钮 */
+	.back-icon {
+		position: absolute;
+		width: 9.15px;
+		height: 17px;
+		left: 12px;
+		top: 48px;
+		z-index: 10;
+
+		image {
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	/* 分享按钮 */
+	.share-button {
+		position: absolute;
+		width: 24px;
+		height: 25px;
+		right: 16px;
+		top: 43px;
+		z-index: 10;
+
+		image {
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	/* 图片计数器 */
+	.image-counter {
+		position: absolute;
+		width: 24px;
+		height: 20px;
+		right: 16px;
+		top: 75px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #FFFFFF;
+		z-index: 10;
+	}
+
+	/* 图片/视频标签 */
+	.media-label {
+		position: absolute;
+		width: 63px;
+		height: 20px;
+		left: 300px;
+		top: 221px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #FFFFFF;
+		z-index: 10;
+	}
+
+	/* 商品卡片区域 - 使用相对布局 */
+	.goods-card-section {
+		background: #FFFFFF;
+		border-radius: 4px;
+		margin: 8px 12px 0;
+		height: 110px;
+		position: relative;
+	}
+
+	/* 价格文字 */
+	.price-text {
+		position: absolute;
+		left: 3px;
+		top: 8px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 24px;
+		line-height: 34px;
+		color: #1A1A1A;
+	}
+
+	/* 销量文字 */
+	.sold-text {
+		position: absolute;
+		right: 8px;
+		top: 19px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #999999;
+	}
+
+	/* 商品标题 */
+	.goods-title-text {
+		position: absolute;
+		left: 8px;
+		top: 46px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #333333;
+	}
+
+	/* 产地容器 */
+	.origin-container {
+		position: absolute;
+		bottom: 14px;
+		left: 8px;
+		width: 68px;
+		height: 20px;
+	}
+
+	/* 产地边框 */
+	.origin-border {
+		box-sizing: border-box;
+		width: 100%;
+		height: 100%;
+		border: 0.5px solid #999999;
+		border-radius: 1px;
+		position: absolute;
+	}
+
+	/* 产地文字 */
+	.origin-text {
+		position: absolute;
+		left: 4px;
+		top: 1.5px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 17px;
+		color: #999999;
+	}
+
+	/* 团购用户区域 */
+	.goods-group-buyers-section {
+		background: #FFFFFF;
+		border-radius: 4px;
+		margin: 10px 12px 0;
+		height: 121px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* 团购标题 */
+	.group-buyers-title {
+		position: absolute;
+		left: 8px;
+		top: 11px;
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #000000;
+		z-index: 2;
+	}
+
+	/* 轮播容器 */
+	.buyers-carousel-container {
+		position: absolute;
+		left: 8px;
+		top: 40px;
+		width: 335px;
+		height: 70px;
+		overflow: hidden;
+	}
+
+	/* 轮播内容 */
+	.buyers-carousel {
+		transition: transform 0.5s ease-in-out;
+	}
+
+	/* 用户项 */
+	.user-item {
+		position: relative;
+		width: 100%;
+		height: 22px;
+		margin-bottom: 2px;
+		display: flex;
+		align-items: center;
+	}
+
+	/* 小头像 */
+	.user-avatar-small {
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		margin-right: 18px;
+		transition: all 0.3s ease;
+	}
+
+	/* 大头像 (中心位置) */
+	.user-avatar-large {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		margin-right: 15px;
+		transition: all 0.3s ease;
+	}
+
+	/* 小用户名 */
+	.user-name-small {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 10px;
+		line-height: 14px;
+		color: #666666;
+		flex: 1;
+		transition: all 0.3s ease;
+	}
+
+	/* 大用户名 (中心位置) */
+	.user-name-large {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #1A1A1A;
+		flex: 1;
+		transition: all 0.3s ease;
+	}
+
+	/* 小购买状态 */
+	.purchase-status-small {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 10px;
+		line-height: 14px;
+		color: #999999;
+		transition: all 0.3s ease;
+	}
+
+	/* 大购买状态 (中心位置) */
+	.purchase-status-large {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 17px;
+		color: #333333;
+		transition: all 0.3s ease;
+	}
+
+	/* 评价区域 */
+	.goods-review-section {
+		background: #FFFFFF;
+		border-radius: 4px;
+		margin: 10px 12px 0;
+		height: 180px;
+		position: relative;
+	}
+
+	/* 评价头部 */
+	.review-header {
+		position: absolute;
+		left: 0;
+		top: 10px;
+		width: 100%;
+		height: 22px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0 8px;
+		box-sizing: border-box;
+	}
+
+	/* 评价左侧 */
+	.review-left {
+		display: flex;
+		align-items: center;
+	}
+
+	/* 评价标题 */
+	.review-title {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #1A1A1A;
+		margin-right: 6px;
+	}
+
+	/* 好评率 */
+	.review-rate {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 17px;
+		color: #E75E34;
+	}
+
+	/* 评价右侧 */
+	.review-right {
+		display: flex;
+		align-items: center;
+	}
+
+	/* 全部文字 */
+	.view-all-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #999999;
+		margin-right: 6px;
+	}
+
+	/* 右箭头图标 */
+	.right-arrow-icon {
+		width: 5px;
+		height: 9px;
+		margin-left: 6px;
+	}
+
+	/* 评价卡片1 */
+	.review-card1 {
+		position: absolute;
+		left: 8px;
+		top: 52px;
+		width: 327px;
+		height: 49px;
+		display: flex;
+		align-items: flex-start;
+	}
+
+	/* 评价卡片2 */
+	.review-card2 {
+		position: absolute;
+		left: 8px;
+		top: 121px;
+		width: 247px;
+		height: 49px;
+		display: flex;
+		align-items: flex-start;
+	}
+
+	/* 评价头像 */
+	.review-avatar {
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		margin-right: 11px;
+		margin-top: 3px;
+	}
+
+	/* 评价内容容器 */
+	.review-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* 评价者姓名 */
+	.reviewer-name {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #999999;
+		margin-bottom: 5px;
+	}
+
+	/* 评价文字 */
+	.review-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #1A1A1A;
+	}
+
+	/* 买家秀区域 */
+	.goods-buyer-show-section {
+		margin: 6px 12px 0;
+		height: 82px;
+		position: relative;
+		display: flex;
+	}
+
+	/* 买家秀图片容器 */
+	.buyer-show-image-wrapper {
+		flex: 1;
+		display: flex;
+		justify-content: center;
+	}
+
+	.buyer-show-image-wrapper:first-child {
+		justify-content: flex-start;
+	}
+
+	.buyer-show-image-wrapper:last-child {
+		justify-content: flex-end;
+	}
+
+	/* 买家秀图片 */
+	.buyer-show-image {
+		width: 82px;
+		height: 82px;
+		border-radius: 4px;
+		object-fit: cover;
+	}
+
+	/* 买家秀标签 */
+	.buyer-show-label {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 43px;
+		height: 14px;
+		background: rgba(0, 0, 0, 0.35);
+		border-radius: 4px 2px 2px 2px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* 买家秀文字 */
+	.buyer-show-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 10px;
+		line-height: 21px;
+		color: #FFFFFF;
+	}
+
+	/* 问大家区域 */
+	.goods-qa-section {
+		background: #FFFFFF;
+		border-radius: 4px;
+		margin: 10px 12px 0;
+		height: 100px;
+		padding: 10px 7px;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* 问大家头部 */
+	.qa-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 22px;
+		margin-bottom: 12px;
+	}
+
+	/* 问大家标题 */
+	.qa-title {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #1A1A1A;
+	}
+
+	/* 右侧全部链接 */
+	.qa-header-right {
+		display: flex;
+		align-items: center;
+	}
+
+	.qa-all-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #999999;
+		margin-right: 6px;
+	}
+
+	.qa-arrow {
+		font-size: 12px;
+		color: #999999;
+	}
+
+	/* 问题列表 */
+	.qa-questions {
+		flex: 1;
+	}
+
+	/* 问题项 */
+	.qa-question-item {
+		margin-bottom: 8px;
+		display: flex;
+		align-items: center;
+		gap: 25px;
+	}
+
+	/* 问题文字 */
+	.qa-question-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #1A1A1A;
+	}
+
+	/* 回答数量 */
+	.qa-answer-count {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 17px;
+		color: #999999;
+	}
+
+	/* 产品介绍区域 */
+	.goods-intro-section {
+		background: #FFFFFF;
+		border-radius: 4px;
+		margin: 10px 12px 0;
+		height: 242px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 9px 0;
+		box-sizing: border-box;
+	}
+
+	/* 产品介绍标题 */
+	.intro-title {
+		width: 64px;
+		height: 22px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-bottom: 14px;
+	}
+
+	.intro-title-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 21px;
+		color: #393D48;
+	}
+
+	/* 产品介绍内容 */
+	.intro-content {
+		width: 338px;
+		height: 171px;
+		padding: 0 8px;
+		box-sizing: border-box;
+	}
+
+	.intro-content-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 21px;
+		color: #808080;
+		display: block;
+	}
+
+	/* 购买意向区域 */
+	.purchase-intent-section {
+		position: fixed;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		height: 61px;
+		background: #FFFFFF;
+		display: flex;
+		align-items: center;
+		padding: 10px 12px;
+		box-sizing: border-box;
+		gap: 10px;
+		z-index: 100;
+		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+	}
+
+	/* 不想买按钮 */
+	.no-want-buy-btn {
+		flex: 168;
+		height: 40px;
+		background: #FFC082;
+		border-radius: 26px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+	}
+
+	/* 想买按钮 */
+	.want-buy-btn {
+		flex: 173;
+		height: 40px;
+		background: #FF840B;
+		border-radius: 26px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+	}
+
+	/* 按钮文字 */
+	.btn-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 18px;
+		color: #FFFFFF;
+	}
+
+	/* 按钮图标 */
+	.btn-icon {
+		width: 13.45px;
+		height: 13.41px;
+	}
+
+	/* 物流信息区域 */
+	.delivery-info-section {
+		background: #FFFFFF;
+		border-radius: 4px;
+		margin: 10px 12px 0;
+		height: 152px;
+		padding: 10px 7px;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* 自提点信息 */
+	.pickup-info {
+		margin-bottom: 22px;
+	}
+
+	.pickup-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #999999;
+	}
+
+	/* 预计送达时间 */
+	.predict-time {
+		display: flex;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+
+	.time-icon-wrapper {
+		display: flex;
+		align-items: center;
+		margin-right: 5px;
+	}
+
+	.time-icon {
+		width: 16px;
+		height: 16px;
+		margin-right: 2px;
+	}
+
+	.colon {
+		font-family: 'Inter';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 15px;
+		color: #999999;
+	}
+
+	.time-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #4D4D4D;
+	}
+
+	/* 送达地址 */
+	.destination {
+		display: flex;
+		align-items: center;
+		margin-bottom: 22px;
+	}
+
+	.location-icon {
+		width: 13.42px;
+		height: 16px;
+		margin-right: 17px;
+	}
+
+	.destination-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #4D4D4D;
+	}
+
+	/* 保障信息 */
+	.guarantee-footer {
+		margin-top: auto;
+	}
+
+	.guarantee-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 22px;
+		color: #999999;
+	}
+
+	/* 购物车操作区域 */
+	.cart-action-section {
+		background: #FFFFFF;
+		margin-top: 10px;
+		height: 61px;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		padding: 10px 12px;
+		box-sizing: border-box;
+		gap: 10px;
+	}
+
+	/* 加入购物车按钮 */
+	.add-cart-btn {
+		flex: 168;
+		height: 40px;
+		background: #FFC082;
+		border-radius: 26px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* 立即购买按钮 */
+	.buy-now-btn {
+		flex: 173;
+		height: 40px;
+		background: #FF840B;
+		border-radius: 26px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.delivery-info {
+		background-color: #fff;
+		padding: 20rpx 30rpx;
+		margin-top: 20rpx;
+
+		.delivery-item {
+			display: flex;
+			align-items: center;
+			margin-bottom: 20rpx;
+
+			.iconfont {
+				width: 40rpx;
+				text-align: center;
+				margin-right: 10rpx;
+				color: #999;
+			}
+
+			.delivery-text {
+				flex: 1;
+				font-size: 28rpx;
+				color: #333;
+			}
+
+			.delivery-tag {
+				padding: 4rpx 10rpx;
+				background-color: #f2f2f2;
+				color: #e93323;
+				font-size: 24rpx;
+				border-radius: 4rpx;
+			}
+		}
+	}
+
+	.guarantee-info {
+		display: flex;
+		align-items: center;
+		background-color: #fff;
+		padding: 20rpx 30rpx;
+		margin-top: 2rpx;
+
+		.guarantee-text {
+			font-size: 28rpx;
+			color: #333;
+			margin-right: 15rpx;
+		}
+
+		.guarantee-value {
+			font-size: 28rpx;
+			color: #999;
+		}
+	}
+
+	.evaluate-box {
+		margin-top: 20rpx;
+		background-color: #fff;
+		padding: 30rpx;
+
+		.evaluate-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 20rpx;
+
+			.evaluate-title {
+				font-size: 30rpx;
+				color: #333;
+				font-weight: bold;
+			}
+
+			.evaluate-rate {
+				font-size: 24rpx;
+				color: #e93323;
+			}
+
+			.view-all {
+				font-size: 26rpx;
+				color: #999;
+				display: flex;
+				align-items: center;
+
+				.iconfont {
+					margin-left: 5rpx;
+				}
+			}
+		}
+
+		.evaluate-list {
+			.evaluate-item {
+				margin-bottom: 20rpx;
+
+				.user-info {
+					display: flex;
+					align-items: center;
+					margin-bottom: 10rpx;
+
+					.user-avatar {
+						width: 60rpx;
+						height: 60rpx;
+						border-radius: 50%;
+						margin-right: 10rpx;
+					}
+
+					.user-name {
+						font-size: 28rpx;
+						color: #333;
+					}
+				}
+
+				.evaluate-content {
+					font-size: 28rpx;
+					color: #333;
+					line-height: 1.5;
+				}
+			}
+		}
+	}
+
+	.qa-box {
+		margin-top: 20rpx;
+		background-color: #fff;
+		padding: 30rpx;
+
+		.qa-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 20rpx;
+
+			.qa-title {
+				font-size: 30rpx;
+				color: #333;
+				font-weight: bold;
+			}
+
+			.view-all {
+				font-size: 26rpx;
+				color: #999;
+				display: flex;
+				align-items: center;
+
+				.iconfont {
+					margin-left: 5rpx;
+				}
+			}
+		}
+
+		.qa-list {
+			.qa-item {
+				margin-bottom: 20rpx;
+
+				.qa-question {
+					font-size: 28rpx;
+					color: #333;
+					margin-bottom: 10rpx;
+				}
+
+				.qa-answer-count {
+					font-size: 24rpx;
+					color: #999;
+				}
+			}
+		}
+	}
+
+	.product-images {
+		margin-top: 20rpx;
+		background-color: #fff;
+		padding: 30rpx;
+
+		.product-images-header {
+			font-size: 30rpx;
+			color: #333;
+			font-weight: bold;
+			margin-bottom: 20rpx;
+		}
+	}
+
+	.buyer-show {
+		margin-top: 20rpx;
+		background-color: #fff;
+		padding: 30rpx;
+
+		.buyer-show-header {
+			font-size: 30rpx;
+			color: #333;
+			font-weight: bold;
+			margin-bottom: 20rpx;
+		}
+
+		.buyer-show-list {
+			display: flex;
+			flex-wrap: wrap;
+			margin: 0 -5rpx;
+
+			.buyer-show-item {
+				width: 25%;
+				padding: 5rpx;
+				box-sizing: border-box;
+
+				.buyer-show-image {
+					width: 100%;
+					height: 170rpx;
+					border-radius: 8rpx;
+				}
+			}
+		}
+	}
+
+	.footer-action {
+		position: fixed;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		height: 100rpx;
+		background-color: #fff;
+		display: flex;
+		align-items: center;
+		z-index: 99;
+		box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+
+		.cart-btn {
+			flex: 1;
+			height: 80rpx;
+			background-color: #ffeee9;
+			color: #e93323;
+			font-size: 30rpx;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin: 0 20rpx;
+			border-radius: 40rpx;
+		}
+
+		.buy-btn {
+			flex: 1;
+			height: 80rpx;
+			background-color: #e93323;
+			color: #fff;
+			font-size: 30rpx;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-right: 20rpx;
+			border-radius: 40rpx;
+		}
+	}
+}
+
+/* 图标字体 */
+@font-face {
+	font-family: "iconfont";
+	src: url('data:font/woff2;charset=utf-8;base64,d09GMgABAAAAAAM8AAsAAAAAB0gAAALvAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHFQGYACDDAqCFIIFATYCJAMQCwoABCAFhGcHRhuqBhEVlKdkf4TjGLbBkpTOrLUhIxvZyMbyIx7o833b59x7X5JqkSSaRNMkiUQoJFqlQYlMJ5FCpxOm96+1dgthUUqD1KzZO/NXip0q3UnqJJVSmJCmKR3Km9Muad/djYECmR+pVFLJnAP+X8e8NC8sPxvIieoPeJYuDdRFXVSHdQINg5HkNuW6BbSF0VMgXjO5BrTzrKoE09BCrRlbxCcwtKcP6T3Ax+j78Q9shE2SkoGx9/QsEij88vOZQA7/H3LmAtLDOWBHkTEDKMS71tZLtMXMoG3qYoku1IEfr9T4mf//F9UlU0P/eCSRVYnG0rkwg5dfDkVIvo4i+Loh8QIzSdukw8s2jojQqGVjz4LGr+uzPJPL9S8vEnxVrAq9cle403OWNbiv1cKdrdspY+cy765WhutaJdzdPsqYuu2Wqf+2V+6u6xXjk5P98/HdF9vn7ngIb8luLu0/Wru/snyruzQ6Pn7SW8rQt/a5W3/stfSUrBsZOd5h2Xa3o2x85E+vLdMjvgsOmh9golTdx1seiIrOPH0IJrL/aRUU5N86/9m/5v/8uHzr9F9pv9H/MfQ94Dd3V/x1bW7qu7bWu8m+rN3Wux21Zv2uprkD9so2TZzOUJhWyqD8B+rfywAo/MzKP/X/3jn9v/6TmP7OP9LV4q9fjnUD+En8b71K0NHf0YGQ+g+OszLJqFszaTJow4YqGRpSTIPbdJuG7HRFQtsYkhYjkLWMoQpmBjpdC9BrWYKhae3NQw4RI2KOwJRnAMK2XUg2fYNs2wWqYF6gs+8betuuYehaeNvBcJmoQTRoTFwNHJkK7YYaU3wTzOXJGFPMCismMRdvMJcDWdesYsEk5lg9tid/EwsYlRQ8Qo+QSvFdCUolxYgmiiwbZKea3E7CMCZU0ECjiasGHDIp0M6gihk/vwnM5RFjuAc2/YqJMi7cwOzyANobrJQWfEp1latbfbR7lx9HsACGihT4IxB6CKniLoXAUvl4TIhCJdbBeEhN2SrH9eX295cBQ2O3RIocJYM41xxO11mSAAAA') format('woff2');
+}
+
+.iconfont {
+	font-family: "iconfont" !important;
+	font-size: 32rpx;
+	font-style: normal;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.icon-location:before {
+	content: "\e602";
+}
+
+.icon-time:before {
+	content: "\e63f";
+}
+
+.icon-address:before {
+	content: "\e606";
+}
+
+.icon-right:before {
+	content: "\e650";
+}
+</style>

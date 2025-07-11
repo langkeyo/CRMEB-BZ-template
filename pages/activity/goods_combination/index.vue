@@ -65,7 +65,9 @@
 	import {
 		getCombinationList,
 		getCombinationBannerList,
-		getPink
+		getPink,
+		getUserCombinationList,
+		getRecommendCombination
 	} from '@/api/activity.js';
 	import {
 		openPinkSubscribe
@@ -91,7 +93,18 @@
 				limit: 10,
 				page: 1,
 				loading: false,
-				loadend: false
+				loadend: false,
+				loadingStatus: false,
+				loadTitle: false,
+				where: {
+					keyword: '',
+					is_host: 0,
+					price_min: 0,
+					price_max: 0,
+					people: 0,
+					order: 0
+				},
+				hostProduct: []
 			}
 		},
 		onLoad() {
@@ -101,6 +114,7 @@
 			this.getCombinationList();
 			this.getBannerList();
 			this.getPink();
+			this.getHostProduct();
 		},
 		methods: {
 			getPink: function() {
@@ -139,26 +153,34 @@
 				});
 				// #endif
 			},
-			getCombinationList: function() {
-				var that = this;
-				if (that.loadend) return;
-				if (that.loading) return;
-				var data = {
-					page: that.page,
-					limit: that.limit
-				};
-				this.loading = true
-				getCombinationList(data).then(function(res) {
-					var combinationList = that.combinationList;
-					var limit = that.limit;
-					that.page++;
-					that.loadend = limit > res.data.length;
-					that.combinationList = combinationList.concat(res.data);
-					that.page = that.data.page;
-					that.loading = false;
-				}).catch(() => {
-					that.loading = false
-				})
+			getCombinationList() {
+				this.loadingStatus = true;
+				getUserCombinationList({
+					page: this.page,
+					limit: this.limit,
+					keyword: this.where.keyword,
+					is_host: this.where.is_host,
+					price_min: this.where.price_min,
+					price_max: this.where.price_max,
+					people: this.where.people,
+					order: this.where.order
+				}).then(res => {
+					this.loadingStatus = false;
+					this.loadTitle = false;
+					this.loading = false;
+					this.loadend = res.data.list.length < this.limit;
+					this.combinationList = this.combinationList.concat(res.data.list);
+					this.page = this.page + 1;
+				}).catch(err => {
+					this.loading = false;
+					this.loadTitle = false;
+					this.loadingStatus = false;
+				});
+			},
+			getHostProduct() {
+				getRecommendCombination().then(res => {
+					this.hostProduct = res.data;
+				});
 			},
 		},
 		onReachBottom: function() {

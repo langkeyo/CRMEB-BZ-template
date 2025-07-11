@@ -1,0 +1,708 @@
+<template>
+    <view class="community-group-root">
+        <!-- Header Section - 按照Figma设计 -->
+        <view class="header-section">
+            <!-- 导航栏 -->
+            <view class="nav-bar">
+                <view class="back-section" @click="goBack">
+                    <view class="back-icon"></view>
+                    <text class="back-text">返回</text>
+                </view>
+                <text class="title">社区团购</text>
+            </view>
+        </view>
+
+        <scroll-view scroll-y class="main-scroll">
+            <!-- 社区团购引导区域 - 按照Figma设计 -->
+            <view class="community-group-onboarding-section">
+                <image class="onboarding-poster" src="/static/images/index/community-group/long_poster.png" mode="aspectFill"
+                    @click="previewImage('/static/images/index/community-group/long_poster.png')" />
+            </view>
+
+            <!-- 注册指南区域 - 按照Figma设计 -->
+            <view class="community-group-registration-guide-section">
+                <!-- 标题 -->
+                <view class="registration-title">
+                    <text>1.注册信息</text>
+                    <text>取货站点：注册时选择的站点即为您的默认取货点，</text>
+                    <text>微信昵称：请确保与入群名称一致便于您取货和售后沟通。</text>
+                </view>
+
+                <!-- 图片区域 -->
+                <view class="registration-images">
+                    <!-- 左侧图片 -->
+                    <view class="signup-info-left">
+                        <image class="registration-img" src="/static/images/index/community-group/signup_info_left.png"
+                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/signup_info_left.png')" />
+                    </view>
+
+                    <!-- 右侧图片 -->
+                    <view class="signup-info-right">
+                        <image class="registration-img" src="/static/images/index/community-group/signup_info_right.png"
+                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/signup_info_right.png')" />
+                    </view>
+                </view>
+
+                <!-- 控制区域 -->
+                <view class="controller-section">
+                    <text class="view-full-text">查看全图</text>
+                    <view class="view-icon"></view>
+                </view>
+            </view>
+
+            <!-- 开团与下单规则区域 - 按照Figma设计 -->
+            <view class="community-group-group-opening-ordering-rules-section">
+                <!-- 标题 -->
+                <view class="rules-title">
+                    <text>2.开团与下单规则</text>
+                    <text>我们将根据市场行情精选高性价比商品进行开团，优化您的购物体验。</text>
+                    <text>首页进入今日开团页面，默认显示您（注册时）选择的取货站点，请在这里下单购买商品，后续您也可以更改添加取货站点，其他站点仅可以预览商品无法下单购买。</text>
+                    <text>若添加或修改站点，可以在设置中选择其它已设立站点（每月仅限1次）。</text>
+                    <text>开团时间和结束时间，也可以通过您所属的团购群来得知。</text>
+                </view>
+
+                <!-- 图片区域 -->
+                <view class="rules-images">
+                    <!-- 第一行图片 -->
+                    <view class="rules-images-row-top">
+                        <!-- 左上图片 -->
+                        <view class="left-top-img">
+                            <image class="rules-img" src="/static/images/index/community-group/2_left_top_img.png"
+                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_left_top_img.png')" />
+                        </view>
+
+                        <!-- 右上图片 -->
+                        <view class="right-top-img">
+                            <image class="rules-img" src="/static/images/index/community-group/2_right_top_img.png"
+                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_right_top_img.png')" />
+                        </view>
+                    </view>
+
+                    <!-- 第二行图片 -->
+                    <view class="rules-images-row-bottom">
+                        <!-- 左下图片 -->
+                        <view class="left-bottom-img">
+                            <image class="rules-img" src="/static/images/index/community-group/2_left_bottom_img.png"
+                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_left_bottom_img.png')" />
+                        </view>
+
+                        <!-- 右下图片 -->
+                        <view class="right-bottom-img">
+                            <image class="rules-img" src="/static/images/index/community-group/2_right_bottom_img.png"
+                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_right_bottom_img.png')" />
+                        </view>
+                    </view>
+                </view>
+
+                <!-- 控制区域 -->
+                <view class="controller-section">
+                    <text class="view-full-text">查看全图</text>
+                    <view class="view-icon"></view>
+                </view>
+            </view>
+
+            <!-- 站点开团服务门槛区域 - 按照Figma设计 -->
+            <view class="community-group-site-opening-service-threshold-section">
+                <!-- 标题 -->
+                <view class="threshold-title">
+                    <text>3.站点开团服务门槛</text>
+                    <text>若站点群人数未满200人，服务将暂不开放，请耐心等待，我们会尽快扩大规模，并欢迎您推荐给同站点附近住的朋友加入！</text>
+                </view>
+
+                <!-- 大图区域 -->
+                <view class="threshold-image">
+                    <image class="threshold-img" src="/static/images/index/community-group/3_img.png"
+                        mode="aspectFill" @click="previewImage('/static/images/index/community-group/3_img.png')" />
+                </view>
+
+                <!-- 控制区域 -->
+                <view class="controller-section">
+                    <text class="view-full-text">查看全图</text>
+                    <view class="view-icon"></view>
+                </view>
+            </view>
+
+            <!-- 用户互动区域 - 按照Figma设计 -->
+            <view class="user-interaction-section">
+                <!-- 标题 -->
+                <view class="interaction-title">
+                    <text>4.用户互动</text>
+                    <text>您可以点击"想买"标记心仪商品，来告知我们。</text>
+                    <text>商品购买后发表点评，您的反馈是我们前进的动力。</text>
+                    <text>如有任何疑问，请联系客服。我们将竭诚为您服务！</text>
+                </view>
+
+                <!-- 图片区域 -->
+                <view class="interaction-images">
+                    <!-- 左侧图片 -->
+                    <view class="left-img">
+                        <image class="interaction-img" src="/static/images/index/community-group/4_left_img.png"
+                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/4_left_img.png')" />
+                    </view>
+
+                    <!-- 中间图片 -->
+                    <view class="center-img">
+                        <image class="interaction-img" src="/static/images/index/community-group/4_center_img.png"
+                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/4_center_img.png')" />
+                    </view>
+
+                    <!-- 右侧图片 -->
+                    <view class="right-img">
+                        <image class="interaction-img" src="/static/images/index/community-group/4_right_img.png"
+                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/4_right_img.png')" />
+                    </view>
+                </view>
+
+                <!-- 控制区域 -->
+                <view class="controller-section">
+                    <text class="view-full-text">查看全图</text>
+                    <view class="view-icon"></view>
+                </view>
+            </view>
+
+
+
+            <!-- 页面底部大按钮 -->
+            <view class="footer-btn-row">
+                <view class="footer-btn" @click="goToGroupBuy">去团购</view>
+            </view>
+        </scroll-view>
+    </view>
+</template>
+
+<script>
+export default {
+    name: 'CommunityGroupPage',
+    methods: {
+        goBack () {
+            uni.navigateBack()
+        },
+        goToGroupBuy () {
+            uni.switchTab({
+                url: '/pages/index/index'
+            })
+        },
+        previewImage (src) {
+            uni.previewImage({
+                urls: [src],
+                current: 0
+            })
+        }
+    }
+}
+</script>
+
+<style lang="scss">
+page {
+    background: #F0F0F0;
+}
+
+.community-group-root {
+    min-height: 100vh;
+    background: #F0F0F0;
+    width: 100%;
+
+    .header-section {
+        position: relative;
+        width: 100%;
+        height: 77px;
+        background: #FFFFFF;
+
+        .nav-bar {
+            position: relative;
+            width: 100%;
+            height: 77px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .back-section {
+                position: absolute;
+                left: 13px;
+                display: flex;
+                align-items: center;
+
+                .back-icon {
+                    width: 7px;
+                    height: 13px;
+                    background-image: url("/static/images/index/community-group/back_arrow.svg");
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    margin-right: 8px;
+                }
+
+                .back-text {
+                    font-family: 'PingFang SC';
+                    font-style: normal;
+                    font-weight: 400;
+                    font-size: 18px;
+                    line-height: 25px;
+                    color: #333333;
+                }
+            }
+
+            .title {
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 18px;
+                line-height: 25px;
+                color: #1A1A1A;
+                text-align: center;
+            }
+        }
+    }
+
+    .main-scroll {
+        height: calc(100vh - 88px);
+        background: #FFFFFF;
+        margin-top: 11px;
+    }
+
+    .community-group-onboarding-section {
+        width: 348px;
+        height: 137px;
+        margin: 12px auto 30px;
+        position: relative;
+
+        .onboarding-poster {
+            width: 348px;
+            height: 137px;
+            display: block;
+        }
+    }
+
+    .community-group-registration-guide-section {
+        position: relative;
+        width: 351px;
+        height: 298px;
+        margin: 0 auto 30px;
+
+        .registration-title {
+            position: absolute;
+            width: 350px;
+            height: 82px;
+            left: 1px;
+            top: 0px;
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 22px;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .registration-images {
+            position: absolute;
+            top: 130px;
+            width: 100%;
+
+            .signup-info-left {
+                position: absolute;
+                width: 168px;
+                height: 167px;
+                left: 1px;
+                top: 0px;
+
+                .registration-img {
+                    width: 168px;
+                    height: 167px;
+                    border-radius: 4px;
+                    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                }
+            }
+
+            .signup-info-right {
+                position: absolute;
+                width: 168px;
+                height: 167px;
+                left: 183px;
+                top: 0px;
+
+                .registration-img {
+                    width: 168px;
+                    height: 167px;
+                    border-radius: 4px;
+                    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                }
+            }
+        }
+
+        .controller-section {
+            position: absolute;
+            width: 351px;
+            height: 75px;
+            left: 0px;
+            top: 223px;
+            background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 0px 0px 4px 4px;
+
+            .view-full-text {
+                position: absolute;
+                width: 40px;
+                height: 30px;
+                left: 156px;
+                top: 23px;
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 10px;
+                line-height: 30px;
+                color: #1C1C1C;
+                text-align: center;
+            }
+
+            .view-icon {
+                position: absolute;
+                width: 13px;
+                height: 13px;
+                left: 169px;
+                top: 55px;
+                background-image: url("/static/images/index/community-group/preview-all-icon.svg");
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+        }
+    }
+
+    .community-group-group-opening-ordering-rules-section {
+        position: relative;
+        width: 351px;
+        height: 615px;
+        margin: 0 auto 30px;
+
+        .rules-title {
+            position: absolute;
+            width: 350px;
+            height: 202px;
+            left: 1px;
+            top: 0px;
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 22px;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .rules-images {
+            position: absolute;
+            top: 280px;
+            width: 100%;
+
+            .rules-images-row-top {
+                position: relative;
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 7px;
+
+                .left-top-img {
+                    position: relative;
+                    width: 168px;
+                    height: 167px;
+
+                    .rules-img {
+                        width: 168px;
+                        height: 167px;
+                        border-radius: 4px;
+                        filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                    }
+                }
+
+                .right-top-img {
+                    position: relative;
+                    width: 168px;
+                    height: 167px;
+
+                    .rules-img {
+                        width: 168px;
+                        height: 167px;
+                        border-radius: 4px;
+                        filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                    }
+                }
+            }
+
+            .rules-images-row-bottom {
+                position: relative;
+                display: flex;
+                justify-content: space-between;
+
+                .left-bottom-img {
+                    position: relative;
+                    width: 168px;
+                    height: 167px;
+
+                    .rules-img {
+                        width: 168px;
+                        height: 167px;
+                        border-radius: 4px;
+                        filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                    }
+                }
+
+                .right-bottom-img {
+                    position: relative;
+                    width: 168px;
+                    height: 167px;
+
+                    .rules-img {
+                        width: 168px;
+                        height: 167px;
+                        border-radius: 4px;
+                        filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                    }
+                }
+            }
+        }
+
+        .controller-section {
+            position: absolute;
+            width: 351px;
+            height: 75px;
+            left: 0px;
+            top: 540px;
+            background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 0px 0px 4px 4px;
+
+            .view-full-text {
+                position: absolute;
+                width: 40px;
+                height: 30px;
+                left: 156px;
+                top: 23px;
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 10px;
+                line-height: 30px;
+                color: #1C1C1C;
+                text-align: center;
+            }
+
+            .view-icon {
+                position: absolute;
+                width: 13px;
+                height: 13px;
+                left: 169px;
+                top: 55px;
+                background-image: url("/static/images/index/community-group/preview-all-icon.svg");
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+        }
+    }
+
+    .community-group-site-opening-service-threshold-section {
+        position: relative;
+        width: 352px;
+        height: 261px;
+        margin: 0 auto 30px;
+
+        .threshold-title {
+            position: absolute;
+            width: 350px;
+            height: 82px;
+            left: 1px;
+            top: 0px;
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 22px;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .threshold-image {
+            position: absolute;
+            width: 351px;
+            height: 168px;
+            left: 0px;
+            top: 93px;
+
+            .threshold-img {
+                position: absolute;
+                width: 351px;
+                height: 160px;
+                left: 1px;
+                top: 8px;
+                border-radius: 4px;
+                filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+            }
+        }
+
+        .controller-section {
+            position: absolute;
+            width: 351px;
+            height: 75px;
+            left: 0px;
+            top: 186px;
+            background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 0px 0px 4px 4px;
+
+            .view-full-text {
+                position: absolute;
+                width: 40px;
+                height: 30px;
+                left: 156px;
+                top: 23px;
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 10px;
+                line-height: 30px;
+                color: #1C1C1C;
+                text-align: center;
+            }
+
+            .view-icon {
+                position: absolute;
+                width: 13px;
+                height: 13px;
+                left: 169px;
+                top: 55px;
+                background-image: url("/static/images/index/community-group/preview-all-icon.svg");
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+        }
+    }
+
+    .user-interaction-section {
+        position: relative;
+        width: 351px;
+        height: 256px;
+        margin: 0 auto 30px;
+
+        .interaction-title {
+            position: absolute;
+            width: 350px;
+            height: 82px;
+            left: 1px;
+            top: 0px;
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 22px;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .interaction-images {
+            position: absolute;
+            width: 351px;
+            height: 106px;
+            left: 0px;
+            top: 150px;
+            display: flex;
+            justify-content: space-between;
+
+            .left-img {
+                position: relative;
+                width: 112px;
+                height: 106px;
+
+                .interaction-img {
+                    width: 112px;
+                    height: 106px;
+                    border-radius: 4px;
+                    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                }
+            }
+
+            .center-img {
+                position: relative;
+                width: 112px;
+                height: 106px;
+
+                .interaction-img {
+                    width: 112px;
+                    height: 106px;
+                    border-radius: 4px;
+                    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                }
+            }
+
+            .right-img {
+                position: relative;
+                width: 112px;
+                height: 106px;
+
+                .interaction-img {
+                    width: 112px;
+                    height: 106px;
+                    border-radius: 4px;
+                    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
+                }
+            }
+        }
+
+        .controller-section {
+            position: absolute;
+            width: 351px;
+            height: 75px;
+            left: 0px;
+            top: 181px;
+            background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 0px 0px 4px 4px;
+
+            .view-full-text {
+                position: absolute;
+                width: 40px;
+                height: 30px;
+                left: 156px;
+                top: 23px;
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 10px;
+                line-height: 30px;
+                color: #1C1C1C;
+                text-align: center;
+            }
+
+            .view-icon {
+                position: absolute;
+                width: 13px;
+                height: 13px;
+                left: 169px;
+                top: 55px;
+                background-image: url("/static/images/index/community-group/preview-all-icon.svg");
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+        }
+    }
+
+
+
+    .footer-btn-row {
+        padding: 20rpx 30rpx 80rpx;
+
+        .footer-btn {
+            height: 96rpx;
+            line-height: 96rpx;
+            background: #FE8D00;
+            color: #FFFFFF;
+            font-size: 34rpx;
+            font-weight: 500;
+            text-align: center;
+            border-radius: 48rpx;
+            box-shadow: 0 4rpx 10rpx rgba(254, 141, 0, 0.2);
+        }
+    }
+}
+</style>

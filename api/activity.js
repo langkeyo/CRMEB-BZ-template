@@ -201,110 +201,152 @@ export function getBargainUserCancel(data) {
 }
 
 /**
- * 获取秒杀小程序二维码
+ * 秒杀二维码
+ * @param int id
+ * 
  */
 export function seckillCode(id, data) {
-	return request.get("seckill/code/" + id, data);
+	return request.post("seckill/code/" + id, data)
 }
 
 /**
- * 获取拼团小程序二维码
+ * 拼团二维码
+ * @param int id
  */
 export function scombinationCode(id) {
 	return request.get("combination/code/" + id);
 }
 
 /**
- * 获取砍价海报详细信息
+ * 拼团海报详情信息
+ * @param int id
  */
 export function getCombinationPosterData(id) {
-	return request.get("combination/poster_info/" + id);
+	return request.get("combination/poster_info/" + id)
 }
 
-
 /**
- * 获取砍价海报详细信息
+ * 砍价海报详情信息
+ * @param int id
  */
 export function getBargainPosterData(id) {
-	return request.get("bargain/poster_info/" + id);
+	return request.get("bargain/poster_info/" + id)
 }
 
 /**
- * 获取积分订单详细信息
+ * 积分兑换确认
+ * @param object data
  */
 export function integralOrderConfirm(data) {
-	return request.post('store_integral/order/confirm', data);
+	return request.post("v2/integral/order/confirm", data)
 }
 
 /**
- * 获取积分订单创建
+ * 积分兑换创建订单
+ * @param object data
  */
 export function integralOrderCreate(data) {
-	return request.post('store_integral/order/create', data);
-}
-/**
- * 获取积分订单详情
- * @param string cartId
- */
-export function integralOrderDetails(order) {
-	return request.get(`store_integral/order/detail/${order}`);
-}
-
-/**
- * 积分产品详情
- * @param int id
- * 
- */
-export function getIntegralProductDetail(id) {
-	return request.get('store_integral/detail/' + id, {}, {
-		noAuth: true
-	});
-}
-
-/**
- * 积分商城商品列表
- * @param object data
- */
-export function getStoreIntegralList(data) {
-	return request.get('store_integral/list', data, {
-		noAuth: true
-	});
-}
-
-/**
- * 积分兑换列表
- * @param object data
- */
-export function getIntegralOrderList(data) {
-	return request.get('store_integral/order/list', data);
+	return request.post("v2/integral/order/create", data)
 }
 
 /**
  * 积分兑换详情
+ * @param int id
+ */
+export function integralOrderDetails(order) {
+	return request.get(`v2/integral/order/${order}`)
+}
+
+/**
+ * 积分兑换商品详情
+ * @param int id
+ */
+export function getIntegralProductDetail(id) {
+	return request.get(`v2/integral/product/${id}`, {}, {
+		noAuth: true
+	})
+}
+
+/**
+ * 积分商城列表
+ * @param object data
+ */
+export function getStoreIntegralList(data) {
+	return request.get("v2/integral/list", data, {
+		noAuth: true
+	})
+}
+
+/**
+ * 积分商城订单列表
+ * @param object data
+ */
+export function getIntegralOrderList(data) {
+	return request.get("v2/integral/order/list", data)
+}
+
+/**
+ * 物流信息
+ * @param int id
  */
 export function getLogisticsDetails(orderId) {
-	return request.get(`store_integral/order/express/${orderId}`);
+	return request.get("v2/integral/order/express/" + orderId)
 }
 
 /**
- * 积分兑换订单确认收货
- * @param object data
+ * 确认收货
+ * @param int id
  */
 export function orderTake(data) {
-	return request.post(`store_integral/order/take`, data);
+	return request.post("v2/integral/order/take", data)
 }
 
 /**
- * 积分兑换订单删除
- * @param object data
+ * 删除订单
+ * @param int id
  */
 export function orderDel(data) {
-	return request.post(`store_integral/order/del`, data);
+	return request.post("v2/integral/order/del", data)
 }
 
 /**
- * 预售商品列表
+ * 预售列表
+ * @param object data
  */
 export function getPresellList(data) {
-	return request.get("advance/list", data);
+	return request.get('presell/list', data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取推荐拼团商品
+ */
+export function getRecommendCombination() {
+	return request.get('group/combination/recommend');
+}
+
+/**
+ * 获取用户端拼团商品列表
+ * @param {Object} data - 请求参数，包含页码、每页数量、搜索关键词、筛选条件等
+ */
+export function getUserCombinationList(data) {
+	return request.get('group/combination/list', data);
+}
+
+/**
+ * 获取用户端拼团商品详情
+ * @param {Number|String} id - 拼团商品ID
+ */
+export function getUserCombinationDetail(id) {
+	return request.get(`group/combination/detail/${id}`);
+}
+
+/**
+ * 参与拼团
+ * @param {Number|String} id - 拼团商品ID
+ * @param {Object} data - 请求参数，包含商品规格等信息
+ */
+export function joinCombination(id, data) {
+	return request.post(`group/combination/join/${id}`, data);
 }

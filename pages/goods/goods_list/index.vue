@@ -1,68 +1,64 @@
 <template>
-	<view class="wrapper" :style="colorStyle">
+	<view class="coupon-products" :style="colorStyle">
 		<view class='productList'>
-			<view class='search bg-color acea-row row-between-wrapper'>
-				<view class='input acea-row row-between-wrapper'><text class='iconfont icon-sousuo'></text>
+			<view class='search-container'>
+				<view class='search-box'>
+					<image class='search-icon' src='/static/images/coupon/search_icon.png'></image>
 					<input :placeholder='$t(`搜索商品名称`)' placeholder-class='placeholder' confirm-type='search'
 						name="search" :value='where.keyword' @confirm="searchSubmit"></input>
 				</view>
-				<view class='iconfont' :class='is_switch==true?"icon-pailie":"icon-tupianpailie"' @click='Changswitch'>
-				</view>
 			</view>
 
+			<view class='coupon-time-bar'>
+				<view class='time-text'>{{$t(`优惠券生效时间`)}}: 2025.05.18-2025.06.18</view>
+			</view>
+			
 			<view class='nav acea-row row-middle'>
 				<view class='item line1' :class='title ? "font-num":""' @click='set_where(1)'>
-					{{title ? $t(title) : $t(`默认`)}}
+					{{title ? $t(title) : $t(`综合`)}}
 				</view>
-				<view class='item' @click='set_where(2)'>
+				<view class='item' :class="price ? 'active' : ''" @click='set_where(2)'>
 					{{$t(`价格`)}}
-					<image v-if="price==1" src='../../../static/images/up.png'></image>
-					<image v-else-if="price==2" src='../../../static/images/down.png'></image>
-					<image v-else src='../../../static/images/horn.png'></image>
+					<view class="sort-arrows">
+						<view class="arrow up" :class="{active: price==1}"></view>
+						<view class="arrow down" :class="{active: price==2}"></view>
+					</view>
 				</view>
-				<view class='item' @click='set_where(3)'>
+				<view class='item' :class="stock ? 'active' : ''" @click='set_where(3)'>
 					{{$t(`销量`)}}
-					<image v-if="stock==1" src='../../../static/images/up.png'></image>
-					<image v-else-if="stock==2" src='../../../static/images/down.png'></image>
-					<image v-else src='../../../static/images/horn.png'></image>
+					<view class="sort-arrows">
+						<view class="arrow up" :class="{active: stock==1}"></view>
+						<view class="arrow down" :class="{active: stock==2}"></view>
+					</view>
 				</view>
-				<!-- down -->
-				<view class='item' :class='nows ? "font-color":""' @click='set_where(4)'>{{$t(`新品`)}}</view>
+				<view class='item' :class='nows ? "active":""' @click='set_where(4)'>{{$t(`新品`)}}</view>
 			</view>
 			<scroll-view :scroll-top="scrollTop" scroll-y="true" class="scroll-Y" @scroll="scroll"
 				@scrolltolower="scrolltolower">
-				<view class='list acea-row row-between-wrapper' :class='is_switch==true?"":"on"'>
-					<view class='item' :class='is_switch==true?"":"on"' hover-class='none'
-						v-for="(item,index) in productList" :key="index" @click="godDetail(item)">
-						<view class='pictrue' :class='is_switch==true?"":"on"'>
-							<image :src='item.image' :class='is_switch==true?"":"on"'></image>
-							<span class="pictrue_log_class"
-								:class="is_switch === true ? 'pictrue_log_big' : 'pictrue_log'"
-								v-if="item.activity && item.activity.type === '1' && $permission('seckill')">{{$t(`秒杀`)}}</span>
-							<span class="pictrue_log_class"
-								:class="is_switch === true ? 'pictrue_log_big' : 'pictrue_log'"
-								v-if="item.activity && item.activity.type === '2' && $permission('bargain')">{{$t(`砍价`)}}</span>
-							<span class="pictrue_log_class"
-								:class="is_switch === true ? 'pictrue_log_big' : 'pictrue_log'"
-								v-if="item.activity && item.activity.type === '3' && $permission('combination')">{{$t(`拼团`)}}</span>
-						</view>
-						<view class='text' :class='is_switch==true?"":"on"'>
-							<view class='name line2'>{{item.store_name}}</view>
-							<view class='money font-color' :class='is_switch==true?"":"on"'>{{$t(`￥`)}}<text
-									class='num'>{{item.price}}</text></view>
-							<view class='vip acea-row row-between-wrapper' :class='is_switch==true?"":"on"'>
-								<view class='vip-money' v-if="item.vip_price && item.vip_price > 0">
-									{{$t(`￥`)}}{{item.vip_price}}
-									<image src='../../../static/images/vip.png'></image>
-								</view>
-								<view v-else></view>
-								<view>{{$t(`已售`)}} {{item.sales}}{{$t(item.unit_name) || $t(`件`)}}</view>
+				<view class='product-grid'>
+					<view class='product-item' v-for="(item,index) in productList" :key="index" @click="godDetail(item)">
+						<view class='product-image-container'>
+							<image class='product-image' :src='item.image'></image>
+							<view class="discount-tag" v-if="item.activity">
+								<image class="tag-bg" src="/static/images/coupon/coupon_product_tag.png"></image>
+								<text class="tag-text">{{item.activity && item.activity.type === '1' ? '秒杀' : item.activity.type === '2' ? '砍价' : '拼团'}}</text>
 							</view>
 						</view>
+						<view class='product-info'>
+							<view class='product-name'>{{item.store_name}}</view>
+							<view class='price-container'>
+								<view class='regular-price'>{{$t(`￥`)}}{{item.price}}</view>
+								<view class='vip-price' v-if="item.vip_price && item.vip_price > 0">
+									<text>{{$t(`￥`)}}{{item.vip_price}}</text>
+									<image class="vip-icon" src='../../../static/images/vip.png'></image>
+								</view>
+							</view>
+							<view class='sales-info'>{{$t(`已售`)}} {{item.sales}}{{$t(item.unit_name) || $t(`件`)}}</view>
+						</view>
 					</view>
-					<view class='loadingicon acea-row row-center-wrapper' v-if='productList.length > 0'>
-						<text class='loading iconfont icon-jiazai' :hidden='loading==false'></text>{{loadTitle}}
-					</view>
+				</view>
+				<view class='loadingicon acea-row row-center-wrapper' v-if='productList.length > 0'>
+					<text class='loading iconfont icon-jiazai' :hidden='loading==false'></text>{{loadTitle}}
 				</view>
 
 			</scroll-view>
@@ -71,7 +67,7 @@
 		<view class='noCommodity' v-if="productList.length==0 && where.page > 1">
 			<view class='emptyBox'>
 				<image :src="imgHost + '/statics/images/no-thing.png'"></image>
-				<view class="tips">{{$t(`暂无商品，去看点别的吧`)}}</view>
+				<view class="tips">{{$t(`暂无可用优惠券商品`)}}</view>
 			</view>
 			<recommend :hostProduct="hostProduct"></recommend>
 		</view>
@@ -286,225 +282,291 @@
 
 <style scoped lang="scss">
 	.scroll-Y {
-		margin-top: 86rpx;
-		height: calc(100vh - 43rpx);
+		margin-top: 170rpx;
+		height: calc(100vh - 170rpx);
+		padding: 0 20rpx;
 	}
 
-	.wrapper {
+	.coupon-products {
 		position: relative;
 		max-height: 100vh;
 		overflow: hidden;
+		background-color: #F7F7F7;
 
 		.back-top {
-			position: absolute;
+			position: fixed;
 			right: 40rpx;
 			bottom: 60rpx;
-			width: 60rpx;
-			height: 60rpx;
+			width: 80rpx;
+			height: 80rpx;
 			border-radius: 50%;
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			border: 1rpx solid #ccc;
 			background-color: #fff;
+			box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
 
 			.icon-xiangshang {
-				color: #ccc;
+				color: #FC1F03;
 				font-weight: bold;
+				font-size: 28rpx;
 			}
 		}
 	}
 
-	.productList .search {
+	.search-container {
 		width: 100%;
-		height: 86rpx;
-		padding-left: 23rpx;
-		box-sizing: border-box;
+		height: 90rpx;
+		padding: 0 20rpx;
+		background-color: #ffffff;
 		position: fixed;
 		left: 0;
 		top: 0;
-		z-index: 9;
+		z-index: 10;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
 	}
 
-	.productList .search .input {
-		width: 640rpx;
-		height: 60rpx;
-		background-color: #fff;
-		border-radius: 50rpx;
-		padding: 0 20rpx;
-		box-sizing: border-box;
+	.search-box {
+		width: 100%;
+		height: 70rpx;
+		background-color: #F8F8F8;
+		border-radius: 35rpx;
+		padding: 0 30rpx;
+		display: flex;
+		align-items: center;
 	}
 
-	.productList .search .input input {
-		width: 548rpx;
+	.search-icon {
+		width: 36rpx;
+		height: 36rpx;
+		margin-right: 20rpx;
+	}
+
+	.search-box input {
+		flex: 1;
 		height: 100%;
-		font-size: 26rpx;
+		font-size: 28rpx;
+		color: #333;
 	}
 
-	.productList .search .input .placeholder {
+	.search-box .placeholder {
 		color: #999;
+		font-size: 28rpx;
 	}
 
-	.productList .search .input .iconfont {
-		font-size: 35rpx;
-		color: #555;
+	.coupon-time-bar {
+		position: fixed;
+		top: 90rpx;
+		left: 0;
+		width: 100%;
+		height: 60rpx;
+		background-color: #FFFBEF;
+		z-index: 9;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.productList .search .icon-pailie,
-	.productList .search .icon-tupianpailie {
-		color: #fff;
-		width: 62rpx;
-		font-size: 40rpx;
-		height: 86rpx;
-		line-height: 86rpx;
+	.time-text {
+		font-size: 24rpx;
+		color: #EB3C3C;
 	}
 
-	.productList .nav {
-		height: 86rpx;
-		color: #454545;
+	.nav {
+		height: 80rpx;
+		color: #333333;
 		position: fixed;
 		left: 0;
 		width: 100%;
 		font-size: 28rpx;
 		background-color: #fff;
-		margin-top: 86rpx;
-		top: 0;
+		top: 150rpx;
 		z-index: 9;
+		border-bottom: 1rpx solid #F5F5F5;
 	}
 
-	.productList .nav .item {
+	.nav .item {
 		width: 25%;
 		text-align: center;
-	}
-
-	.productList .nav .item.font-color {
-		font-weight: bold;
-	}
-
-	.productList .nav .item image {
-		width: 15rpx;
-		height: 19rpx;
-		margin-left: 10rpx;
-	}
-
-	.productList .list {
-		padding: 0 20rpx 30rpx 20rpx;
-		margin-top: 86rpx;
-	}
-
-	.productList .list.on {
-		background-color: #fff;
-		border-top: 1px solid #f6f6f6;
-	}
-
-	.productList .list .item {
-		width: 345rpx;
-		margin-top: 20rpx;
-		background-color: #fff;
-		border-radius: 20rpx;
-	}
-
-	.productList .list .item.on {
-		width: 100%;
-		display: flex;
-		border-bottom: 1rpx solid #f6f6f6;
-		padding: 30rpx 0;
-		margin: 0;
-	}
-
-	.productList .list .item .pictrue {
-		position: relative;
-		width: 100%;
-		height: 345rpx;
-
-	}
-
-	.productList .list .item .name {
-		line-height: 42rpx;
-		height: 84rpx;
-	}
-
-	.productList .list .item .pictrue.on {
-		width: 180rpx;
-		height: 180rpx;
-	}
-
-	.productList .list .item .pictrue image {
-		width: 100%;
-		height: 100%;
-		border-radius: 20rpx 20rpx 0 0;
-	}
-
-	.productList .list .item .pictrue image.on {
-		border-radius: 6rpx;
-	}
-
-	.productList .list .item .text {
-		padding: 20rpx 17rpx 26rpx 17rpx;
-		font-size: 30rpx;
-		color: #222;
-	}
-
-	.productList .list .item .text.on {
-		width: 508rpx;
-		padding: 0 0 0 22rpx;
-	}
-
-	.productList .list .item .text .money {
-		font-size: 26rpx;
-		font-weight: bold;
-		margin-top: 8rpx;
-	}
-
-	.productList .list .item .text .money.on {
-		margin-top: 50rpx;
-	}
-
-	.productList .list .item .text .money .num {
-		font-size: 34rpx;
-	}
-
-	.productList .list .item .text .vip {
-		font-size: 22rpx;
-		color: #aaa;
-		margin-top: 7rpx;
-	}
-
-	.productList .list .item .text .vip.on {
-		margin-top: 12rpx;
-	}
-
-	.productList .list .item .text .vip .vip-money {
-		font-size: 24rpx;
-		color: #282828;
-		font-weight: bold;
 		display: flex;
 		align-items: center;
+		justify-content: center;
+		position: relative;
 	}
 
-	.productList .list .item .text .vip .vip-money image {
-		width: 64rpx;
-		height: 26rpx;
-		margin-left: 4rpx;
+	.nav .item.active {
+		color: #EB3C3C;
+		font-weight: bold;
+	}
+
+	.sort-arrows {
+		display: flex;
+		flex-direction: column;
+		margin-left: 10rpx;
+		height: 20rpx;
+	}
+
+	.arrow {
+		width: 0;
+		height: 0;
+		border-left: 8rpx solid transparent;
+		border-right: 8rpx solid transparent;
+	}
+
+	.arrow.up {
+		border-bottom: 10rpx solid #ccc;
+		margin-bottom: 3rpx;
+	}
+
+	.arrow.down {
+		border-top: 10rpx solid #ccc;
+	}
+
+	.arrow.active.up {
+		border-bottom-color: #EB3C3C;
+	}
+
+	.arrow.active.down {
+		border-top-color: #EB3C3C;
+	}
+
+	.product-grid {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		padding: 20rpx 0;
+	}
+
+	.product-item {
+		width: 48%;
+		min-width: 320rpx;
+		margin-bottom: 20rpx;
+		background-color: #FFFFFF;
+		border-radius: 12rpx;
+		overflow: hidden;
+		box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+	}
+
+	.product-image-container {
+		position: relative;
+		width: 100%;
+		height: 0;
+		padding-bottom: 100%;
+		overflow: hidden;
+	}
+
+	.product-image {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.discount-tag {
+		position: absolute;
+		top: 10rpx;
+		left: 10rpx;
+		width: 90rpx;
+		height: 40rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.tag-bg {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+	}
+
+	.tag-text {
+		font-size: 20rpx;
+		color: white;
+		font-weight: bold;
+		z-index: 1;
+	}
+
+	.product-info {
+		padding: 20rpx;
+	}
+
+	.product-name {
+		font-size: 28rpx;
+		color: #333333;
+		line-height: 1.4;
+		height: 78rpx;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+	}
+
+	.price-container {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		margin-top: 15rpx;
+	}
+
+	.regular-price {
+		font-size: 30rpx;
+		color: #EB3C3C;
+		font-weight: bold;
+	}
+
+	.vip-price {
+		display: flex;
+		align-items: center;
+		margin-left: 20rpx;
+		font-size: 24rpx;
+		color: #333333;
+	}
+
+	.vip-icon {
+		width: 30rpx;
+		height: 30rpx;
+		margin-left: 6rpx;
+	}
+
+	.sales-info {
+		font-size: 22rpx;
+		color: #999999;
+		margin-top: 10rpx;
 	}
 
 	.noCommodity {
-		background-color: #fff;
-		padding-bottom: 30rpx;
+		background-color: #F7F7F7;
+		padding: 100rpx 0;
 
 		.emptyBox {
 			text-align: center;
-			padding-top: 20rpx;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
 
 			.tips {
-				color: #aaa;
-				font-size: 26rpx;
+				color: #999999;
+				font-size: 28rpx;
+				margin-top: 30rpx;
 			}
 
 			image {
-				width: 414rpx;
-				height: 304rpx;
+				width: 240rpx;
+				height: 240rpx;
 			}
 		}
+	}
+
+	.loadingicon {
+		height: 80rpx;
+		padding: 20rpx 0;
+		font-size: 26rpx;
+		color: #999;
 	}
 </style>

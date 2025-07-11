@@ -1,0 +1,144 @@
+<template>
+    <view class="completed-page">
+        <!-- 状态栏占位 -->
+        <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
+
+        <!-- 顶部导航 -->
+        <view class="header">
+            <view class="back-icon" @tap="goBack">
+                <image src="/static/images/product-provide/back_icon.svg" class="icon-image"></image>
+            </view>
+            <text class="page-title">产品提供</text>
+            <view class="right-placeholder"></view>
+        </view>
+
+        <view class="divider"></view>
+
+        <!-- 内容区域 -->
+        <view class="content">
+            <image src="/static/images/index/icons/completed_icon.svg" mode="aspectFit" class="completed-icon"></image>
+            <view class="completed-text">您的信息已经提交了稍后会有专业人员与您联系，请耐心等待哦~</view>
+        </view>
+
+        <!-- 返回首页按钮 -->
+        <view class="bottom-btn" @tap="goToHome">返回首页</view>
+    </view>
+</template>
+
+<script>
+export default {
+    data () {
+        return {
+            statusBarHeight: 20, // 默认值，会在onLoad中获取真实值
+        }
+    },
+    onLoad () {
+        // 获取状态栏高度
+        this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight
+    },
+    methods: {
+        goBack () {
+            uni.navigateBack()
+        },
+        goToHome () {
+            uni.switchTab({
+                url: '/pages/index/index'
+            })
+        }
+    }
+}
+</script>
+
+<style lang="scss" scoped>
+.completed-page {
+    min-height: 100vh;
+    background-color: #FFFFFF;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 状态栏 */
+.status-bar {
+    background-color: #FFFFFF;
+}
+
+/* 顶部导航 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 44px;
+    padding: 0 16px;
+    background-color: #FFFFFF;
+
+    .back-icon {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .icon-image {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    .page-title {
+        font-size: 18px;
+        font-weight: 400;
+        color: #1A1A1A;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .right-placeholder {
+        width: 28px;
+    }
+}
+
+.divider {
+    height: 0.5px;
+    background-color: #F2F2F2;
+    width: 100%;
+}
+
+/* 内容区域 */
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 40px;
+
+    .completed-icon {
+        width: 160px;
+        height: 160px;
+        margin-bottom: 30px;
+    }
+
+    .completed-text {
+        font-size: 16px;
+        color: #666666;
+        text-align: center;
+        line-height: 1.6;
+    }
+}
+
+/* 底部按钮 */
+.bottom-btn {
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    background-color: #FFC082;
+    color: #FFFFFF;
+    font-size: 16px;
+    text-align: center;
+    position: fixed;
+    bottom: 34px;
+    left: 0;
+}
+</style>

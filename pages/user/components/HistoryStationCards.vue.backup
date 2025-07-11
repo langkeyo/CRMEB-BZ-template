@@ -1,0 +1,204 @@
+<template>
+  <view class="history-station-section">
+    <!-- 团购足迹卡片 -->
+    <view class="history-card">
+      <view class="card-header">
+        <text class="card-title">团购足迹</text>
+        <view class="card-link" @click="onHistoryClick">
+          <text class="card-link-text">浏览和收藏</text>
+          <image class="arrow-right-small" src="/static/images/user/arrow_right_small.svg" />
+        </view>
+      </view>
+      <view class="card-content">
+        <image class="history-item-image" :src="historyItem.image" />
+        <view class="history-item-details">
+          <text class="history-item-title">{{ historyItem.title }}</text>
+          <text class="history-item-subtitle">{{ historyItem.subtitle }}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 我的站点卡片 -->
+    <view class="station-card">
+      <view class="card-header">
+        <text class="card-title">我的站点</text>
+        <view class="card-link" @click="onStationClick">
+          <text class="card-link-text">进入站点</text>
+          <image class="arrow-right-small" src="/static/images/user/arrow_right_small.svg" />
+        </view>
+      </view>
+      <view class="card-content">
+        <image class="station-item-image" src="/static/images/user/map_site_icon.png" />
+        <view class="station-item-details">
+          <text class="station-item-title">{{ stationItem.title }}</text>
+          <text class="station-item-subtitle">{{ stationItem.subtitle }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  name: 'HistoryStationCards',
+  props: {
+    historyItem: {
+      type: Object,
+      default: () => ({
+        title: '好品分享',
+        subtitle: '3688人加入了购物车',
+        image: '/static/images/user/food_item.png'
+      })
+    },
+    stationItem: {
+      type: Object,
+      default: () => ({
+        title: '【我的站点】距我100m',
+        subtitle: '北京尚德井小区菜鸟驿站',
+        image: '/static/images/user/map_placeholder.png'
+      })
+    }
+  },
+  methods: {
+    onHistoryClick() {
+      this.$emit('history-click');
+    },
+    onStationClick() {
+      this.$emit('station-click');
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.history-station-section {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 30rpx;
+  margin-top: 30rpx;
+  gap: 20rpx;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.history-card,
+.station-card {
+  flex: 1;
+  background-color: #F7F7F7;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  width: 48%;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 26rpx;
+  line-height: 36rpx;
+  color: #1A1A1A;
+}
+
+.card-link {
+  display: flex;
+  align-items: center;
+}
+
+.card-link-text {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 22rpx;
+  line-height: 30rpx;
+  color: #999999;
+  margin-right: 6rpx;
+}
+
+.arrow-right-small {
+  width: 12rpx;
+  height: 22rpx;
+}
+
+.card-content {
+  display: flex;
+  align-items: center;
+  margin-top: 10rpx;
+}
+
+.history-item-image {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 6rpx;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+
+.station-item-image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 8rpx;
+  margin-right: 10rpx;
+  flex-shrink: 0;
+}
+
+.history-item-details,
+.station-item-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  justify-content: center;
+}
+
+.history-item-title,
+.station-item-title {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #1A1A1A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-subtitle,
+.station-item-subtitle {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 22rpx;
+  line-height: 30rpx;
+  color: #999999;
+  margin-top: 4rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.station-item-title {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 500;
+  font-size: 20rpx;
+  line-height: 28rpx;
+  color: #1A1A1A;
+}
+
+.station-item-subtitle {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 20rpx;
+  line-height: 28rpx;
+  color: #999999;
+  margin-top: 2rpx;
+  white-space: pre-line;
+}
+</style>

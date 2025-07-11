@@ -16,31 +16,16 @@ import request from "@/utils/request.js";
  * 
  */
 export function getProductDetail(id) {
-	return request.get('product/detail/' + id, {}, {
-		noAuth: true
-	});
+	return request.get('product/detail/' + id, {}, { noAuth: true });
 }
 
 /**
  * 产品分享二维码 推广员
  * @param int id
  */
-// #ifdef H5  || APP-PLUS
 export function getProductCode(id) {
-	return request.get('product/code/' + id, {}, {
-		noAuth: true
-	});
+	return request.get('product/code/' + id, {}, { noAuth: true });
 }
-// #endif
-// #ifdef MP
-export function getProductCode(id) {
-	return request.get('product/code/' + id, {
-		user_type: 'routine',
-	}, {
-		noAuth: true
-	});
-}
-// #endif
 
 /**
  * 添加收藏
@@ -48,10 +33,7 @@ export function getProductCode(id) {
  * @param string category product=普通产品,product_seckill=秒杀产品
  */
 export function collectAdd(id, category) {
-	return request.post('collect/add', {
-		id: id,
-		'product': category === undefined ? 'product' : category
-	});
+	return request.post('collect/add', { id: id, category: category === undefined ? 'product' : category });
 }
 
 /**
@@ -60,28 +42,63 @@ export function collectAdd(id, category) {
  * @param string category product=普通产品,product_seckill=秒杀产品
  */
 export function collectDel(id, category) {
-	return request.post('collect/del', {
-		id: id,
-		category: category === undefined ? 'product' : category
-	});
+	return request.post('collect/del', { id: id, category: category === undefined ? 'product' : category });
 }
 
 /**
- * 购车添加
- * 
+ * 购物车重选属性
+ * @param int id
  */
-export function postCartAdd(data) {
-	return request.post('cart/add', data);
+export function postCartProduct(id, data) {
+	return request.post('product/cart_add/' + id, data);
+}
+
+/**
+ * 批量收藏
+ * @param object id
+ * @param string category 
+ */
+export function collectAll(id, category) {
+	return request.post('collect/all', { id: id, category: category === undefined ? 'product' : category });
+}
+
+/**
+ * 添加购物车
+ * @param int id
+ * @param int cartNum
+ * @param object uniqueId
+ * @param object selectValue
+ */
+export function postCartAdd(id, cartNum = 1, uniqueId = '', selectValue = []) {
+	return request.post('cart/add', { productId: id, cartNum: cartNum, uniqueId: uniqueId, selectValue: selectValue });
+}
+
+/**
+ * 修改购物车产品数量
+ * @param int id
+ * @param int number
+ * @param object uniqueId
+ */
+export function changeCartNum(id, cartNum, uniqueId = '') {
+	return request.post('cart/num', { id: id, number: cartNum, uniqueId: uniqueId });
+}
+
+/**
+ * 修改购物车产品数量
+ * @param int id
+ * @param int number
+ * @param object uniqueId
+ */
+export function changeCartNumPlus(id, cartNum, uniqueId = '') {
+	return request.post('cart/change_num', { id: id, number: cartNum, uniqueId: uniqueId });
 }
 
 /**
  * 获取分类列表
  * 
  */
-export function getCategoryList() {
-	return request.get('category', {}, {
-		noAuth: true
-	});
+export function getCategory() {
+	return request.get('category', {}, { noAuth: true });
 }
 
 /**
@@ -89,36 +106,124 @@ export function getCategoryList() {
  * @param object data
  */
 export function getProductslist(data) {
-	return request.get('products', data, {
-		noAuth: true
-	});
+	return request.get('products', data, { noAuth: true });
 }
-
-
 
 /**
  * 获取推荐产品
- * 
+ * @param object data
  */
 export function getProductHot(page, limit) {
-	return request.get("product/hot", {
-		page: page === undefined ? 1 : page,
-		limit: limit === undefined ? 4 : limit
-	}, {
-		noAuth: true
-	});
+	return request.get("product/hot", { page: page, limit: limit }, { noAuth: true });
 }
+
 /**
- * 批量收藏
- * 
- * @param object id  产品编号 join(',') 切割成字符串
- * @param string category 
+ * 批量添加购物车
+ * @param array id
+ * @param array cartNum
+ * @param array uniqueId
  */
-export function collectAll(id, category) {
-	return request.post('collect/all', {
-		id: id,
-		category: category === undefined ? 'product' : category
-	});
+export function postCartAddBatch(id, cartNum, uniqueId, selectValue) {
+	return request.post('cart/add_batch', { productId: id, cartNum: cartNum, uniqueId: uniqueId, selectValue: selectValue });
+}
+
+/**
+ * 获取购物车列表
+ * @param object data
+ */
+export function getCartList(data) {
+	return request.get('cart/list', data);
+}
+
+/**
+ * 获取购物车数量
+ * @param object data
+ * 
+ */
+export function getCartCount(data) {
+	return request.get('cart/count', data);
+}
+
+/**
+ * 修改购物车数量
+ * @param int cartId
+ * @param int cartNum
+ */
+export function changeCartCount(cartId, cartNum) {
+	return request.post('cart/count', { id: cartId, number: cartNum });
+}
+
+/**
+ * 清除购物车
+ * @param object ids
+ * 
+ */
+export function cartDel(ids) {
+	return request.post('cart/del', { ids: ids });
+}
+
+/**
+ * 购物车产品全选状态
+ * 
+ */
+export function cartSelectAll(data) {
+	return request.post('cart/select', data);
+}
+
+/**
+ * 购物车产品全选状态
+ * 
+ */
+export function cartSelectStatus(id, selectValue) {
+	return request.post('cart/select/status', { id: id, selectValue: selectValue });
+}
+
+/**
+ * 获取购物车信息
+ * @param {Object} data - 请求参数
+ */
+export function getCartInfo() {
+	return request.get('group/cart/get');
+}
+
+/**
+ * 添加/更新购物车商品
+ * @param {Object} data - 请求参数，包含商品ID和数量
+ */
+export function updateCart(data) {
+	return request.post('group/cart/update', data);
+}
+
+/**
+ * 删除购物车商品
+ * @param {Object} data - 请求参数，包含商品ID
+ */
+export function removeCartItem(data) {
+	return request.post('group/cart/remove', data);
+}
+
+/**
+ * 获取收藏列表
+ * @param {Object} data - 请求参数，包含收藏类型等
+ */
+export function getCollectList(data) {
+	return request.get('group/collect/get', data);
+}
+
+/**
+ * 添加收藏
+ * @param {Object} data - 请求参数，包含收藏ID和类型
+ */
+export function addCollect(data) {
+	return request.post('group/collect/add', data);
+}
+
+/**
+ * 取消收藏
+ * @param {Object} data - 请求参数，包含收藏ID和类型
+ */
+export function deleteCollect(data) {
+	return request.post('group/collect/del', data);
 }
 
 /**

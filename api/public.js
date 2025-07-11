@@ -16,13 +16,7 @@ import wechat from "@/libs/wechat.js";
  * @returns {*}
  */
 export function getWechatConfig() {
-	return request.get(
-		"wechat/config", {
-			url: wechat.signLink()
-		}, {
-			noAuth: true
-		}
-	);
+	return request.get("wechat/config", { url: wechat.signLink() });
 }
 
 /**
@@ -31,13 +25,7 @@ export function getWechatConfig() {
  */
 export function wechatAuth(code, spread, login_type) {
 	return request.get(
-		"wechat/auth", {
-			code,
-			spread,
-			login_type
-		}, {
-			noAuth: true
-		}
+		"wechat/auth?code=" + code + "&spread=" + spread + "&login_type=" + login_type
 	);
 }
 
@@ -46,9 +34,7 @@ export function wechatAuth(code, spread, login_type) {
  * 
  */
 export function getLogo() {
-	return request.get('wechat/get_logo', {}, {
-		noAuth: true
-	});
+	return request.get('wechat/get_logo', {}, { noAuth: true });
 }
 
 /**
@@ -56,9 +42,7 @@ export function getLogo() {
  * @param data object 小程序用户登陆信息
  */
 export function login(data) {
-	return request.post("wechat/mp_auth", data, {
-		noAuth: true
-	});
+	return request.post("wechat/mp_auth", data, { noAuth: true });
 }
 
 /**
@@ -83,9 +67,7 @@ export function silenceAuth(data) {
  * @returns {*}
  */
 export function getShare() {
-	return request.get("share", {}, {
-		noAuth: true
-	});
+	return request.get("share", {}, { noAuth: true });
 }
 
 /**
@@ -103,9 +85,7 @@ export function wechatAuthLogin(data) {
  * @returns {*}
  */
 export function follow() {
-	return request.get("wechat/follow", {}, {
-		noAuth: true
-	});
+	return request.get("wechat/follow", {}, { noAuth: true });
 }
 
 /**
@@ -128,19 +108,15 @@ export function authLogin(data) {
 	});
 }
 
-
 /**
  * 获取图片base64
  * @retins {*}
  * */
 export function imageBase64(image, code) {
 	return request.post(
-		"image_base64", {
-			image: image,
-			code: code
-		}, {
-			noAuth: true
-		}
+		"image_base64",
+		{ image: image, code: code },
+		{ noAuth: true }
 	);
 }
 
@@ -149,18 +125,15 @@ export function imageBase64(image, code) {
  * @returns {*}
  */
 export function copyWords() {
-	return request.get("copy_words", {}, {
-		noAuth: true
-	});
+	return request.get("copy_words", {}, { noAuth: true });
 }
 
 /**
  * 获取商城是否强制绑定手机号
+ * @returns {*}
  */
 export function getShopConfig() {
-	return request.get('v2/bind_status', {}, {
-		noAuth: true
-	});
+	return request.get("v2/bind_status", {}, { noAuth: true });
 }
 
 /**
@@ -172,6 +145,7 @@ export function routineBindingPhone(data) {
 		noAuth: true
 	});
 }
+
 /**
  * 小程序绑定手机号
  * @param {Object} data
@@ -181,6 +155,7 @@ export function wechatBindingPhone(data) {
 		noAuth: true
 	});
 }
+
 /**
  * 小程序手机号登录
  * @param {Object} data
@@ -225,6 +200,7 @@ export function getNavigation(data) {
 		noAuth: true
 	});
 }
+
 export function getSubscribe() {
 	return request.get("subscribe", {}, {
 		noAuth: true
@@ -250,6 +226,7 @@ export function getVersion(name) {
 		noAuth: true
 	});
 }
+
 /**
  * 获取商品分类版本号
  * 
@@ -269,6 +246,7 @@ export function basicConfig(name) {
 		noAuth: true
 	});
 }
+
 /**
  * 后台版本信息
  * 
@@ -287,4 +265,125 @@ export function remoteRegister(data) {
 	return request.get(`remote_register`, data, {
 		noAuth: true
 	});
+}
+
+/**
+ * 获取商城配置
+ * @returns {*}
+ */
+export function getConfig() {
+	return request.get("config", {}, { noAuth: true });
+}
+
+/**
+ * 获取商城配置
+ * @returns {*}
+ */
+export function getThemeConfig() {
+	return request.get("v2/get_theme_config", {}, { noAuth: true });
+}
+
+/**
+ * 获取商城全局配置
+ * @returns {*}
+ */
+export function getAppConfig() {
+	return request.get("v2/get_app_config", {}, { noAuth: true });
+}
+
+/**
+ * 获取版权信息
+ * @returns {*}
+ */
+export function getCrmebInfo() {
+	return request.get("copyright", {}, { noAuth: true });
+}
+
+/**
+ * 获取商城全局配置
+ * @returns {*}
+ */
+export function getSystemConfig() {
+	return request.get("v2/get_system_config", {}, { noAuth: true });
+}
+
+/**
+ * 获取首页DIY；
+ * @param data
+ * @returns {*}
+ */
+export function getDiy(data) {
+	return request.get("v2/diy/get_diy", data, { noAuth: true });
+}
+
+/**
+ * 获取公告列表
+ * @returns {*}
+ */
+export function getNoticeList(data) {
+	return request.get("v2/get_notice_list", data, { noAuth: true });
+}
+
+/**
+ * 获取公告详情
+ * @returns {*}
+ */
+export function getNoticeInfo(id) {
+	return request.get("v2/get_notice_info/" + id, {}, { noAuth: true });
+}
+
+/**
+ * 获取搜索关键字
+ * @returns {*}
+ */
+export function getSearchKeyword() {
+	return request.get("v2/search/keyword", {}, { noAuth: true });
+}
+
+/**
+ * 获取地理位置
+ * @returns {*}
+ */
+export function getCity() {
+	return request.get("city_list", {}, { noAuth: true });
+}
+
+/**
+ * 获取可用优惠券列表
+ * @param {Object} data - 请求参数，包含页码、每页数量、搜索关键词等
+ */
+export function getAvailableCoupons(data) {
+	return request.get('group/coupons/available/list', data);
+}
+
+/**
+ * 获取优惠券详情
+ * @param {Number|String} id - 优惠券ID
+ */
+export function getCouponDetail(id) {
+	return request.get(`group/coupons/detail/${id}`);
+}
+
+/**
+ * 获取我的优惠券列表
+ * @param {Object} data - 请求参数，包含状态筛选、页码、每页数量等
+ */
+export function getMyCoupons(data) {
+	return request.get('group/coupons/my/list', data);
+}
+
+/**
+ * 获取订单可用优惠券
+ * @param {Object} data - 请求参数，包含订单金额等
+ */
+export function getOrderAvailableCoupons(data) {
+	return request.get('group/coupons/order/available', data);
+}
+
+/**
+ * 领取优惠券
+ * @param {Object} data - 请求参数，包含优惠券ID
+ */
+export function receiveCoupon(data) {
+	return request.post('group/coupons/receive', data);
 }

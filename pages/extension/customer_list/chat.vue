@@ -58,6 +58,10 @@
 			<scroll-view scroll-y="true" style="height: 100%;" :scroll-top="scrollTop" @scrolltoupper="scrollToTop">
 				<Loading :loaded="status" :loading="loading"></Loading>
 				<view id="box" class="chat" ref="chat">
+					<!-- 添加调试信息 -->
+					<view v-if="chatList.length === 0" style="text-align:center;padding:20px;color:#999;">
+						{{$t(`暂无消息`)}}
+					</view>
 					<view v-for="(item, index) in records" :key="index" :id="`msg-${item.id}`">
 						<view class="day-box" v-if="item.show">{{item._add_time}}</view>
 						<view class="chat-item" :class="{ 'right-box': item.uid == myUid }">

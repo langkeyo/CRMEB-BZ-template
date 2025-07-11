@@ -1,0 +1,361 @@
+<template>
+  <view class="chat-page">
+    <!-- 状态栏 -->
+    <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
+    
+    <!-- 顶部导航 -->
+    <view class="header">
+      <view class="back-icon" @tap="goBack">
+        <image src="/static/images/index/icons/back_arrow.svg" class="icon-image"></image>
+        <text class="back-text">返回</text>
+      </view>
+      <text class="page-title">在线咨询</text>
+      <view class="right-placeholder"></view>
+    </view>
+    
+    <!-- 消息日期 -->
+    <view class="message-date">
+      <text>{{currentDate}}</text>
+    </view>
+    
+    <!-- 消息列表 -->
+    <scroll-view class="message-list" scroll-y="true" :scroll-top="scrollTop" @scrolltoupper="loadMoreMessages">
+      <view class="message-item service" v-for="(msg, index) in messages" :key="index" v-if="msg.type === 'service'">
+        <image class="avatar" :src="serviceAvatar" mode="aspectFill"></image>
+        <view class="message-bubble">
+          <text>{{msg.content}}</text>
+        </view>
+      </view>
+      <view class="message-item user" v-for="(msg, index) in messages" :key="index" v-if="msg.type === 'user'">
+        <view class="message-bubble">
+          <text>{{msg.content}}</text>
+        </view>
+        <image class="avatar" :src="userAvatar" mode="aspectFill"></image>
+      </view>
+    </scroll-view>
+    
+    <!-- 底部输入框 -->
+    <view class="input-area">
+      <view class="input-wrapper">
+        <input type="text" class="message-input" v-model="messageContent" placeholder="请输入您想要咨询的问题" confirm-type="send" @confirm="sendMessage" />
+      </view>
+      <view class="send-btn" @tap="sendMessage">
+        <image src="/static/images/user/chat/send_icon.svg" class="send-icon"></image>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      statusBarHeight: 20, // 默认值，会在onLoad中获取真实值
+      currentDate: '2025.04.01 下午1：02：30',
+      serviceAvatar: '/static/images/user/chat/customer_avatar.png',
+      userAvatar: '', // 用户头像，默认为空
+      messages: [
+        {
+          type: 'service',
+          content: '亲爱的用户您好，请问有什么可以帮您么？',
+          time: '2025.04.01 13:02:30'
+        }
+      ],
+      messageContent: '', // 当前输入的消息内容
+      scrollTop: 0
+    }
+  },
+  onLoad() {
+    // 获取状态栏高度
+    this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
+    
+    // 获取当前日期时间
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    // 获取时间
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // 上午/下午格式
+    const period = hours >= 12 ? '下午' : '上午';
+    hours = hours % 12 || 12; // 转为12小时制
+    
+    this.currentDate = `${year}.${month}.${day} ${period}${hours}：${minutes}：${seconds}`;
+    
+    // 获取用户信息
+    this.getUserInfo();
+    
+    // 滚动到底部
+    this.scrollToBottom();
+  },
+  onShow() {
+    // 滚动到底部
+    this.scrollToBottom();
+  },
+  methods: {
+    goBack() {
+      uni.navigateBack();
+    },
+    getUserInfo() {
+      // 获取用户信息，包括头像
+      try {
+        const userInfo = uni.getStorageSync('userInfo');
+        if (userInfo) {
+          this.userAvatar = userInfo.avatar || '/static/images/user/default_avatar.png';
+        } else {
+          this.userAvatar = '/static/images/user/default_avatar.png';
+        }
+      } catch (e) {
+        this.userAvatar = '/static/images/user/default_avatar.png';
+      }
+    },
+    sendMessage() {
+      // 发送消息
+      if (!this.messageContent.trim()) {
+        return;
+      }
+      
+      // 添加用户消息
+      this.messages.push({
+        type: 'user',
+        content: this.messageContent,
+        time: new Date().toLocaleString()
+      });
+      
+      // 清空输入框
+      const content = this.messageContent;
+      this.messageContent = '';
+      
+      // 滚动到底部
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
+      
+      // 模拟客服回复
+      setTimeout(() => {
+        // 添加客服回复消息
+        this.messages.push({
+          type: 'service',
+          content: this.getAutoReply(content),
+          time: new Date().toLocaleString()
+        });
+        
+        // 滚动到底部
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
+      }, 1000);
+    },
+    getAutoReply(content) {
+      // 简单的自动回复逻辑
+      if (content.includes('价格') || content.includes('多少钱')) {
+        return '您好，关于价格问题，您可以在商品详情页查看最新价格，如有特殊需求可以联系我们的客服。';
+      } else if (content.includes('配送') || content.includes('送货')) {
+        return '您好，我们的配送时间一般是下单后24小时内，特殊情况会提前与您沟通。';
+      } else if (content.includes('退款') || content.includes('退货')) {
+        return '您好，退款请在订单详情页申请，我们会在1-3个工作日内处理您的退款申请。';
+      } else if (content.includes('优惠') || content.includes('折扣')) {
+        return '您好，关于优惠活动，您可以在首页查看最新活动，也可以到个人中心查看您的优惠券。';
+      } else {
+        return '您好，感谢您的咨询。请问还有其他问题需要帮助吗？';
+      }
+    },
+    scrollToBottom() {
+      // 使用nextTick确保DOM已更新
+      this.$nextTick(() => {
+        // 获取消息列表高度并滚动到底部
+        try {
+          const query = uni.createSelectorQuery().in(this);
+          query.select('.message-list').boundingClientRect(data => {
+            if (data) {
+              this.scrollTop = data.height * 2; // 确保滚动到底部
+            }
+          }).exec();
+        } catch (error) {
+          console.error('滚动到底部时出错:', error);
+        }
+      });
+    },
+    loadMoreMessages() {
+      // 上拉加载更多历史消息，实际项目中可能需要从服务器获取
+      console.log('加载更多消息');
+      // 这里可以实现加载历史消息的逻辑
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.chat-page {
+  min-height: 100vh;
+  background-color: #F0F0F0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 状态栏 */
+.status-bar {
+  background-color: #FFFFFF;
+}
+
+/* 顶部导航 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  background-color: #FFFFFF;
+  z-index: 10;
+  
+  .back-icon {
+    display: flex;
+    align-items: center;
+    
+    .icon-image {
+      width: 20px;
+      height: 20px;
+      margin-right: 4px;
+    }
+    
+    .back-text {
+      font-size: 18px;
+      color: #333333;
+    }
+  }
+  
+  .page-title {
+    font-size: 18px;
+    font-weight: 400;
+    color: #1A1A1A;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .right-placeholder {
+    width: 60px;
+  }
+}
+
+/* 消息日期 */
+.message-date {
+  text-align: center;
+  padding: 10px 0;
+  
+  text {
+    font-size: 12px;
+    color: #CCCCCC;
+    background-color: transparent;
+  }
+}
+
+/* 消息列表 */
+.message-list {
+  flex: 1;
+  padding: 0 16px;
+  margin-bottom: 60px;
+}
+
+.message-item {
+  display: flex;
+  margin-bottom: 20px;
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  
+  .message-bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    word-break: break-all;
+    
+    text {
+      line-height: 1.4;
+    }
+  }
+  
+  &.service {
+    align-items: flex-start;
+    
+    .avatar {
+      margin-right: 10px;
+    }
+    
+    .message-bubble {
+      background-color: #FFFFFF;
+      color: #333333;
+    }
+  }
+  
+  &.user {
+    align-items: flex-start;
+    justify-content: flex-end;
+    
+    .avatar {
+      margin-left: 10px;
+    }
+    
+    .message-bubble {
+      background-color: #FF840B;
+      color: #FFFFFF;
+    }
+  }
+}
+
+/* 底部输入框 */
+.input-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #F7F7F7;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+  
+  .input-wrapper {
+    flex: 1;
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    padding: 0 15px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .message-input {
+    flex: 1;
+    height: 40px;
+    font-size: 14px;
+    color: #333333;
+  }
+  
+  .send-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    
+    .send-icon {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+</style>

@@ -141,7 +141,7 @@ export default {
 		document.addEventListener(
 			'touchmove',
 			(e) => {
-				e.preventDefalut();
+				e.preventDefault();
 			},
 			{
 				passive: false

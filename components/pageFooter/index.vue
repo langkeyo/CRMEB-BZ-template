@@ -13,7 +13,7 @@
 					:style="[componentStyle]"
 				>
 					<view class="foot-item flex-1 flex-col flex-center h-96 relative" v-for="(item, index) in newData.menuList" :key="index" @click="goRouter(item)">
-						<template v-if="item.link.split('?')[0] == activeRouter">
+						<template v-if="isActiveTab(item)">
 							<image v-if="newData.navStyleConfig.tabVal != 1" :src="item.imgList[0]"></image>
 							<view v-if="newData.navStyleConfig.tabVal != 2" class="txt active" :style="[txtActiveColor]">{{ item.name }}</view>
 						</template>
@@ -133,6 +133,15 @@ export default {
 		};
 	},
 	methods: {
+		// 判断是否为当前激活的tab，处理路径映射
+		isActiveTab(item) {
+			let itemLink = item.link.split('?')[0];
+			// 处理路径映射
+			if (itemLink == '/pages/goods_cate/goods_cate') {
+				itemLink = '/pages/goods_category/index';
+			}
+			return itemLink == this.activeRouter;
+		},
 		setNavigationInfo(data) {
 			if (this.isTabBar) {
 				this.newData = data;
@@ -172,6 +181,12 @@ export default {
 			var pages = getCurrentPages();
 			var page = pages[pages.length - 1].$page.fullPath;
 			if (item.link == page) return;
+
+			// 路径映射 - 将错误的路径映射到正确的路径
+			if (item.link == '/pages/goods_cate/goods_cate') {
+				item.link = '/pages/goods_category/index';
+			}
+
 			if (item.link == '/pages/short_video/appSwiper/index' || item.link == '/pages/short_video/nvueSwiper/index') {
 				//#ifdef APP
 				item.link = '/pages/short_video/appSwiper/index';

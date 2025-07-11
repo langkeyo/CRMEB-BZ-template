@@ -1,216 +1,260 @@
 <template>
-	<view class="agreement" :style="colorStyle">
-		<view class="top-msg" v-if="agreementData.avatar">
-			<view class="avatar">
-				<img :src="agreementData.avatar" alt="">
+	<view class="cancellation-page" :style="colorStyle">
+		<view class="header">
+			<view class="back-icon" @click="navigateBack">
+				<text class="iconfont icon-left"></text>
 			</view>
-			<view class="name">{{agreementData.name}}</view>
+			<view class="page-title">更换手机号</view>
 		</view>
-		<view class="content" v-html="agreementData.content">
+		
+		<!-- 顶部警告提示 -->
+		<view class="warning-box">
+			<view class="warning-text">账户注销后，您将在一个月内无法再登录进行团购，您确定要注销么？</view>
 		</view>
-		<view class="footer">
-			<view class="trip">
-				{{$t(`点击【立即注销】即代表您已经同意《用户注销协议》`)}}
+		
+		<!-- 验证部分 -->
+		<view class="verification-section">
+			<view class="section-title">请完成以下验证</view>
+			
+			<!-- 手机号验证提示 -->
+			<view class="phone-tip">
+				请输入{{ maskPhone(phone) }}收到的短信验证码
 			</view>
-			<view class="cancellation flex-aj-center" @click="isCancellation = true">
-				{{$t(`立即注销`)}}
-			</view>
-		</view>
-		<view class="mark" v-show="isCancellation"></view>
-		<view class="tipaddress" v-show="isCancellation">
-			<view class="top"></view>
-			<view class="bottom">
-				<view class="font1">{{$t(`是否确认注销`)}}</view>
-				<view class="font2">{{$t(`注销后无法恢复，请谨慎操作`)}}</view>
-				<view class="btn">
-					<view class="cancellation-btn btn-sty flex-aj-center" @tap="cancelUser">{{$t(`注销`)}}</view>
-					<view class="cancel btn-sty flex-aj-center" @tap="isCancellation = false">
-						{{$t(`取消`)}}
-					</view>
+			
+			<!-- 验证码输入区 -->
+			<view class="verification-code-input">
+				<view class="input-label">短信验证码</view>
+				<view class="input-box">
+					<input type="number" v-model="smsCode" placeholder="请输入验证码" />
+					<view class="get-code" @click="sendSmsCode" :class="{ disabled: codeSending }">{{ codeText }}</view>
 				</view>
 			</view>
+			
+			<!-- 提交按钮 -->
+			<view class="submit-button" @click="submitCancellation">确定注销</view>
 		</view>
 	</view>
 </template>
 
 <script>
 	import colors from '@/mixins/color.js';
+	import sendVerifyCode from "@/mixins/SendVerifyCode";
 	import {
 		getUserAgreement,
-		cancelUser
+		cancelUser,
+		getPhoneNumber,
+		sendVerificationCode
 	} from '@/api/user.js'
 	const app = getApp();
 	export default {
-		mixins: [colors],
+		mixins: [colors, sendVerifyCode],
 		data() {
 			return {
-				isCancellation: false,
-				agreementData: ''
+				phone: '', // 用户手机号
+				smsCode: '', // 短信验证码
+				codeSending: false, // 是否正在发送验证码
+				codeText: '获取验证码'
 			}
 		},
 		onLoad() {
-			this.getAgreement()
+			this.getUserPhone();
 		},
 		methods: {
-			getAgreement() {
-				getUserAgreement(5).then(res => {
-					this.agreementData = res.data
-				})
+			// 获取用户手机号
+			getUserPhone() {
+				getPhoneNumber().then(res => {
+					this.phone = res.data || '';
+				}).catch(err => {
+					this.$util.Tips({
+						title: err || '获取手机号失败'
+					});
+				});
 			},
-			cancelUser() {
-				cancelUser().then(res => {
+			
+			// 手机号脱敏处理
+			maskPhone(phone) {
+				if (!phone) return '';
+				return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+			},
+			
+			// 发送短信验证码
+			sendSmsCode() {
+				if (this.codeSending) return;
+				
+				this.codeSending = true;
+				this.codeText = '发送中...';
+				
+				// 调用发送验证码的接口
+				sendVerificationCode(this.phone, 'cancellation').then(res => {
+					this.$util.Tips({
+						title: '验证码已发送'
+					});
+					this.startCodeTimer();
+				}).catch(err => {
+					this.codeSending = false;
+					this.codeText = '获取验证码';
+					this.$util.Tips({
+						title: err || '验证码发送失败'
+					});
+				});
+			},
+			
+			// 开始倒计时
+			startCodeTimer() {
+				let count = 60;
+				this.codeText = `${count}s`;
+				
+				const timer = setInterval(() => {
+					count--;
+					if (count > 0) {
+						this.codeText = `${count}s`;
+					} else {
+						clearInterval(timer);
+						this.codeSending = false;
+						this.codeText = '获取验证码';
+					}
+				}, 1000);
+			},
+			
+			// 提交注销申请
+			submitCancellation() {
+				if (!this.smsCode) {
+					return this.$util.Tips({
+						title: '请输入验证码'
+					});
+				}
+				
+				// 调用注销接口
+				cancelUser({
+					code: this.smsCode
+				}).then(res => {
 					app.globalData.spid = '';
 					app.globalData.pid = '';
 					this.$store.commit("LOGOUT");
-					uni.reLaunch({
-						url: '/pages/index/index'
-					})
+					
+					uni.showToast({
+						title: '注销成功',
+						icon: 'success',
+						duration: 2000,
+						success: () => {
+							setTimeout(() => {
+								uni.reLaunch({
+									url: '/pages/index/index'
+								});
+							}, 2000);
+						}
+					});
 				}).catch(msg => {
 					return this.$util.Tips({
-						title: msg
+						title: msg || '注销失败'
 					});
 				});
+			},
+			
+			// 返回上一页
+			navigateBack() {
+				uni.navigateBack();
 			}
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
-	.agreement {
+	.cancellation-page {
 		background-color: #fff;
-
-		.content {
-			padding: 10rpx 30rpx;
-			overflow-y: scroll;
-			height: calc(100vh - 242rpx);
-		}
+		min-height: 100vh;
 	}
 
-	.top-msg {
+	.header {
+		position: relative;
+		height: 88rpx;
 		display: flex;
 		align-items: center;
-		background-color: #fff;
-		padding: 40rpx 30rpx 40rpx 30rpx;
-
-		.avatar {
-			width: 76rpx;
-			height: 76rpx;
-			margin-right: 20rpx;
-
-			img {
-				width: 100%;
-				height: 100%;
-				border-radius: 50%;
-			}
+		justify-content: center;
+		border-bottom: 1rpx solid #f5f5f5;
+		
+		.back-icon {
+			position: absolute;
+			left: 30rpx;
+			font-size: 36rpx;
+		}
+		
+		.page-title {
+			font-size: 36rpx;
+			font-weight: 500;
 		}
 	}
 
-	.footer {
-		text-align: center;
-		z-index: 99;
-		width: 100%;
-		background-color: #fafafa;
-		position: fixed;
-		padding: 36rpx 30rpx;
-		box-sizing: border-box;
-		border-top: 1rpx solid #eee;
-		bottom: 0rpx;
-
-		.trip {
-			color: #999999;
-			font-size: 24rpx;
-			margin: 24rpx 0;
+	.warning-box {
+		background-color: #FFF9F2;
+		padding: 20rpx 30rpx;
+		margin-bottom: 30rpx;
+		
+		.warning-text {
+			color: #FF9500;
+			font-size: 28rpx;
+			line-height: 40rpx;
 		}
+	}
 
-		.cancellation {
-			height: 45px;
+	.verification-section {
+		padding: 30rpx;
+		
+		.section-title {
+			font-size: 40rpx;
+			font-weight: 500;
+			margin-bottom: 40rpx;
+		}
+		
+		.phone-tip {
+			color: #999;
+			font-size: 28rpx;
+			margin-bottom: 60rpx;
+		}
+		
+		.verification-code-input {
+			margin-bottom: 60rpx;
+			
+			.input-label {
+				font-size: 30rpx;
+				margin-bottom: 20rpx;
+			}
+			
+			.input-box {
+				display: flex;
+				align-items: center;
+				border-bottom: 1rpx solid #f0f0f0;
+				padding-bottom: 20rpx;
+				
+				input {
+					flex: 1;
+					height: 80rpx;
+					font-size: 32rpx;
+				}
+				
+				.get-code {
+					color: #1989fa;
+					font-size: 28rpx;
+					padding: 0 20rpx;
+					
+					&.disabled {
+						color: #999;
+					}
+				}
+			}
+		}
+		
+		.submit-button {
+			width: 100%;
+			height: 90rpx;
+			background: linear-gradient(90deg, #FF9500 0%, #FF5E00 100%);
+			border-radius: 45rpx;
 			color: #fff;
 			font-size: 32rpx;
-			background: #E93323;
-			border-radius: 23px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-top: 60rpx;
 		}
-	}
-
-	.tipaddress {
-		position: fixed;
-		left: 13%;
-		top: 25%;
-		// margin-left: -283rpx;
-		width: 560rpx;
-		height: 614rpx;
-		background-color: #fff;
-		border-radius: 10rpx;
-		z-index: 100;
-		text-align: center;
-
-		.top {
-			width: 560rpx;
-			height: 270rpx;
-			border-top-left-radius: 10rpx;
-			border-top-right-radius: 10rpx;
-			background-image: url(../static/address.png);
-			background-repeat: round;
-			background-color: #E93323;
-
-			.tipsphoto {
-				display: inline-block;
-				width: 200rpx;
-				height: 200rpx;
-				margin-top: 73rpx;
-			}
-		}
-
-		.bottom {
-			font-size: 32rpx;
-			font-weight: 400;
-
-			.font1 {
-
-				font-size: 36rpx;
-				font-weight: 600;
-				color: #333333;
-				margin: 32rpx 0rpx 22rpx;
-			}
-
-			.font2 {
-				color: #666666;
-				margin-bottom: 48rpx;
-			}
-
-			.btn {
-				display: flex;
-				margin: 0 20rpx;
-
-				.btn-sty {
-					height: 82rpx;
-					border-radius: 42rpx;
-					line-height: 82rpx;
-					padding: 24rpx 78rpx;
-					margin: 0 auto;
-				}
-
-				.cancellation-btn {
-					background-color: #F5F5F5;
-					color: #333333;
-				}
-
-				.cancel {
-					color: #FFFFFF;
-					background: linear-gradient(90deg, #F67A38 0%, #F11B09 100%);
-				}
-
-			}
-		}
-
-	}
-
-	.mark {
-		position: fixed;
-		top: 0;
-		left: 0;
-		bottom: 0;
-		right: 0;
-		background: rgba(0, 0, 0, 0.5);
-		z-index: 99;
 	}
 </style>

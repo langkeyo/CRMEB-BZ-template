@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="180px" height="180px" viewBox="0 0 180 180" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>审核中</title>
+    <g id="Status-Reviewing" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="bg" fill="#EEF8FF" cx="90" cy="90" r="90"></circle>
+        <path d="M105,65 C119.359,65 131,76.6405 131,91 C131,105.359 119.359,117 105,117 C90.6405,117 79,105.359 79,91 C79,76.6405 90.6405,65 105,65 Z" id="circle" fill="#CCE8FF"></path>
+        <g id="icon" transform="translate(50.000000, 45.000000)">
+            <rect id="background" fill="#2196F3" x="0" y="0" width="80" height="80" rx="40"></rect>
+            <path d="M40,24 C41.1,24 42,24.9 42,26 L42,26 L42,40 C42,41.1 41.1,42 40,42 C38.9,42 38,41.1 38,40 L38,40 L38,26 C38,24.9 38.9,24 40,24 Z M40,50 C42.2,50 44,51.8 44,54 C44,56.2 42.2,58 40,58 C37.8,58 36,56.2 36,54 C36,51.8 37.8,50 40,50 Z" id="path" fill="#FFFFFF" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

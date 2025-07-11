@@ -23,5 +23,10 @@ export default {
 		setCartNum(state, data) {
 			state.cartNum = data;
 		}
+	},
+	actions: {
+		setCartnumber({ commit }, number) {
+			commit('setCartNum', number);
+		}
 	}
 }

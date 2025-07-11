@@ -401,3 +401,18 @@ export function getInvoiceLink(id) {
 export function orderReceiveGift(orderId, data) {
 	return request.post("order/receive_gift/" + orderId, data);
 }
+
+/**
+ * 获取待评价订单列表
+ * @param {Object} data
+ */
+export function getEvaluateList(data) {
+	return request.get('order/evaluate/list', data);
+}
+
+/**
+ * 获取推荐商品列表
+ */
+export function getRecommendGoods() {
+	return request.get('goods/recommend');
+}

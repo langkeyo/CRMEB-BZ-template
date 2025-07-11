@@ -16,6 +16,7 @@ import util from 'utils/util'
 import configs from './config/app.js'
 import socket from './libs/new_chat.js'
 import i18n from './utils/lang.js';
+
 Vue.prototype.$util = util;
 Vue.prototype.$config = configs;
 Vue.prototype.$Cache = Cache;
@@ -70,16 +71,6 @@ if (vconsole !== undefined) {
 		Cache.clear(cookieName);
 } else vconsole = Cache.get(cookieName);
 
-// import VConsole from './pages/extension/components/vconsole.min.js'
-
-// if (vconsole !== undefined && vconsole === md5Crmeb) {
-// 	Cache.set(cookieName, md5Crmeb, 3600);
-// 	let vConsole = new VConsole();
-// }
-
-// let snsapiBase = 'snsapi_base';
-// Auth.isWeixin() && Auth.oAuth(snsapiBase);
-
 // 记录进入app时的url
 if (typeof window.entryUrl === 'undefined' || window.entryUrl === '') {
 	window.entryUrl = location.href
@@ -89,7 +80,6 @@ if (typeof window.entryUrl === 'undefined' || window.entryUrl === '') {
 // #endif
 
 App.mpType = 'app'
-
 
 const app = new Vue({
 	...App,

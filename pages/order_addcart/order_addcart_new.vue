@@ -1,0 +1,759 @@
+<template>
+  <view :style="colorStyle">
+    <view class="shoppingCart copy-data" v-if="canShow">
+      <!-- 购物车头部组件 -->
+      <cart-header 
+        :has-items="cartList.valid.length > 0 || cartList.invalid.length > 0"
+        :is-editing="footerswitch"
+        @manage="manage"
+      />
+
+      <!-- 促销信息组件 -->
+      <promotion-bar 
+        v-if="cartList.valid.length > 0"
+        :promotion-info="$t(`以满99元，可换购1件`)"
+        @more="goToIndex"
+      />
+
+      <view
+        v-if="(cartList.valid.length > 0 || cartList.invalid.length > 0) && canShow"
+      >
+        <!-- 有效商品列表组件 -->
+        <valid-cart-items
+          :cart-items="cartList.valid"
+          :is-editing="footerswitch"
+          :disabled-change-number="disabledChangeNumber"
+          @checkbox-change="checkboxChange"
+          @re-election="reElection"
+          @sub-cart="subCart"
+          @add-cart="addCart"
+          @ipt-cart-num="iptCartNum"
+          @blur-input="blurInput"
+        />
+
+        <!-- 失效商品列表组件 -->
+        <invalid-cart-items
+          :invalid-items="cartList.invalid"
+          :is-hidden="goodsHidden"
+          :is-loading="loadingInvalid"
+          :loadend="loadend"
+          :load-title="loadTitleInvalid"
+          @toggle-open="goodsOpen"
+          @clear="unsetCart"
+        />
+      </view>
+
+      <!-- 空购物车提示组件 -->
+      <empty-cart
+        v-if="cartList.valid.length == 0 && cartList.invalid.length == 0 && canShow"
+        :img-host="imgHost"
+        :host-product="hostProduct"
+      />
+
+      <view style="height: 120rpx; color: #f5f5f5"></view>
+
+      <!-- 底部结算栏组件 -->
+      <cart-footer
+        v-if="cartList.valid.length > 0 && canShow"
+        :is-all-select="!!isAllSelect"
+        :selected-count="selectValue.length"
+        :total-price="selectCountPrice"
+        :is-editing="footerswitch"
+        :is-diy-set="is_diy && is_diy_set"
+        @checkbox-all-change="checkboxAllChange"
+        @submit-order="subOrder"
+        @submit-collect="subCollect"
+        @submit-delete="subDel"
+      />
+    </view>
+
+    <!-- 其他组件保持不变 -->
+    <productWindow
+      :attr="attr"
+      :isShow="1"
+      :iSplus="1"
+      :iScart="1"
+      @myevent="onMyEvent"
+      @ChangeAttr="ChangeAttr"
+      @ChangeCartNum="ChangeCartNum"
+      @attrVal="attrVal"
+      @iptCartNum="iptCartNum"
+      @goCat="reGoCat"
+      id="product-window"
+    ></productWindow>
+    <!-- #ifdef MP -->
+    <!-- <authorize :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
+    <!-- #endif -->
+    <view class="uni-p-b-98"></view>
+    <pageFooter @newDataStatus="newDataStatus"></pageFooter>
+  </view>
+</template>
+
+<script>
+// #ifdef APP-PLUS
+let sysHeight = uni.getSystemInfoSync().statusBarHeight + "px";
+// #endif
+// #ifndef APP-PLUS
+let sysHeight = 0;
+// #endif
+import {
+  getCartList,
+  getCartCounts,
+  changeCartNum,
+  cartDel,
+  getResetCart,
+} from "@/api/order.js";
+import { getProductHot } from "@/api/store.js";
+import { collectAll } from "@/api/user.js";
+import { mapGetters } from "vuex";
+import recommend from "@/components/recommend/index.vue";
+import productWindow from "@/components/productWindow/index.vue";
+import pageFooter from "@/components/pageFooter.vue";
+
+// 导入拆分的组件
+import CartHeader from "@/components/cart/CartHeader.vue";
+import PromotionBar from "@/components/cart/PromotionBar.vue";
+import ValidCartItems from "@/components/cart/ValidCartItems.vue";
+import InvalidCartItems from "@/components/cart/InvalidCartItems.vue";
+import EmptyCart from "@/components/cart/EmptyCart.vue";
+import CartFooter from "@/components/cart/CartFooter.vue";
+
+export default {
+  components: {
+    recommend,
+    productWindow,
+    pageFooter,
+    CartHeader,
+    PromotionBar,
+    ValidCartItems,
+    InvalidCartItems,
+    EmptyCart,
+    CartFooter
+  },
+  data() {
+    return {
+      imgHost: this.$VUE_APP_API_URL,
+      cartList: { valid: [], invalid: [] },
+      isAllSelect: false,
+      selectValue: [],
+      selectCountPrice: 0.0,
+      isAuto: false,
+      isShowAuth: false,
+      goodsHidden: true,
+      footerswitch: true,
+      hostProduct: [],
+      attr: {
+        cartAttr: false,
+        productSelect: {}
+      },
+      isShow: false,
+      loadend: false,
+      loadTitle: "",
+      loading: false,
+      loadTitleInvalid: "",
+      loadingInvalid: false,
+      loadendInvalid: false,
+      canShow: false,
+      disabledChangeNumber: false,
+      is_diy: false,
+      is_diy_set: false,
+      sysHeight: sysHeight
+    };
+  },
+  computed: mapGetters(["isLogin"]),
+  onLoad(options) {
+    if (options.is_diy) {
+      this.is_diy = options.is_diy;
+      this.is_diy_set = options.is_diy_set;
+    }
+  },
+  onShow() {
+    if (this.isLogin) {
+      this.getCartList();
+      this.getHostProduct();
+      this.canShow = true;
+    } else {
+      this.cartList = { valid: [], invalid: [] };
+      this.hostProduct = [];
+      this.canShow = true;
+    }
+    this.disabledChangeNumber = false;
+    this.selectValue = [];
+    this.selectCountPrice = 0.0;
+    this.isAllSelect = false;
+  },
+  methods: {
+    // 授权关闭
+    authColse(e) {
+      this.isShowAuth = e;
+    },
+    newDataStatus(val, num) {
+      this.is_diy = val;
+      this.is_diy_set = num;
+    },
+    // 修改购物车
+    reGoCat() {
+      this.disabledChangeNumber = true;
+      let id = this.attr.productSelect.id;
+      if (id) {
+        this.attr.cartAttr = false;
+        let cartId = this.attr.currentCartId;
+        uni.showLoading({ title: this.$t(`请求中`) });
+        changeCartNum(cartId, this.attr.productSelect.cart_num)
+          .then(res => {
+            uni.hideLoading();
+            this.attr.cartAttr = false;
+            this.getCartList();
+            this.disabledChangeNumber = false;
+          })
+          .catch(err => {
+            uni.hideLoading();
+            this.disabledChangeNumber = false;
+            this.$util.Tips({ title: err });
+          });
+      }
+    },
+    onMyEvent() {
+      this.attr.cartAttr = false;
+    },
+    reElection(item) {
+      this.getGoodsDetails(item);
+    },
+    /**
+     * 获取产品详情
+     *
+     */
+    getGoodsDetails(item) {
+      this.attr.cartAttr = true;
+      this.attr.productSelect = item;
+      this.attr.productAttr = item.productInfo.attrInfo;
+      this.attr.productSelect.cart_num = item.cart_num;
+      this.attr.currentCartId = item.id;
+      this.attr.productSelect.is_virtual = item.productInfo.virtual_type > 0;
+      this.attr.productSelect.is_presale = item.productInfo.presale_start_time > 0;
+      this.attr.productSelect.presale_start_time = item.productInfo.presale_start_time;
+      this.attr.productSelect.presale_end_time = item.productInfo.presale_end_time;
+      this.attr.productSelect.cart_num = 1;
+      this.attr.productSelect.quota = item.productInfo.quota;
+      this.attr.productSelect.quota_show = item.productInfo.quota_show;
+      this.attr.productSelect.product_id = item.product_id;
+      this.DefaultSelect();
+    },
+    /**
+     * 属性变动赋值
+     */
+    ChangeAttr(res) {
+      this.attr.productSelect.image = res.image;
+      this.attr.productSelect.price = res.price;
+      this.attr.productSelect.stock = res.stock;
+      this.attr.productSelect.unique = res.unique;
+      this.attr.productSelect.cart_num = 1;
+      this.attr.productSelect.quota = res.quota;
+      this.attr.productSelect.quota_show = res.quota_show;
+      this.attr.productSelect.product_id = res.product_id;
+      this.attr.productSelect.is_virtual = res.is_virtual;
+    },
+    /**
+     * 默认选中属性
+     */
+    DefaultSelect() {
+      let productAttr = this.attr.productAttr;
+      let value = [];
+      for (let i = 0; i < productAttr.length; i++) {
+        for (let j = 0; j < productAttr[i].attr_values.length; j++) {
+          if (j === 0) value.push(productAttr[i].attr_values[j]);
+        }
+      }
+      for (let i = 0; i < this.attr.productAttr.length; i++) {
+        this.$set(this.attr.productAttr[i], "index", 0);
+      }
+      //sort();排序函数:数字-英文-汉字；
+      let productSelect = this.attr.productSelect;
+      if (productSelect && productSelect.attrValue) {
+        let attrValue = productSelect.attrValue.split(";");
+        for (let i = 0; i < attrValue.length; i++) {
+          if (attrValue[i]) {
+            for (let j = 0; j < productAttr[i].attr_values.length; j++) {
+              if (productAttr[i].attr_values[j] === attrValue[i]) {
+                this.$set(this.attr.productAttr[i], "index", j);
+              }
+            }
+          }
+        }
+      }
+      let valueArr = [];
+      for (let i = 0; i < productAttr.length; i++) {
+        valueArr.push(productAttr[i].attr_values[productAttr[i].index]);
+      }
+      this.getProductSelect(valueArr);
+    },
+    attrVal(val) {
+      let value = "";
+      for (let i = 0; i < val.length; i++) {
+        value += val[i] + ";";
+      }
+      return value;
+    },
+    /**
+     * 购物车数量加和数量减
+     */
+    ChangeCartNum(changeValue) {
+      //changeValue:是否 加|减
+      //获取当前变动属性
+      let productSelect = this.attr.productSelect;
+      //如果没有属性,赋值给商品默认库存
+      if (productSelect.product_id === undefined) return;
+      let stock = productSelect.stock || 0;
+      let num = productSelect.cart_num;
+      let quotaShow = productSelect.quota_show || 0;
+      let quota = productSelect.quota || 0;
+      if (changeValue) {
+        num++;
+        if (quotaShow !== 0 && num > quota) {
+          uni.showToast({
+            title: this.$t(`每人限购`) + quotaShow + this.$t(`件`),
+            icon: "none",
+            duration: 2000
+          });
+          return;
+        }
+        if (num > stock) {
+          uni.showToast({
+            title: this.$t(`库存不足`),
+            icon: "none",
+            duration: 2000
+          });
+          return;
+        }
+      } else {
+        num = num - 1 <= 0 ? 1 : num - 1;
+      }
+      productSelect.cart_num = num;
+    },
+    /**
+     * 购物车手动填写
+     */
+    iptCartNum(e) {
+      this.attr.productSelect.cart_num = e;
+    },
+    subDel(event) {
+      let that = this;
+      uni.showModal({
+        title: that.$t(`提示`),
+        content: that.$t(`确定要删除此商品吗？`),
+        success: function(res) {
+          if (res.confirm) {
+            uni.showLoading({ title: that.$t(`请求中`) });
+            cartDel(that.selectValue)
+              .then(res => {
+                uni.hideLoading();
+                that.$util.Tips({ title: that.$t(`删除成功`) });
+                that.getCartList();
+                that.$store.dispatch("updateCartNum");
+              })
+              .catch(err => {
+                uni.hideLoading();
+                that.$util.Tips({ title: err });
+              });
+          }
+        }
+      });
+    },
+    getSelectValueProductId() {
+      let productId = [];
+      for (let i = 0; i < this.cartList.valid.length; i++) {
+        if (this.cartList.valid[i].checked) {
+          productId.push(this.cartList.valid[i].product_id);
+        }
+      }
+      return productId;
+    },
+    subCollect(event) {
+      let that = this;
+      uni.showLoading({ title: that.$t(`请求中`) });
+      let selectValue = that.getSelectValueProductId();
+      collectAll(selectValue)
+        .then(res => {
+          uni.hideLoading();
+          that.$util.Tips({ title: that.$t(`收藏成功`) });
+        })
+        .catch(err => {
+          uni.hideLoading();
+          that.$util.Tips({ title: err });
+        });
+    },
+    subOrder(event) {
+      let that = this;
+      if (that.selectValue.length <= 0)
+        return that.$util.Tips({ title: that.$t(`请选择要结算的商品`) });
+      uni.navigateTo({
+        url: `/pages/users/order_confirm/index?cartId=${that.selectValue.join(",")}`
+      });
+    },
+    checkboxAllChange(event) {
+      let value = event.detail.value;
+      if (value.length > 0) {
+        this.setAllSelectValue(true);
+      } else {
+        this.setAllSelectValue(false);
+      }
+    },
+    setAllSelectValue(status) {
+      let selectValue = [];
+      let selectCountPrice = 0.0;
+      if (status) {
+        for (let i = 0; i < this.cartList.valid.length; i++) {
+          if (this.cartList.valid[i].attrStatus) {
+            this.cartList.valid[i].checked = true;
+            selectValue.push(this.cartList.valid[i].id);
+            selectCountPrice =
+              selectCountPrice +
+              this.cartList.valid[i].cart_num * this.cartList.valid[i].truePrice;
+          }
+        }
+      } else {
+        for (let i = 0; i < this.cartList.valid.length; i++) {
+          this.cartList.valid[i].checked = false;
+        }
+      }
+      this.isAllSelect = status;
+      this.selectValue = selectValue;
+      this.selectCountPrice = selectCountPrice.toFixed(2);
+    },
+    checkboxChange(event) {
+      let value = event.detail.value;
+      let selectValue = [];
+      let selectCountPrice = 0.0;
+      for (let i = 0; i < this.cartList.valid.length; i++) {
+        if (this.inArray(this.cartList.valid[i].id, value)) {
+          this.cartList.valid[i].checked = true;
+          selectValue.push(this.cartList.valid[i].id);
+          selectCountPrice =
+            selectCountPrice +
+            this.cartList.valid[i].cart_num * this.cartList.valid[i].truePrice;
+        } else {
+          this.cartList.valid[i].checked = false;
+        }
+      }
+      this.selectValue = selectValue;
+      this.selectCountPrice = selectCountPrice.toFixed(2);
+      let validLength = this.cartList.valid.length;
+      let clength = this.cartList.valid.length;
+      for (let i = 0; i < this.cartList.valid.length; i++) {
+        if (!this.cartList.valid[i].attrStatus) {
+          validLength--;
+        }
+      }
+      if (selectValue.length < validLength) {
+        this.isAllSelect = false;
+      } else if (clength > 0) {
+        this.isAllSelect = true;
+      } else {
+        this.isAllSelect = false;
+      }
+    },
+    inArray(search, array) {
+      for (let i in array) {
+        if (array[i] == search) {
+          return true;
+        }
+      }
+      return false;
+    },
+    switchSelect() {
+      let that = this;
+      if (that.footerswitch) {
+        that.footerswitch = false;
+        that.selectValue = [];
+        let selectCountPrice = 0.0;
+        for (let i = 0; i < that.cartList.valid.length; i++) {
+          that.cartList.valid[i].checked = false;
+        }
+        that.isAllSelect = false;
+        that.selectValue = [];
+        that.selectCountPrice = selectCountPrice.toFixed(2);
+      } else {
+        that.footerswitch = true;
+      }
+    },
+    /**
+     * 购物车手动填写
+     */
+    iptCartNum(index) {
+      if (this.disabledChangeNumber) return;
+      let item = this.cartList.valid[index];
+      item.numSub = item.cart_num > 1 ? true : false;
+      item.numAdd = item.cart_num < item.trueStock ? true : false;
+    },
+    blurInput(index) {
+      let item = this.cartList.valid[index];
+      if (item.cart_num < 1) item.cart_num = 1;
+      if (item.cart_num > item.trueStock) item.cart_num = item.trueStock;
+      this.setCartNum(item.id, item.cart_num);
+    },
+    subCart(index) {
+      if (this.disabledChangeNumber) return;
+      let item = this.cartList.valid[index];
+      if (item.cart_num <= 1) return;
+      item.cart_num = item.cart_num - 1;
+      item.numSub = item.cart_num > 1 ? true : false;
+      item.numAdd = true;
+      this.setCartNum(item.id, item.cart_num);
+      this.selectCountPrice = 0.0;
+      for (let i = 0; i < this.cartList.valid.length; i++) {
+        if (this.cartList.valid[i].checked) {
+          this.selectCountPrice =
+            this.selectCountPrice +
+            this.cartList.valid[i].cart_num * this.cartList.valid[i].truePrice;
+        }
+      }
+      this.selectCountPrice = this.selectCountPrice.toFixed(2);
+    },
+    addCart(index) {
+      if (this.disabledChangeNumber) return;
+      let item = this.cartList.valid[index];
+      if (item.cart_num >= item.trueStock) return;
+      item.cart_num = item.cart_num + 1;
+      item.numSub = item.cart_num > 1 ? true : false;
+      item.numAdd = item.cart_num < item.trueStock ? true : false;
+      this.setCartNum(item.id, item.cart_num);
+      this.selectCountPrice = 0.0;
+      for (let i = 0; i < this.cartList.valid.length; i++) {
+        if (this.cartList.valid[i].checked) {
+          this.selectCountPrice =
+            this.selectCountPrice +
+            this.cartList.valid[i].cart_num * this.cartList.valid[i].truePrice;
+        }
+      }
+      this.selectCountPrice = this.selectCountPrice.toFixed(2);
+    },
+    setCartNum(cartId, cartNum, successCallback, errorCallback) {
+      let that = this;
+      that.disabledChangeNumber = true;
+      uni.showLoading({ title: that.$t(`请求中`) });
+      changeCartNum(cartId, cartNum)
+        .then(res => {
+          uni.hideLoading();
+          that.disabledChangeNumber = false;
+          if (successCallback) successCallback(res);
+        })
+        .catch(err => {
+          uni.hideLoading();
+          that.disabledChangeNumber = false;
+          that.$util.Tips({ title: err });
+          if (errorCallback) errorCallback(err);
+        });
+    },
+    getCartNum() {
+      let that = this;
+      getCartCounts()
+        .then(res => {
+          that.$store.dispatch("indexData/setCartnumber", res.data.count);
+        })
+        .catch(err => {
+          that.$util.Tips({ title: err });
+        });
+    },
+    getCartData(data) {
+      let that = this;
+      let cartList = data.valid;
+      let valid = [];
+      for (let i = 0; i < cartList.length; i++) {
+        let item = cartList[i];
+        if (item.attrStatus) {
+          item.numSub = item.cart_num > 1 ? true : false;
+          item.numAdd = item.cart_num < item.trueStock ? true : false;
+          item.checked = false;
+        }
+        valid.push(item);
+      }
+      that.cartList.valid = valid;
+      that.cartList.invalid = data.invalid;
+    },
+    getCartList(init) {
+      let that = this;
+      if (init) that.loading = true;
+      uni.showLoading({ title: that.$t(`正在加载`) });
+      getCartList()
+        .then(res => {
+          uni.hideLoading();
+          that.getCartData(res.data);
+          that.loading = false;
+          that.loadend = true;
+          that.loadTitle = that.$t(`没有更多了`);
+          that.getCartNum();
+        })
+        .catch(err => {
+          uni.hideLoading();
+          that.loading = false;
+          that.loadend = true;
+          that.loadTitle = that.$t(`没有更多了`);
+          that.$util.Tips({ title: err });
+        });
+    },
+    getInvalidList() {
+      let that = this;
+      if (that.loadingInvalid === true) return;
+      if (that.loadendInvalid === true) return;
+      that.loadingInvalid = true;
+      that.loadTitleInvalid = that.$t(`加载更多`);
+      getResetCart()
+        .then(res => {
+          that.loadingInvalid = false;
+          that.loadendInvalid = res.data.length < 20;
+          that.loadTitleInvalid = that.loadendInvalid
+            ? that.$t(`没有更多了`)
+            : that.$t(`加载更多`);
+          let validList = [];
+          validList = validList.concat(res.data);
+          that.cartList.invalid = validList;
+        })
+        .catch(err => {
+          that.loadingInvalid = false;
+          that.loadendInvalid = true;
+          that.loadTitleInvalid = that.$t(`没有更多了`);
+          that.$util.Tips({ title: err });
+        });
+    },
+    getHostProduct() {
+      let that = this;
+      getProductHot({
+        page: 1,
+        limit: 4
+      }).then(res => {
+        that.hostProduct = res.data;
+      });
+    },
+    goodsOpen() {
+      this.goodsHidden = !this.goodsHidden;
+    },
+    goToIndex() {
+      uni.switchTab({
+        url: "/pages/index/index"
+      });
+    },
+    manage() {
+      this.footerswitch = !this.footerswitch;
+      let selectValue = [];
+      let selectCountPrice = 0.0;
+      if (this.footerswitch) {
+        for (let i = 0; i < this.cartList.valid.length; i++) {
+          this.cartList.valid[i].checked = false;
+        }
+      } else {
+        for (let i = 0; i < this.cartList.valid.length; i++) {
+          this.cartList.valid[i].checked = false;
+        }
+      }
+      this.isAllSelect = false;
+      this.selectValue = selectValue;
+      this.selectCountPrice = selectCountPrice.toFixed(2);
+    },
+    unsetCart() {
+      let that = this;
+      uni.showModal({
+        title: that.$t(`提示`),
+        content: that.$t(`确定要清空失效商品吗？`),
+        success: function(res) {
+          if (res.confirm) {
+            uni.showLoading({ title: that.$t(`请求中`) });
+            getResetCart("1")
+              .then(res => {
+                uni.hideLoading();
+                that.$util.Tips({ title: that.$t(`清空成功`) });
+                that.cartList.invalid = [];
+              })
+              .catch(err => {
+                uni.hideLoading();
+                that.$util.Tips({ title: err });
+              });
+          }
+        }
+      });
+    }
+  },
+  onReachBottom() {
+    // this.getInvalidList();
+  },
+  // 滚动监听
+  onPageScroll(e) {
+    // let scrollTop = e.scrollTop;
+    // this.isFixed = scrollTop > 30 ? true : false;
+  }
+};
+</script>
+
+<style scoped lang="scss">
+.shoppingCart {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.uni-p-b-98 {
+  padding-bottom: 98rpx;
+}
+
+/* 通用样式 */
+.copy-data {
+  background-color: #f5f5f5;
+}
+
+.cart-color {
+  color: #ff3b0d !important;
+  border-color: #ff3b0d !important;
+}
+
+.bg-color {
+  background-color: #ff3b0d !important;
+  border-color: #ff3b0d !important;
+}
+
+.round-checkbox {
+  border-radius: 50% !important;
+}
+
+.checkAll {
+  font-size: 28rpx;
+  color: #282828;
+}
+
+/* 商品名称和价格样式 */
+.product-name {
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.product-price {
+  color: #ff3b0d !important;
+}
+
+/* 按钮样式 */
+.round-btn {
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 加载更多样式 */
+.loadingicon {
+  font-size: 24rpx;
+  color: #999;
+  padding: 20rpx 0;
+}
+
+.loadingicon .loading {
+  animation: loading 3s infinite;
+  font-size: 32rpx;
+  margin-right: 10rpx;
+}
+
+@keyframes loading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>

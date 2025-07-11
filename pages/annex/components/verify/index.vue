@@ -104,7 +104,7 @@
 			this.uuid()
 			// #ifdef H5
 			document.addEventListener("touchmove", (e) => {
-				e.preventDefalut()
+				e.preventDefault()
 			}, {
 				passive: false
 			});

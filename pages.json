@@ -1,4 +1,7 @@
 {
+	"easycom": {
+		"^u-(.*)": "uview-ui/components/u-$1/u-$1.vue"
+	},
 	"pages": [ //pages数组中第一项表示应用启动页
 		{
 			"path": "pages/guide/index",
@@ -14,6 +17,273 @@
 				"navigationBarTitleText": "",
 				"navigationStyle": "custom",
 				"navigationBarTextStyle": "black",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/category/snacks/index",
+			"style": {
+				"navigationBarTitleText": "休闲零食",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/testLogin",
+			"style": {
+				"navigationBarTitleText": "模拟登录工具",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/today-group-buying/index",
+			"style": {
+				"navigationBarTitleText": "今日开团",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/my_site/index",
+			"style": {
+				"navigationBarTitleText": "我的站点",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/my_site/select",
+			"style": {
+				"navigationBarTitleText": "添加站点",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/my_site/site_list",
+			"style": {
+				"navigationBarTitleText": "我的站点",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/my_site/add",
+			"style": {
+				"navigationBarTitleText": "添加站点",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/my_site/edit",
+			"style": {
+				"navigationBarTitleText": "编辑站点",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/intermediary_service/index",
+			"style": {
+				"navigationBarTitleText": "居间服务",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/intermediary_service/apply",
+			"style": {
+				"navigationBarTitleText": "申请居间服务",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/guide/index",
+			"style": {
+				"app-plus": {
+					"titleNView": false //禁用原生导航栏
+				}
+			}
+		},
+		{
+			"path": "pages/index/join/index",
+			"style": {
+				"navigationBarTitleText": "加入流程",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/join/form",
+			"style": {
+				"navigationBarTitleText": "基本信息",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/join/status",
+			"style": {
+				"navigationBarTitleText": "资料审核",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/hot-group/index",
+			"style": {
+				"navigationBarTitleText": "热门团购",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/hot-group/detail",
+			"style": {
+				"navigationBarTitleText": "商品详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/community-group/index",
+			"style": {
+				"navigationBarTitleText": "社区团购",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/business-info/index",
+			"style": {
+				"navigationBarTitleText": "商业信息",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/business-info/detail",
+			"style": {
+				"navigationBarTitleText": "加盟详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/business-info/service-detail",
+			"style": {
+				"navigationBarTitleText": "便民服务详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/business-info/franchise/index",
+			"style": {
+				"navigationBarTitleText": "加盟详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/business-info/business-cooperation/index",
+			"style": {
+				"navigationBarTitleText": "招商合作详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/business-info/service-detail",
+			"style": {
+				"navigationBarTitleText": "便民服务详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/shop-transfer/index",
+			"style": {
+				"navigationBarTitleText": "旺铺转让",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/shop-transfer/detail",
+			"style": {
+				"navigationBarTitleText": "商铺详情",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/house-rental/index",
+			"style": {
+				"navigationBarTitleText": "房屋租售",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/house-rental/detail",
+			"style": {
+				"navigationBarTitleText": "房源详情",
+				"navigationStyle": "custom",
 				"app-plus": {
 					"scrollIndicator": "none"
 				}
@@ -48,9 +318,10 @@
 			}
 		},
 		{
-			"path": "pages/goods_cate/goods_cate",
+			"path": "pages/goods_category/index",
 			"style": {
 				"navigationBarTitleText": "商品分类",
+				"navigationStyle": "custom",
 				"app-plus": {
 					// #ifdef APP-PLUS
 					"titleNView": {
@@ -71,6 +342,96 @@
 						"type": "default"
 					}
 					// #endif
+				}
+			}
+		},
+		{
+			"path": "pages/index/product-provide/join-process/index",
+			"style": {
+				"navigationBarTitleText": "加入流程",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/product-provide/form/index",
+			"style": {
+				"navigationBarTitleText": "基本信息",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/index/product-provide/review/index",
+			"style": {
+				"navigationBarTitleText": "资料审核",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/users/online_chat/index",
+			"style": {
+				"navigationBarTitleText": "在线咨询",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/users/user_settings/index",
+			"style": {
+				"navigationBarTitleText": "设置",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/users/user_settings/basic_settings",
+			"style": {
+				"navigationBarTitleText": "设置",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/users/user_settings/account_security",
+			"style": {
+				"navigationBarTitleText": "账号与安全",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/users/user_settings/change_password",
+			"style": {
+				"navigationBarTitleText": "修改密码",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
+		},
+		{
+			"path": "pages/users/user_settings/version_account_security",
+			"style": {
+				"navigationBarTitleText": "账号与安全",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
 				}
 			}
 		}
@@ -139,7 +500,17 @@
 		}, {
 			"root": "pages/goods",
 			"name": "goods",
-			"pages": [{
+			"pages": [
+				{
+					"path": "order_list/all_orders",
+					"style": {
+						"navigationBarTitleText": "全部订单",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},{
 					"path": "goods_list/index",
 					"style": {
 						"navigationBarTitleText": "商品列表",
@@ -173,6 +544,15 @@
 								"type": "default"
 							}
 							// #endif
+						}
+					}
+				}, {
+					"path": "order_complete/index",
+					"style": {
+						"navigationBarTitleText": "订单完成",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
 						}
 					}
 				}, {
@@ -309,6 +689,15 @@
 						}
 					}
 				}, {
+					"path": "order_confirm/new_order_confirm",
+					"style": {
+						"navigationBarTitleText": "确认订单",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				}, {
 					"path": "order_details/index",
 					"style": {
 						"navigationBarTitleText": "订单详情",
@@ -384,12 +773,82 @@
 							// #endif
 						}
 					}
+				},
+				{
+					"path": "pending_payment/index",
+					"style": {
+						"navigationBarTitleText": "待支付",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "pending_delivery/index",
+					"style": {
+						"navigationBarTitleText": "待收货",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "group_buy_payment/index",
+					"style": {
+						"navigationBarTitleText": "团购支付",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "unpaid_order_tip/index",
+					"style": {
+						"navigationBarTitleText": "未结清订单提示",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "order_cancelled/index",
+					"style": {
+						"navigationBarTitleText": "交易取消",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "payment_success/index",
+					"style": {
+						"navigationBarTitleText": "支付成功",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
 				}
 			]
 		}, {
 			"root": "pages/users",
 			"name": "users",
-			"pages": [{
+			"pages": [
+				{
+					"path": "browse_collection/index",
+					"style": {
+						"navigationBarTitleText": "足迹/收藏",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},{
 					"path": "user_vip_areer/index",
 					"style": {
 						"navigationBarTitleText": "经验记录",
@@ -517,7 +976,7 @@
 							"scrollIndicator": "none"
 						}
 					}
-				}, 
+				},
 				{
 					"path": "binding_phone/index",
 					"style": {
@@ -531,13 +990,20 @@
 				{
 					"path": "retrievePassword/index",
 					"style": {
-						"navigationBarTitleText": "忘记密码",
+						"navigationBarTitleText": "找回密码",
+						"navigationStyle": "custom",
 						"app-plus": {
-							// #ifdef APP-PLUS
-							"titleNView": {
-								"type": "default"
-							}
-							// #endif
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "retrievePassword/setPassword",
+					"style": {
+						"navigationBarTitleText": "设置新密码",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
 						}
 					}
 				},
@@ -867,26 +1333,6 @@
 					}
 				},
 				{
-					"path": "user_pwd_edit/index",
-					"style": {
-						"navigationBarTitleText": "修改密码"
-
-							// #ifdef MP
-							// 	,
-							// "navigationBarTextStyle": "white"
-							// "navigationBarBackgroundColor": "#e93323"
-							// #endif
-							,
-						"app-plus": {
-							// #ifdef APP-PLUS
-							"titleNView": {
-								"type": "default"
-							}
-							// #endif
-						}
-					}
-				},
-				{
 					"path": "promoter-list/index",
 					"style": {
 						"navigationBarTitleText": "推广人列表"
@@ -978,6 +1424,58 @@
 					}
 				},
 				{
+					"path": "after_sales/index",
+					"style": {
+						"navigationBarTitleText": "售后",
+						"app-plus": {
+							// #ifdef APP-PLUS
+							"titleNView": {
+								"type": "default"
+							}
+							// #endif
+						}
+					}
+				},
+				{
+					"path": "after_sales/detail",
+					"style": {
+						"navigationBarTitleText": "售后详情",
+						"app-plus": {
+							// #ifdef APP-PLUS
+							"titleNView": {
+								"type": "default"
+							}
+							// #endif
+						}
+					}
+				},
+				{
+					"path": "after_sales/apply",
+					"style": {
+						"navigationBarTitleText": "申请售后",
+						"app-plus": {
+							// #ifdef APP-PLUS
+							"titleNView": {
+								"type": "default"
+							}
+							// #endif
+						}
+					}
+				},
+				{
+					"path": "after_sales/evaluate",
+					"style": {
+						"navigationBarTitleText": "售后评价",
+						"app-plus": {
+							// #ifdef APP-PLUS
+							"titleNView": {
+								"type": "default"
+							}
+							// #endif
+						}
+					}
+				},
+				{
 					"path": "login/index",
 					"style": {
 						"navigationBarTitleText": "登录",
@@ -1035,6 +1533,37 @@
 					}
 				}
 				// #endif
+				,
+				{
+					"path": "message_private/index",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "信息私信",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "user_follow/index",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "我的关注",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "liked_goods/index",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "已赞商品",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				}
 			],
 			"plugins": {
 				"live-player-plugin": {
@@ -1630,7 +2159,7 @@
 				"text": "首页"
 			},
 			{
-				"pagePath": "pages/goods_cate/goods_cate",
+				"pagePath": "pages/goods_category/index",
 				"iconPath": "static/images/2-001.png",
 				"selectedIconPath": "static/images/2-002.png",
 				"text": "分类"

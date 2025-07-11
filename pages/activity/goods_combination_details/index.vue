@@ -325,6 +325,7 @@
 		HTTP_REQUEST_URL
 	} from '@/config/app';
 	import homeList from '@/components/homeList';
+	import { getUserCombinationDetail, getRecommendCombination } from '@/api/activity.js';
 	let sysHeight = uni.getSystemInfoSync().statusBarHeight + 'px';
 	export default {
 		components: {
@@ -420,6 +421,9 @@
 				showMenuIcon: false,
 				currentPage: false,
 				sysHeight: sysHeight,
+				timeLeft: {},
+				countDown: null,
+				recommendList: [],
 			}
 		},
 		watch: {
@@ -427,7 +431,8 @@
 				handler: function(newV, oldV) {
 					if (newV) {
 						// this.downloadFilePromotionCode();
-						this.combinationDetail();
+						this.getCombinationDetail();
+						this.getRecommendProducts();
 					}
 				},
 				deep: true
@@ -485,7 +490,8 @@
 			if (options.hasOwnProperty('id')) {
 				this.id = options.id
 				if (this.isLogin) {
-					this.combinationDetail();
+					this.getCombinationDetail();
+					this.getRecommendProducts();
 				} else {
 					// #ifdef H5 || APP-PLUS
 					try {
@@ -501,7 +507,8 @@
 					let val = uni.getStorageSync('comGoodsId');
 					if (val != '') {
 						this.id = val
-						this.combinationDetail();
+						this.getCombinationDetail();
+						this.getRecommendProducts();
 					}
 				} catch (e) {
 					uni.showToast({
@@ -603,160 +610,45 @@
 				})
 				// #endif
 			},
-			// 获取详情
-			combinationDetail() {
-				var that = this;
-				var data = that.id;
-				getCombinationDetail(data).then((res) => {
-					that.dataShow = 1;
-					uni.setNavigationBarTitle({
-						title: res.data.storeInfo.title.substring(0, 16)
-					})
-					that.imgUrls = res.data.storeInfo.images;
-					that.storeInfo = res.data.storeInfo;
-					that.storeInfo.description = that.storeInfo.description.replace(/<img/gi,
-						'<img style="max-width:100%;height:auto;float:left;display:block" ');
-					that.attribute.productSelect.num = res.data.storeInfo.num;
-					that.pink = res.data.pink;
-					that.pinkAll = res.data.pinkAll;
-					that.reply = res.data.reply ? [res.data.reply] : [];
-					that.replyCount = res.data.replyCount;
-					that.itemNew = res.data.pink_ok_list;
-					that.pink_ok_sum = res.data.pink_ok_sum;
-					that.replyChance = res.data.replyChance;
-					that.attribute.productAttr = res.data.productAttr;
-					that.productValue = res.data.productValue;
-					if (!this.storeInfo.wechat_code) {
-						// #ifdef H5
-						this.codeVal = window.location.origin +
-							'/pages/activity/goods_combination_details/index?id=' + this.id +
-							'&spid=' + this.$store.state.app.uid
-						// #endif	
-						// #ifdef APP-PLUS
-						this.codeVal = HTTP_REQUEST_URL + '/pages/activity/goods_combination_details/index?id=' +
-							this.id +
-							'&spid=' + this.$store.state.app.uid
-						// #endif	
-					} else {
-						that.$set(that, "PromotionCode", this.storeInfo.wechat_code);
+			getCombinationDetail() {
+				getUserCombinationDetail(this.id).then(res => {
+					this.combinationDetail = res.data;
+					this.storeInfo = res.data;
+					// 设置商品图片
+					this.imgUrls = res.data.images;
+					// 设置分享信息
+					this.setShareInfo();
+					// 设置倒计时
+					if (res.data.time_left && res.data.time_left.total_seconds > 0) {
+						this.countDown = setInterval(() => {
+							this.timeLeft = this.countDownFormat(--res.data.time_left.total_seconds);
+						}, 1000);
 					}
-					that.routineContact = Number(res.data.routine_contact_type);
-					for (let key in res.data.productValue) {
-						let obj = res.data.productValue[key];
-						that.skuArr.push(obj);
-					}
-					that.$set(that, "selectSku", that.skuArr[0]);
-					var navList = [that.$t(`商品`), that.$t(`详情`)];
-					if (res.data.replyCount) {
-						navList.splice(1, 0, that.$t(`评价`));
-					}
-					that.$set(that, 'navList', navList);
-					that.storeImage = that.storeInfo.image
-					// #ifdef H5
-					that.setShare();
-					that.getImageBase64();
-					// #endif
-					// #ifdef APP-PLUS
-					that.downloadFilestoreImage();
-					// that.downloadFileAppCode();
-					// #endif
-					// #ifdef MP
-					that.downloadFilestoreImage();
-					// that.downloadFilePromotionCode();
-					// #endif
-					// that.setProductSelect();
-					that.DefaultSelect();
-					setTimeout(function() {
-						that.infoScroll();
-					}, 500);
-
-				}).catch(function(err) {
-					that.$util.Tips({
-						title: err
-					}, {
-						tab: 3
-					})
-				})
-			},
-			// app获取二维码
-			downloadFileAppCode() {
-				let that = this;
-				uni.downloadFile({
-					url: that.setDomain(that.PromotionCode),
-					success: function(res) {
-						that.PromotionCode = res.tempFilePath;
-					},
-					fail: function() {
-						return that.$util.Tips({
-							title: ''
-						});
-						that.PromotionCode = '';
-					},
+				}).catch(err => {
+					this.$util.Tips({
+						title: err.msg || '获取详情失败'
+					});
 				});
 			},
-			//#ifdef H5
-			setShare: function() {
-				this.$wechat.isWeixin() &&
-					this.$wechat.wechatEvevt([
-						"updateAppMessageShareData",
-						"updateTimelineShareData",
-						"onMenuShareAppMessage",
-						"onMenuShareTimeline"
-					], {
-						desc: this.storeInfo.info,
-						title: this.storeInfo.title,
-						link: location.href,
-						imgUrl: this.storeInfo.image
-					}).then(res => {}).catch(err => {});
+			getRecommendProducts() {
+				getRecommendCombination().then(res => {
+					this.recommendList = res.data;
+				});
 			},
-			//#endif
-			// setTime: function() { //到期时间戳
-			// 	var that = this;
-			// 	var endTimeList = that.pink;
-			// 	that.pink.map(item => {
-			// 		item.time = {
-			// 			day: '00',
-			// 			hou: '00',
-			// 			min: '00',
-			// 			sec: '00'
-			// 		};
-			// 	});
-			// 	var countDownArr = [];
-			// 	var timeer = setInterval(function() {
-			// 		var newTime = new Date().getTime() / 1000;
-			// 		for (var i in endTimeList) {
-			// 			var endTime = endTimeList[i].stop_time;
-			// 			var obj = [];
-			// 			if (endTime - newTime > 0) {
-			// 				var time = endTime - newTime;
-			// 				var day = parseInt(time / (60 * 60 * 24));
-			// 				var hou = parseInt(time % (60 * 60 * 24) / 3600);
-			// 				var min = parseInt(time % (60 * 60 * 24) % 3600 / 60);
-			// 				var sec = parseInt(time % (60 * 60 * 24) % 3600 % 60);
-			// 				hou = parseInt(hou) + parseInt(day * 24);
-			// 				obj = {
-			// 					day: that.timeFormat(day),
-			// 					hou: that.timeFormat(hou),
-			// 					min: that.timeFormat(min),
-			// 					sec: that.timeFormat(sec)
-			// 				}
-			// 			} else {
-			// 				obj = {
-			// 					day: '00',
-			// 					hou: '00',
-			// 					min: '00',
-			// 					sec: '00'
-			// 				}
-			// 			}
-			// 			endTimeList[i].time = obj;
-			// 		}
-			// 		that.pink = endTimeList
-			// 	}, 1000);
-			// 	that.timeer = timeer
-			// },
-			// timeFormat(param) { //小于10的格式化函数
-			// 	return param < 10 ? '0' + param : param;
-			// },
+			countDownFormat(totalSeconds) {
+				const days = Math.floor(totalSeconds / (60 * 60 * 24));
+				const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+				const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+				const seconds = Math.floor(totalSeconds % 60);
+				return {
+					days,
+					hours,
+					minutes,
+					seconds,
+					total_seconds: totalSeconds,
+					text: `${days > 0 ? days + '天' : ''}${hours}小时${minutes}分${seconds}秒`
+				};
+			},
 			/**
 			 * 默认选中属性
 			 * 
@@ -857,7 +749,8 @@
 			// 授权后回调
 			onLoadFun: function(e) {
 				this.userInfo = e
-				this.combinationDetail();
+				this.getCombinationDetail();
+				this.getRecommendProducts();
 			},
 			selecAttr: function() {
 				this.attribute.cartAttr = true
