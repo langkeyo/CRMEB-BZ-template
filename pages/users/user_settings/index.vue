@@ -2,45 +2,43 @@
   <view class="settings-page">
     <!-- 顶部导航栏 -->
     <view class="header">
+      <view class="back-btn" @click="goBack">
+        <image src="/static/icons/back-arrow.svg" class="back-icon" />
+      </view>
       <view class="title">设置</view>
     </view>
-    
-    <!-- 分割线 -->
-    <view class="divider"></view>
     
     <!-- 设置选项列表 -->
     <view class="settings-list">
       <!-- 账号与安全 -->
       <view class="settings-item" @click="navigateTo('/pages/users/user_settings/version_account_security')">
-        <image class="item-icon" src="/static/images/user/document_icon.svg" mode="aspectFit"></image>
         <view class="item-text">账号与安全</view>
         <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
       </view>
-      
+      <view class="divider"></view>
       <!-- 编辑资料 -->
       <view class="settings-item" @click="navigateTo('/pages/users/user_info/index')">
-        <image class="item-icon" src="/static/images/user/document_icon.svg" mode="aspectFit"></image>
         <view class="item-text">编辑资料</view>
         <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
       </view>
-      
-      <!-- 我的站点（之前是收货地址） -->
+      <view class="divider"></view>
+      <!-- 我的站点 -->
       <view class="settings-item" @click="navigateTo('/pages/my_site/index')">
-        <image class="item-icon" src="/static/images/user/document_icon.svg" mode="aspectFit"></image>
         <view class="item-text">我的站点</view>
         <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
       </view>
-      
+      <view class="divider"></view>
       <!-- 信息推送 -->
       <view class="settings-item">
         <view class="item-text">信息推送</view>
         <switch class="switch-btn" color="#04D44D" @change="switchChange" />
       </view>
-      
+      <view class="divider"></view>
       <!-- 关于张罗 -->
       <view class="settings-item" @click="navigateTo('/pages/users/privacy/index?type=4')">
-        <image class="item-icon" src="/static/images/user/document_icon.svg" mode="aspectFit"></image>
-        <view class="item-text">关于张罗</view>
+        <view class="item-text">关于张罗
+          <text class="dot"></text>
+        </view>
         <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
       </view>
     </view>
@@ -51,7 +49,9 @@
     <!-- 退出登录确认弹窗 -->
     <view class="logout-popup" v-if="showLogoutModal">
       <view class="logout-modal">
-        <view class="modal-title">您确定要退出登陆么？</view>
+        <view class="modal-content">
+          <view class="modal-title">您确定要退出登陆么？</view>
+        </view>
         <view class="modal-btns">
           <view class="btn-cancel" @click="cancelLogout">再想想</view>
           <view class="divider-vertical"></view>
@@ -81,29 +81,27 @@ export default {
     }
   },
   methods: {
+    goBack() {
+      uni.navigateBack();
+    },
     // 页面跳转
     navigateTo(url) {
       uni.navigateTo({
         url: url
       });
     },
-    
     // 推送开关切换
     switchChange(e) {
-      console.log('信息推送开关状态：', e.detail.value);
       // TODO: 保存推送设置
     },
-    
     // 显示退出登录确认弹窗
     showLogoutConfirm() {
       this.showLogoutModal = true;
     },
-    
     // 取消退出登录
     cancelLogout() {
       this.showLogoutModal = false;
     },
-    
     // 确认退出登录
     confirmLogout() {
       getLogout().then(res => {
@@ -120,7 +118,6 @@ export default {
         });
       });
     },
-    
     // 跳转到登录页
     toLogin() {
       uni.navigateTo({
@@ -138,65 +135,93 @@ export default {
   position: relative;
 }
 
-/* 顶部标题 */
 .header {
-  padding: 30rpx;
-  background-color: #EEEEEE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100rpx;
+  background: #fff;
+  position: relative;
+  border-bottom: 1rpx solid #F2F2F2;
+}
+.back-btn {
+  position: absolute;
+  left: 20rpx;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.back-icon {
+  width: 32rpx;
+  height: 32rpx;
 }
 .title {
   font-size: 36rpx;
   font-weight: 400;
   color: #1A1A1A;
-  text-align: left;
+  text-align: center;
 }
 
-/* 分割线 */
-.divider {
-  height: 1rpx;
-  background-color: #F2F2F2;
-}
-
-/* 设置列表 */
 .settings-list {
-  margin-top: 20rpx;
+  margin-top: 0;
+  background: #fff;
 }
 .settings-item {
   display: flex;
   align-items: center;
-  padding: 30rpx;
+  padding: 0 30rpx;
+  height: 100rpx;
   position: relative;
-  box-shadow: 0 1rpx 0 0 rgba(245, 245, 245, 1);
-}
-.item-icon {
-  width: 40rpx;
-  height: 40rpx;
-  margin-right: 20rpx;
+  background: #fff;
 }
 .item-text {
   flex: 1;
   font-size: 32rpx;
-  color: #4D4D4D;
+  color: #232A43;
+  display: flex;
+  align-items: center;
 }
 .arrow-icon {
-  width: 30rpx;
-  height: 30rpx;
+  width: 20rpx;
+  height: 20rpx;
+  position: absolute;
+  right: 30rpx;
 }
 .switch-btn {
-  transform: scale(0.8);
+  position: absolute;
+  right: 30rpx;
+  transform: scale(0.7);
+  transform-origin: right center;
 }
-
-/* 退出登录按钮 */
+.divider {
+  height: 1rpx;
+  background: #F2F2F2;
+  margin-left: 30rpx;
+}
+.dot {
+  display: inline-block;
+  width: 12rpx;
+  height: 12rpx;
+  background: #FF4D4F;
+  border-radius: 50%;
+  margin-left: 8rpx;
+}
 .logout-btn {
-  width: 80%;
+  width: 90%;
   height: 96rpx;
-  background: linear-gradient(90deg, #FE8D00, #FE8D00);
+  background: #FE8D00;
   color: #FFFFFF;
   font-size: 32rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 60rpx auto;
-  border-radius: 96rpx;
+  margin: 120rpx auto 0 auto;
+  border-radius: 48rpx;
+  position: fixed;
+  left: 5%;
+  bottom: 60rpx;
+  z-index: 10;
 }
 
 /* 退出登录弹窗 */
@@ -213,20 +238,37 @@ export default {
   z-index: 999;
 }
 .logout-modal {
-  width: 80%;
-  background-color: #FFFFFF;
+  width: 590rpx;
+  height: 376rpx;
+  background-color: #fff;
   border-radius: 20rpx;
   overflow: hidden;
+  box-shadow: 0 8rpx 20rpx 0 rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-content {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .modal-title {
-  padding: 40rpx;
   text-align: center;
   font-size: 36rpx;
   color: #1A1A1A;
+  font-weight: 400;
+  line-height: 50rpx;
 }
 .modal-btns {
   display: flex;
+  width: 100%;
   border-top: 1rpx solid #D7D7D7;
+  background: #fff;
+  height: 100rpx;
 }
 .btn-cancel, .btn-confirm {
   flex: 1;
@@ -235,6 +277,9 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 36rpx;
+  font-weight: 400;
+  line-height: 50rpx;
+  cursor: pointer;
 }
 .btn-cancel {
   color: #1A1A1A;
@@ -245,5 +290,6 @@ export default {
 .divider-vertical {
   width: 1rpx;
   background-color: #D7D7D7;
+  height: 100rpx;
 }
 </style> 

@@ -28,14 +28,14 @@ export default {
 
 <style lang="scss" scoped>
 .banner-cup-section {
-  margin: 20rpx 30rpx;
+  margin: 20rpx 22rpx 20rpx 30rpx;
   border-radius: 8rpx;
   overflow: hidden;
   position: relative;
   z-index: 1;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   box-sizing: border-box;
-  width: calc(100% - 60rpx);
+  width: calc(100% - 52rpx);
 }
 
 .banner-swiper {

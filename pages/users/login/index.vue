@@ -64,6 +64,7 @@
 import dayjs from '@/plugin/dayjs/dayjs.min.js'
 import sendVerifyCode from '@/mixins/SendVerifyCode'
 import { loginH5, loginMobile, registerVerify, register, getCodeApi, getUserInfo, appleLogin, resetPassword } from '@/api/user'
+import { groupLogin, groupLoginMobile } from '@/api/group.js'
 import attrs, { required, alpha_num, chs_phone } from '@/utils/validate'
 import { getLogo } from '@/api/public'
 // import cookie from "@/utils/store/cookie";
@@ -147,11 +148,105 @@ export default {
 			this.loginMode = mode
 		},
 		
-		// 处理下一步
+		// 处理下一步（验证码登录/注册）
 		handleNextStep(data) {
-			this.registerInfo.account = data.account
-			this.registerInfo.captcha = data.captcha
-			this.step = 2
+			// 先尝试验证码登录
+			this.tryVerifyCodeLogin(data).catch(() => {
+				// 登录失败，进入注册流程
+				this.registerInfo.account = data.account
+				this.registerInfo.captcha = data.captcha
+				this.step = 2
+			});
+		},
+
+		// 尝试验证码登录
+		tryVerifyCodeLogin(data) {
+			if (this.keyLock) {
+				this.keyLock = !this.keyLock
+			} else {
+				return Promise.reject(new Error('请勿重复点击'))
+			}
+
+			// 优先尝试团购验证码登录接口
+			return this.tryGroupMobileLogin(data).catch(() => {
+				// 团购接口失败，使用原有验证码登录接口
+				return new Promise((resolve, reject) => {
+					loginMobile({
+						phone: data.account,
+						captcha: data.captcha,
+						spread: this.$Cache.get('spread')
+					}).then(res => {
+						let responseData = res.data
+						this.$store.commit('LOGIN', {
+							token: responseData.token,
+							time: responseData.expires_time - this.$Cache.time()
+						})
+						let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
+						this.$Cache.clear(BACK_URL)
+
+						getUserInfo().then((userRes) => {
+							this.keyLock = true
+							this.$store.commit('SETUID', userRes.data.uid)
+							uni.reLaunch({
+								url: backUrl
+							})
+							resolve(res);
+						}).catch((error) => {
+							this.keyLock = true
+							reject(error);
+						})
+					}).catch(err => {
+						this.keyLock = true
+						console.log('验证码登录失败:', err);
+						// 如果是用户不存在的错误，进入注册流程
+						if (err.includes('用户不存在') || err.includes('账号不存在')) {
+							reject(err); // 让外层catch处理，进入注册流程
+						} else {
+							// 其他错误直接提示
+							this.$util.Tips({
+								title: err
+							});
+							reject(err);
+						}
+					});
+				});
+			});
+		},
+
+		// 尝试团购验证码登录
+		tryGroupMobileLogin(data) {
+			return new Promise((resolve, reject) => {
+				groupLoginMobile({
+					phone: data.account,
+					captcha: data.captcha
+				}).then(res => {
+					if (res.status === 200 && res.data && res.data.token) {
+						this.$store.commit('LOGIN', {
+							token: res.data.token,
+							time: res.data.expires_time - this.$Cache.time()
+						})
+						let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
+						this.$Cache.clear(BACK_URL)
+
+						getUserInfo().then((userRes) => {
+							this.keyLock = true
+							this.$store.commit('SETUID', userRes.data.uid)
+							uni.reLaunch({
+								url: backUrl
+							})
+							resolve(res);
+						}).catch((error) => {
+							this.keyLock = true
+							reject(error);
+						})
+					} else {
+						reject(new Error('团购验证码登录返回数据格式错误'));
+					}
+				}).catch(err => {
+					console.log('团购验证码登录失败:', err);
+					reject(err);
+				});
+			});
 		},
 		
 		// 处理密码登录
@@ -163,37 +258,80 @@ export default {
 					title: this.$t(`请勿重复点击`)
 				})
 			}
-			
-			loginH5({
-				account: data.account,
-				password: data.password,
-				spread: this.$Cache.get('spread')
-			})
-				.then(({ data }) => {
-					this.$store.commit('LOGIN', {
-						token: data.token,
-						time: data.expires_time - this.$Cache.time()
-					})
-					let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
-					this.$Cache.clear(BACK_URL)
-					getUserInfo()
-						.then((res) => {
-							this.keyLock = true
-							this.$store.commit('SETUID', res.data.uid)
-							uni.reLaunch({
-								url: backUrl
+
+			// 优先尝试团购登录接口
+			this.tryGroupLogin(data).catch(() => {
+				// 团购登录失败，使用原有登录接口
+				loginH5({
+					account: data.account,
+					password: data.password,
+					spread: this.$Cache.get('spread')
+				})
+					.then(({ data }) => {
+						this.$store.commit('LOGIN', {
+							token: data.token,
+							time: data.expires_time - this.$Cache.time()
+						})
+						let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
+						this.$Cache.clear(BACK_URL)
+						getUserInfo()
+							.then((res) => {
+								this.keyLock = true
+								this.$store.commit('SETUID', res.data.uid)
+								uni.reLaunch({
+									url: backUrl
+								})
 							})
-						})
-						.catch((error) => {
-							this.keyLock = true
-						})
-				})
-				.catch((e) => {
-					this.keyLock = true
-					this.$util.Tips({
-						title: e
+							.catch((error) => {
+								this.keyLock = true
+							})
 					})
-				})
+					.catch((e) => {
+						this.keyLock = true
+						this.$util.Tips({
+							title: e
+						})
+					})
+			});
+		},
+
+		// 尝试团购登录
+		tryGroupLogin(data) {
+			return new Promise((resolve, reject) => {
+				groupLogin({
+					account: data.account,
+					password: data.password
+				}).then(res => {
+					if (res.status === 200 && res.data && res.data.token) {
+						this.$store.commit('LOGIN', {
+							token: res.data.token,
+							time: res.data.expires_time - this.$Cache.time()
+						})
+						let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
+						this.$Cache.clear(BACK_URL)
+
+						// 获取用户信息
+						getUserInfo()
+							.then((userRes) => {
+								this.keyLock = true
+								this.$store.commit('SETUID', userRes.data.uid)
+								uni.reLaunch({
+									url: backUrl
+								})
+								resolve(res);
+							})
+							.catch((error) => {
+								this.keyLock = true
+								reject(error);
+							})
+					} else {
+						reject(new Error('团购登录返回数据格式错误'));
+					}
+				}).catch(err => {
+					console.log('团购登录失败:', err);
+					reject(err);
+				});
+			});
 		},
 		
 		// 处理密码设置

@@ -1,31 +1,48 @@
 <template>
-	<view :style="colorStyle">
-		<form @submit="editPwd">
-			<view class="ChangePassword">
-				<!-- TODO: 添加"此手机号码已被绑定到其他账号"的验证提示 -->
-				<view class="list">
-					<view class="item">
-						<input type='number' :placeholder='$t(`填写手机号码`)' placeholder-class='placeholder'
-							v-model="phone"></input>
-					</view>
-					<view class="item acea-row row-between-wrapper">
-						<input type='number' :placeholder='$t(`填写验证码`)' placeholder-class='placeholder' class="codeIput"
-							v-model="captcha"></input>
-						<button class="code font-num" :class="disabled === true ? 'on' : ''" :disabled='disabled'
-							@click="code">
-							{{ text }}
-						</button>
-					</view>
-				</view>
-				<!-- TODO: 添加"验证码输入错误，请重新输入"的提示 -->
-				<button form-type="submit" class="confirmBnt bg-color">{{ $t(`确认绑定`) }}</button>
+	<view class="change-phone-page">
+		<!-- 顶部导航栏 -->
+		<view class="nav-bar">
+			<view class="back-btn" @click="goBack">
+				<view class="back-arrow"></view>
 			</view>
-		</form>
-
-		<!-- TODO: 添加"账户注销后，您将在一个月内无法再登录进行团购"的注销确认功能 -->
-		<Verify @success="success" :captchaType="captchaType" :imgSize="{ width: '330px', height: '155px' }"
-			ref="verify"></Verify>
-
+			<view class="nav-title">{{ step === 3 ? '系统提示' : '更换手机号' }}</view>
+		</view>
+		<view class="divider"></view>
+		<view v-if="step === 1">
+			<!-- 副标题 -->
+			<view class="subtitle">请输入新手机号</view>
+			<!-- 手机号输入区 -->
+			<view class="input-row">
+				<view class="area-code" @click="showAreaCode">+{{ areaCode }}<text class="arrow-down">▼</text></view>
+				<input class="phone-input" type="number" v-model="phone" placeholder="请输入新手机号" placeholder-class="input-placeholder" maxlength="11" />
+			</view>
+			<view class="input-divider"></view>
+			<!-- 下一步按钮 -->
+			<button class="next-btn" :disabled="!phone" @click="nextStep">下一步</button>
+		</view>
+		<view v-else-if="step === 2">
+			<!-- 验证码副标题 -->
+			<view class="subtitle">请输入验证码</view>
+			<view class="desc">已向手机号：{{ maskedPhone }}发送验证码</view>
+			<view class="code-row">
+				<input class="code-input" type="number" v-model="verificationCode" maxlength="6" placeholder="" />
+				<view class="countdown">{{ countdown }}s</view>
+			</view>
+			<view class="input-divider"></view>
+			<button class="next-btn" :disabled="!verificationCode" @click="submitCode">完成</button>
+		</view>
+		<view v-else>
+			<!-- 操作成功页面 -->
+			<view class="success-content">
+				<view class="success-icon">
+					<svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="40" fill="#8BE51A"/><path d="M25 42l12 10 18-22" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+				</view>
+				<view class="success-text">操作成功</view>
+			</view>
+			<button class="next-btn success-btn" @click="goBack">确认</button>
+		</view>
+		<!-- 底部Home Indicator -->
+		<view class="home-indicator"></view>
 	</view>
 </template>
 
@@ -58,16 +75,27 @@ export default {
 	},
 	data () {
 		return {
+			step: 1,
 			phone: '',
+			areaCode: '86',
 			captcha: '',
 			isAuto: false, //没有授权的不会自动授权
 			isShowAuth: false, //是否隐藏授权
 			key: '',
 			authKey: '',
-			type: 0
+			type: 0,
+			verificationCode: '', // 改名避免与方法冲突
+			countdown: 60,
+			timer: null
 		}
 	},
-	computed: mapGetters(['isLogin']),
+	computed: {
+		...mapGetters(['isLogin']),
+		maskedPhone() {
+			if (!this.phone) return '';
+			return this.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+		}
+	},
 	onLoad (options) {
 		if (this.isLogin) {
 			verifyCode().then(res => {
@@ -81,6 +109,38 @@ export default {
 		this.type = options.type || 0
 	},
 	methods: {
+		goBack() {
+			uni.navigateBack();
+		},
+		showAreaCode() {
+			uni.showActionSheet({
+				itemList: ['+86', '+852', '+853', '+886'],
+				success: (res) => {
+					const codes = ['86', '852', '853', '886']
+					this.areaCode = codes[res.tapIndex]
+				}
+			})
+		},
+		nextStep() {
+			this.step = 2;
+			this.startCountdown();
+		},
+		startCountdown() {
+			this.countdown = 60;
+			if (this.timer) clearInterval(this.timer);
+			this.timer = setInterval(() => {
+				if (this.countdown > 0) {
+					this.countdown--;
+				} else {
+					clearInterval(this.timer);
+				}
+			}, 1000);
+		},
+		submitCode() {
+			// 验证码提交逻辑
+			this.step = 3;
+			if (this.timer) clearInterval(this.timer);
+		},
 		onLoadFun: function () { },
 		// 授权关闭
 		authColse: function (e) {
@@ -201,64 +261,201 @@ export default {
 			this.$refs.verify.show()
 			return
 		}
+	},
+	beforeDestroy() {
+		if (this.timer) clearInterval(this.timer);
 	}
 }
 </script>
 
-<style lang="scss">
-page {
-	background-color: #fff !important;
+<style lang="scss" scoped>
+.change-phone-page {
+	width: 100vw;
+	min-height: 100vh;
+	background: #fff;
+	position: relative;
+	box-sizing: border-box;
 }
-
-.ChangePassword .phone {
-	font-size: 32rpx;
-	font-weight: bold;
+.nav-bar {
+	display: flex;
+	align-items: center;
+	height: 88rpx;
+	position: relative;
+	padding: 0 0 0 30rpx;
+	background: #fff;
+}
+.back-btn {
+	width: 44rpx;
+	height: 44rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.back-arrow {
+	width: 18rpx;
+	height: 18rpx;
+	border-left: 3rpx solid #1A1A1A;
+	border-bottom: 3rpx solid #1A1A1A;
+	transform: rotate(45deg);
+	margin-left: 6rpx;
+}
+.nav-title {
+	flex: 1;
 	text-align: center;
-	margin-top: 55rpx;
+	font-size: 32rpx;
+	color: #1A1A1A;
+	font-weight: 400;
+	position: absolute;
+	left: 0;
+	right: 0;
+	margin: auto;
+	width: 180rpx;
+	height: 88rpx;
+	line-height: 88rpx;
 }
-
-.ChangePassword .list {
-	width: 580rpx;
-	margin: 53rpx auto 0 auto;
-}
-
-.ChangePassword .list .item {
+.divider {
 	width: 100%;
-	height: 110rpx;
-	border-bottom: 2rpx solid #f0f0f0;
+	height: 1rpx;
+	background: #F2F2F2;
 }
-
-.ChangePassword .list .item input {
-	width: 100%;
-	height: 100%;
+.subtitle {
+	margin-top: 60rpx;
+	margin-left: 34rpx;
+	font-size: 36rpx;
+	color: #1A1A1A;
+	font-weight: 400;
+	line-height: 50rpx;
+}
+.input-row {
+	display: flex;
+	align-items: center;
+	margin: 60rpx 34rpx 0;
+	width: calc(100% - 68rpx);
+	height: 80rpx;
+	background: #fff;
+	box-shadow: 0 1rpx 0 0 #F5F5F5;
+	border-radius: 0;
+	position: relative;
+}
+.area-code {
+	font-size: 32rpx;
+	color: #1A1A1A;
+	font-weight: 400;
+	margin-right: 16rpx;
+	display: flex;
+	align-items: center;
+	height: 80rpx;
+}
+.arrow-down {
+	font-size: 24rpx;
+	color: #1A1A1A;
+	margin-left: 4rpx;
+}
+.phone-input {
+	flex: 1;
+	font-size: 32rpx;
+	color: #1A1A1A;
+	border: none;
+	outline: none;
+	background: transparent;
+	height: 80rpx;
+	line-height: 80rpx;
+}
+.input-placeholder {
+	color: #CCCCCC;
 	font-size: 32rpx;
 }
-
-.ChangePassword .list .item .placeholder {
-	color: #b9b9bc;
+.input-divider {
+	width: calc(100% - 68rpx);
+	height: 1rpx;
+	background: #F5F5F5;
+	margin: 0 34rpx;
 }
-
-.ChangePassword .list .item input.codeIput {
-	width: 340rpx;
-}
-
-.ChangePassword .list .item .code {
-	font-size: 32rpx;
-	background-color: #fff;
-}
-
-.ChangePassword .list .item .code.on {
-	color: #b9b9bc !important;
-}
-
-.ChangePassword .confirmBnt {
-	font-size: 32rpx;
-	width: 580rpx;
-	height: 90rpx;
-	border-radius: 45rpx;
+.next-btn {
+	width: calc(100% - 68rpx);
+	max-width: 600rpx;
+	height: 80rpx;
+	background: #FE8D00;
+	border-radius: 40rpx;
 	color: #fff;
-	margin: 92rpx auto 0 auto;
-	text-align: center;
-	line-height: 90rpx;
+	font-size: 30rpx;
+	font-weight: 400;
+	margin: 60rpx auto 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	box-shadow: none;
+}
+.next-btn:disabled {
+	background: #FFE0B2;
+	color: #fff;
+}
+.home-indicator {
+	position: fixed;
+	left: 50%;
+	bottom: 8rpx;
+	transform: translateX(-50%);
+	width: 134rpx;
+	height: 5rpx;
+	background: #000;
+	border-radius: 100rpx;
+	opacity: 0.8;
+}
+.desc {
+	margin-left: 34rpx;
+	margin-top: 12rpx;
+	font-size: 26rpx;
+	color: #CCCCCC;
+	line-height: 36rpx;
+}
+.code-row {
+	display: flex;
+	align-items: center;
+	margin: 80rpx 34rpx 0 34rpx;
+	width: calc(100% - 68rpx);
+	height: 80rpx;
+	position: relative;
+}
+.code-input {
+	flex: 1;
+	font-size: 36rpx;
+	color: #1A1A1A;
+	border: none;
+	outline: none;
+	background: transparent;
+	height: 80rpx;
+	line-height: 80rpx;
+}
+.countdown {
+	font-size: 28rpx;
+	color: #CCCCCC;
+	margin-left: 12rpx;
+}
+.success-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	margin-top: 180rpx;
+	margin-bottom: 120rpx;
+}
+.success-icon {
+	width: 120rpx;
+	height: 120rpx;
+	margin-bottom: 40rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.success-text {
+	font-size: 36rpx;
+	color: #1A1A1A;
+	font-weight: 400;
+	margin-top: 10rpx;
+}
+.success-btn {
+	margin-top: 120rpx;
+	background: #FE8D00;
 }
 </style>

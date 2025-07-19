@@ -3,9 +3,21 @@
     <!-- 背景 -->
     <view class="background-header"></view>
 
-    <!-- 顶部导航/状态栏占位 -->
-    <view class="status-bar-placeholder"></view>
-    <view class="navigation-bar">
+    <!-- 用户信息和导航栏组合 -->
+    <view class="user-nav-container">
+      <!-- 用户信息 -->
+      <view class="user-info-section">
+        <image class="avatar" :src="userInfo.avatar || '/static/images/user/avatar.png'" />
+        <view class="user-details">
+          <text class="user-name">{{ userInfo.nickname || '加载中....' }}</text>
+          <view class="edit-profile" @click="onEditProfile">
+            <text class="edit-profile-text">编辑资料</text>
+            <image class="arrow-right" src="/static/common/icons/navigation/arrow_right.svg" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 导航图标 -->
       <view class="nav-icons">
         <view class="icon-notification" @click="onNotificationClick">
           <!-- 通知图标 -->
@@ -15,18 +27,6 @@
         <view class="icon-settings" @click="onSettingsClick">
           <!-- 设置图标 -->
           <image class="icon-gear" src="/static/images/user/settings_icon.svg" />
-        </view>
-      </view>
-    </view>
-
-    <!-- 用户信息 -->
-    <view class="user-info-section">
-      <image class="avatar" :src="userInfo.avatar || '/static/images/user/avatar.png'" />
-      <view class="user-details">
-        <text class="user-name">{{ userInfo.nickname || '加载中....' }}</text>
-        <view class="edit-profile" @click="onEditProfile">
-          <text class="edit-profile-text">编辑资料</text>
-          <image class="arrow-right" src="/static/common/icons/navigation/arrow_right.svg" />
         </view>
       </view>
     </view>
@@ -101,19 +101,13 @@ export default {
   z-index: 0;
 }
 
-.status-bar-placeholder {
-  height: var(--status-bar-height);
-  background-color: transparent;
-}
-
-.navigation-bar {
+.user-nav-container {
   position: relative;
   z-index: 1;
-  height: 88rpx;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  padding-right: 22rpx;
+  padding: 30rpx 22rpx 0 30rpx;
 }
 
 .nav-icons {
@@ -167,8 +161,6 @@ export default {
   z-index: 1;
   display: flex;
   align-items: center;
-  padding: 30rpx;
-  margin-top: 20rpx;
 }
 
 .avatar {

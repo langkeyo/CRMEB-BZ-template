@@ -126,6 +126,7 @@
 
 <script>
 import { getCollectUserList, collectDel } from '@/api/store.js';
+import { getCollectList, deleteCollect } from '@/api/group.js';
 import { getBrowseList, delBrowse } from '@/api/user.js';
 import { mapGetters } from "vuex";
 import colors from '@/mixins/color.js';
@@ -373,34 +374,83 @@ export default {
 		// 加载收藏列表
 		loadCollectList() {
 			if (this.collectLoading || this.collectLoadEnd) return;
-			
+
 			this.collectLoading = true;
-			
-			getCollectUserList({
-				page: this.collectPage,
-				limit: this.collectLimit
-			}).then(res => {
-				this.collectLoading = false;
-				
-				const list = res.data.list;
-				
-				// 初始化选中状态
-				list.forEach(item => {
-					item.checked = false;
+
+			// 优先尝试团购收藏接口
+			this.loadGroupCollectList().catch(() => {
+				// 团购接口失败，使用原有接口
+				getCollectUserList({
+					page: this.collectPage,
+					limit: this.collectLimit
+				}).then(res => {
+					this.collectLoading = false;
+
+					const list = res.data.list;
+
+					// 初始化选中状态
+					list.forEach(item => {
+						item.checked = false;
+					});
+
+					// 添加到列表
+					this.collectList = [...this.collectList, ...list];
+
+					// 判断是否加载完毕
+					this.collectLoadEnd = list.length < this.collectLimit;
+
+					// 页码自增
+					this.collectPage++;
+				}).catch(err => {
+					this.collectLoading = false;
+					this.$util.Tips({
+						title: err.message || '加载失败'
+					});
 				});
-				
-				// 添加到列表
-				this.collectList = [...this.collectList, ...list];
-				
-				// 判断是否加载完毕
-				this.collectLoadEnd = list.length < this.collectLimit;
-				
-				// 页码自增
-				this.collectPage++;
-			}).catch(err => {
-				this.collectLoading = false;
-				this.$util.Tips({
-					title: err.message || '加载失败'
+			});
+		},
+
+		// 加载团购收藏列表
+		loadGroupCollectList() {
+			return new Promise((resolve, reject) => {
+				getCollectList({
+					type: '0', // 商品收藏
+					page: this.collectPage,
+					limit: this.collectLimit
+				}).then(res => {
+					this.collectLoading = false;
+
+					if (res.status === 200 && res.data) {
+						const list = res.data.list || res.data;
+
+						// 转换数据格式以适配页面显示
+						const formattedList = list.map(item => ({
+							id: item.id || item.fav_id,
+							store_name: item.title || item.store_name,
+							price: item.price || '0.00',
+							image: item.image,
+							is_show: item.is_show !== undefined ? item.is_show : true,
+							checked: false,
+							...item
+						}));
+
+						// 添加到列表
+						this.collectList = [...this.collectList, ...formattedList];
+
+						// 判断是否加载完毕
+						this.collectLoadEnd = formattedList.length < this.collectLimit;
+
+						// 页码自增
+						this.collectPage++;
+
+						resolve(res);
+					} else {
+						reject(new Error('团购收藏数据格式错误'));
+					}
+				}).catch(err => {
+					this.collectLoading = false;
+					console.log('获取团购收藏失败:', err);
+					reject(err);
 				});
 			});
 		},

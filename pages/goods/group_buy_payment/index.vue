@@ -55,9 +55,7 @@
 			@cancel="cancelPayment">
 		</payment-confirm-popup>
 		<view v-show="false" v-html="formContent"></view>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 	</view>
 </template>
 
@@ -72,7 +70,7 @@
 	import {
 		mapGetters
 	} from "vuex";
-	import home from '@/components/home';
+
 	import colors from "@/mixins/color";
 	import payment from '@/components/payment';
 		import paymentConfirmPopup from '@/components/paymentConfirmPopup';
@@ -84,8 +82,7 @@ import { purchaseFlowNavigation } from '@/utils/navigationConfig.js';
 	export default {
 		components: {
 			payment,
-			paymentConfirmPopup,
-			home
+			paymentConfirmPopup
 		},
 		mixins: [colors],
 		data() {

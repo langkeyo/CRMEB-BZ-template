@@ -44,8 +44,8 @@ export default {
 
 <style lang="scss" scoped>
 .featured-products-section {
-background-color: #FFFFFF;
-  padding: 30rpx 30rpx 40rpx 30rpx;
+  padding: 30rpx 22rpx 40rpx 30rpx;
+  margin-top: 20rpx;
   box-sizing: border-box;
   width: 100%;
 }

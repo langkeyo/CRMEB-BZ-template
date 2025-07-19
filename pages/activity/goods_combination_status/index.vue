@@ -150,7 +150,7 @@
 	// #ifdef MP
 	import authorize from '@/components/Authorize';
 	// #endif
-	import home from '@/components/home';
+
 	const NAME = 'GroupRule';
 	// #ifdef APP-PLUS
 	import {
@@ -167,7 +167,6 @@
 		components: {
 			CountDown,
 			ProductWindow,
-			home,
 			// #ifdef MP
 			authorize
 			// #endif

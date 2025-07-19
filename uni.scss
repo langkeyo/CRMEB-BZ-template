@@ -7,7 +7,7 @@
  */
 
 // 引入uView主题变量，解决$u-primary未定义的问题
-@import "node_modules/uview-ui/theme.scss";
+@import "./node_modules/uview-ui/theme.scss";
 
 /**
  * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能

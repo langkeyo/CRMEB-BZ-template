@@ -1,5 +1,8 @@
 {
   "name": "uni-app",
   "version": "1.0.0",
-  "dependencies": {}
+  "dependencies": {
+    "echarts": "^5.6.0",
+    "uview-ui": "^2.0.31"
+  }
 }

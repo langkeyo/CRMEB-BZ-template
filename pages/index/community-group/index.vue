@@ -171,8 +171,24 @@
 </template>
 
 <script>
+import {
+    getCommunityList,
+    getMyCommunityInfo,
+    bindCommunity
+} from '@/api/group.js';
+
 export default {
     name: 'CommunityGroupPage',
+    data() {
+        return {
+            communityList: [],
+            myCommunity: null,
+            loading: false
+        };
+    },
+    onLoad() {
+        this.loadCommunityData();
+    },
     methods: {
         goBack () {
             uni.navigateBack()
@@ -187,6 +203,62 @@ export default {
                 urls: [src],
                 current: 0
             })
+        },
+
+        // 加载社区数据
+        loadCommunityData() {
+            this.loadMyCommunity();
+            this.loadCommunityList();
+        },
+
+        // 获取我的社区信息
+        loadMyCommunity() {
+            getMyCommunityInfo().then(res => {
+                if (res.status === 200 && res.data) {
+                    this.myCommunity = res.data;
+                }
+            }).catch(err => {
+                console.log('获取我的社区信息失败:', err);
+            });
+        },
+
+        // 获取社区列表
+        loadCommunityList() {
+            if (this.loading) return;
+            this.loading = true;
+
+            getCommunityList({
+                page: 1,
+                limit: 20
+            }).then(res => {
+                this.loading = false;
+                if (res.status === 200 && res.data) {
+                    this.communityList = res.data.list || res.data;
+                }
+            }).catch(err => {
+                this.loading = false;
+                console.log('获取社区列表失败:', err);
+            });
+        },
+
+        // 绑定社区
+        bindCommunityAction(communityId) {
+            bindCommunity({
+                community_id: communityId
+            }).then(res => {
+                if (res.status === 200) {
+                    uni.showToast({
+                        title: '绑定成功',
+                        icon: 'success'
+                    });
+                    this.loadMyCommunity(); // 重新加载我的社区信息
+                }
+            }).catch(err => {
+                uni.showToast({
+                    title: err.message || '绑定失败',
+                    icon: 'none'
+                });
+            });
         }
     }
 }
@@ -361,7 +433,7 @@ page {
                 height: 13px;
                 left: 169px;
                 top: 55px;
-                background-image: url("/static/common/icons/navigation/arrow_right.svg");
+                background-image: url("/static/icons/view-all.svg");
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -492,7 +564,7 @@ page {
                 height: 13px;
                 left: 169px;
                 top: 55px;
-                background-image: url("/static/common/icons/navigation/arrow_right.svg");
+                background-image: url("/static/icons/view-all.svg");
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -570,7 +642,7 @@ page {
                 height: 13px;
                 left: 169px;
                 top: 55px;
-                background-image: url("/static/common/icons/navigation/arrow_right.svg");
+                background-image: url("/static/icons/view-all.svg");
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -679,7 +751,7 @@ page {
                 height: 13px;
                 left: 169px;
                 top: 55px;
-                background-image: url("/static/common/icons/navigation/arrow_right.svg");
+                background-image: url("/static/icons/view-all.svg");
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;

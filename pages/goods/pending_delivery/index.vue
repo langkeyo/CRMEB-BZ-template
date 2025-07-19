@@ -2,54 +2,12 @@
   <view class="pending-delivery-container" :style="colorStyle">
     <!-- 顶部导航栏 -->
     <view class="header">
-      <view class="status-bar"></view>
       <view class="nav-bar">
         <view class="left" @click="goBack">
           <image class="back-icon" src="/static/images/order/back_arrow.svg" mode="widthFix"></image>
           <text>返回</text>
         </view>
         <view class="title">待收货</view>
-      </view>
-    </view>
-
-    <!-- 地图区域 -->
-    <view v-if="status === 'onway'" class="map-container">
-      <image class="map-background" src="/static/common/shared/coffee.png" mode="aspectFill"></image>
-
-      <!-- 司机位置标记 -->
-      <view class="driver-marker">
-        <view class="marker-dot"></view>
-        <view class="marker-pulse"></view>
-      </view>
-
-      <!-- 配送地址标记 -->
-      <view class="destination-marker">
-        <text class="marker-label">配送地址</text>
-        <view class="marker-pin"></view>
-      </view>
-    </view>
-
-    <!-- 司机信息区 -->
-    <view v-if="status === 'onway'" class="driver-info">
-      <view class="driver-header">
-        <view class="driver-avatar">
-          <image src="/static/common/shared/driver_avatar.png" mode="aspectFill"></image>
-        </view>
-        <view class="driver-details">
-          <view class="driver-name">王师傅</view>
-          <view class="driver-status">骑手已接单，正在配送中</view>
-        </view>
-        <view class="driver-contact" @click="callDriver">
-          <view class="contact-icon">
-            <text class="iconfont icon-phone"></text>
-          </view>
-          <text class="contact-text">联系骑手</text>
-        </view>
-      </view>
-
-      <!-- 物流状态流程 -->
-      <view class="delivery-process">
-        <image src="/static/common/icons/business/location.svg" mode="widthFix"></image>
       </view>
     </view>
 
@@ -73,45 +31,24 @@
         </view>
       </view>
       <view class="divider"></view>
-      <view class="logistics-status" v-if="status === 'onway'">
-        <image src="/static/common/icons/business/location.svg" mode="aspectFit"></image>
+      <view class="logistics-status">
+        <image src="/static/images/pending_delivery/road-haul-cargo.svg" mode="aspectFit"></image>
         <text>司机正在路上~ 预计{{ estimatedTime }}送达</text>
       </view>
-      <view class="logistics-status delivered" v-else-if="status === 'delivered'">
-        <view class="delivered-icon">
-          <text class="iconfont icon-wancheng1"></text>
-        </view>
-        <text>商品已送达！ 请您到取货点取货</text>
-      </view>
-      <view class="logistics-status delivered" v-else>
-        <view class="delivered-icon">
-          <text class="iconfont icon-wancheng1"></text>
-        </view>
-        <text>商品已送达！ 请您到取货点取货</text>
-      </view>
-      <view class="button-group" v-if="status === 'onway'">
-        <view class="not-found-btn" @click="showNotFoundPopup">未找到商品</view>
+      <view class="button-group">
+        <view class="not-found-btn" @click="showNotFoundNotice">未找到商品</view>
         <view class="confirm-btn" @click="confirmDelivery">确认收货</view>
-      </view>
-      <view class="button-group" v-else-if="status === 'delivered'">
-        <view class="confirm-btn received" @click="gotoOrderComplete">我已收货</view>
-      </view>
-      <view class="button-group" v-else>
-        <view class="not-found-btn active" @click="showNotFoundNotice">未找到商品</view>
-        <view class="confirm-btn" @click="gotoOrderComplete">确认收货</view>
       </view>
     </view>
 
     <!-- 弹窗 -->
-    <view v-if="showPopup" class="popup-mask">
-      <view class="popup-content" :class="{ 'notfound-popup': notFoundPopupActive }">
-        <view class="popup-text">{{ popupText }}</view>
-        <view class="popup-btn" @click="handlePopupConfirm">{{ popupBtnText }}</view>
-      </view>
-    </view>
+    <view v-if="showPopup" class="popup-text" @click="handlePopupConfirm">{{ popupText }}</view>
 
     <!-- 查找订单提示 -->
-    <view class="find-order-tip">没有找到订单？试试查看全部订单</view>
+    <view class="find-order-tip">
+      没有找到订单？试试查看
+      <text class="link" @click="gotoOrderComplete">全部订单</text>
+    </view>
 
     <!-- 猜你喜欢 -->
     <view class="guess-like">
@@ -119,19 +56,21 @@
       <view class="like-list">
         <view class="like-item" v-for="(item, idx) in likeList" :key="idx">
           <image :src="item.image" mode="aspectFill"></image>
-          <view class="like-name">{{ item.name }}</view>
-          <view class="like-info">{{ item.info }}</view>
+          <view class="like-card">
+            <view class="like-name">{{ item.name }}</view>
+            <view class="like-info">
+              <text class="price">{{ item.price }}</text>
+              <view class="sales">
+                <text class="sales-text">已售</text>
+                <text class="sales-number">{{ item.sales }}</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 状态切换按钮（开发用，可删除） -->
-    <view style="position:fixed;bottom:10px;right:10px;z-index:999;">
-      <button size="mini" @click="status = 'onway'">在路上</button>
-      <button size="mini" @click="status = 'delivered'">已送达</button>
-      <button size="mini" @click="status = 'notfound'">未找到</button>
-      <button size="mini" @click="showNotFoundNotice">弹窗</button>
-    </view>
+
   </view>
 </template>
 
@@ -143,12 +82,9 @@ export default {
   mixins: [colors],
   data () {
     return {
-      status: 'onway', // onway:在路上 delivered:已送达 notfound:未找到商品
+      status: 'onway', // 订单状态：在路上
       showPopup: false,
       popupText: '',
-      popupBtnText: '知道了',
-      popupAction: null,
-      notFoundPopupActive: false,
       order: {
         id: '123456', // 添加订单ID
         image: '/static/common/shared/chicken_feet.png',
@@ -162,22 +98,26 @@ export default {
         {
           image: '/static/common/shared/coffee.png',
           name: '瑞幸咖啡5选1',
-          info: '￥12.5 已售99+单'
+          price: '12.5',
+          sales: '99+单'
         },
         {
           image: '/static/common/shared/bbq.png',
           name: '滩羊烤串21串套餐',
-          info: '￥49 已售754件'
+          price: '49',
+          sales: '754件'
         },
         {
           image: '/static/common/shared/wings.png',
           name: '精美黄金烤鸡翅',
-          info: '￥22 已售99+份'
+          price: '22',
+          sales: '99+份'
         },
         {
           image: '/static/common/shared/octopus.png',
           name: '超值章鱼丸子1份',
-          info: '￥7.5 已售1122件'
+          price: '7.5',
+          sales: '1122件'
         }
       ]
     }
@@ -191,44 +131,24 @@ export default {
       this.showProductOnWayPopup()
     },
     showProductOnWayPopup () {
-      this.notFoundPopupActive = false
       this.popupText = '商品还在路上请您耐心等候哦~'
-      this.popupBtnText = '知道了'
-      this.popupAction = null
       this.showPopup = true
+      setTimeout(() => {
+        this.showPopup = false
+      }, 2000)
     },
     showNotFoundNotice () {
-      this.notFoundPopupActive = true
       this.popupText = '未找到商品？已反馈平台管理员'
-      this.popupBtnText = '知道了'
-      this.popupAction = () => {
-        this.status = 'notfound'
-      }
       this.showPopup = true
+      setTimeout(() => {
+        this.showPopup = false
+      }, 2000)
     },
     gotoOrderComplete () {
       navigateToOrderComplete(this.order.id)
     },
     handlePopupConfirm () {
       this.showPopup = false
-      if (this.popupAction) {
-        this.popupAction()
-      }
-    },
-    showNotFoundPopup () {
-      // 切换到未找到状态，显示弹窗提示
-      this.showNotFoundNotice()
-    },
-    callDriver () {
-      uni.makePhoneCall({
-        phoneNumber: '13812345678',
-        success: () => {
-          console.log('已拨打电话')
-        },
-        fail: (err) => {
-          console.error('拨打电话失败', err)
-        }
-      })
     }
   }
 }
@@ -242,194 +162,52 @@ export default {
   .header {
     background-color: #FFFFFF;
 
-    .status-bar {
-      height: 44px;
-    }
-
     .nav-bar {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 44px;
+      height: 88rpx; /* 44px * 2 */
 
       .left {
         position: absolute;
-        left: 15px;
+        left: 30rpx; /* 15px * 2 */
         display: flex;
         align-items: center;
 
         .back-icon {
-          width: 10px;
-          height: 18px;
-          margin-right: 5px;
+          width: 20rpx; /* 10px * 2 */
+          height: 36rpx; /* 18px * 2 */
+          margin-right: 10rpx; /* 5px * 2 */
         }
 
         text {
           color: #333333;
-          font-size: 18px;
+          font-size: 36rpx; /* 18px * 2 */
+          margin-left: 10rpx;
         }
       }
 
       .title {
-        font-size: 18px;
+        font-size: 36rpx; /* 18px * 2 */
         font-weight: 400;
         color: #1A1A1A;
       }
     }
   }
 
-  // 地图区域
-  .map-container {
-    position: relative;
-    width: 100%;
-    height: 160px;
-    overflow: hidden;
 
-    .map-background {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
 
-    .driver-marker {
-      position: absolute;
-      left: 30%;
-      top: 40%;
-      z-index: 2;
 
-      .marker-dot {
-        width: 12px;
-        height: 12px;
-        background-color: #EB3C3C;
-        border-radius: 50%;
-        position: relative;
-        z-index: 3;
-      }
 
-      .marker-pulse {
-        position: absolute;
-        top: -4px;
-        left: -4px;
-        width: 20px;
-        height: 20px;
-        background-color: rgba(235, 60, 60, 0.3);
-        border-radius: 50%;
-        z-index: 2;
-        animation: pulse 1.5s infinite;
-      }
-    }
 
-    .destination-marker {
-      position: absolute;
-      right: 20%;
-      bottom: 35%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      .marker-label {
-        background-color: #FFFFFF;
-        color: #333333;
-        font-size: 12px;
-        padding: 2px 6px;
-        border-radius: 10px;
-        margin-bottom: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .marker-pin {
-        width: 10px;
-        height: 10px;
-        background-color: #FFFFFF;
-        border-radius: 50%;
-        border: 2px solid #333333;
-      }
-    }
-  }
-
-  // 司机信息区
-  .driver-info {
-    background-color: #FFFFFF;
-    margin: 0 0 10px 0;
-    padding: 15px;
-
-    .driver-header {
-      display: flex;
-      align-items: center;
-
-      .driver-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 25px;
-        overflow: hidden;
-        margin-right: 12px;
-
-        image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      }
-
-      .driver-details {
-        flex: 1;
-
-        .driver-name {
-          font-size: 16px;
-          color: #1A1A1A;
-          margin-bottom: 4px;
-        }
-
-        .driver-status {
-          font-size: 14px;
-          color: #999999;
-        }
-      }
-
-      .driver-contact {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-
-        .contact-icon {
-          width: 30px;
-          height: 30px;
-          border-radius: 15px;
-          background-color: #F0F0F0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 4px;
-
-          .iconfont {
-            color: #333333;
-            font-size: 18px;
-          }
-        }
-
-        .contact-text {
-          font-size: 12px;
-          color: #666666;
-        }
-      }
-    }
-
-    .delivery-process {
-      margin-top: 15px;
-
-      image {
-        width: 100%;
-      }
-    }
-  }
 
   // 订单卡片
   .order-card {
     background: #FFFFFF;
-    border-radius: 4px;
-    margin: 10px 15px;
-    padding: 15px;
+    border-radius: 8rpx; /* 4px * 2 */
+    margin: 20rpx 30rpx; /* 10px 15px * 2 */
+    padding: 30rpx; /* 15px * 2 */
 
     .order-info {
       display: flex;
@@ -438,25 +216,25 @@ export default {
 
       .order-no {
         color: #B3B3B3;
-        font-size: 13px;
+        font-size: 26rpx; /* 13px * 2 */
       }
 
       .order-status {
         color: #DA3232;
-        font-size: 15px;
+        font-size: 30rpx; /* 15px * 2 */
       }
     }
 
     .product-info {
       display: flex;
-      margin: 15px 0;
+      margin: 30rpx 0; /* 15px * 2 */
 
       .product-image {
-        width: 80px;
-        height: 80px;
-        border-radius: 4px;
+        width: 190rpx; /* Make it square */
+        height: 190rpx; /* Keep the same height */
+        border-radius: 8rpx; /* 4px * 2 */
         overflow: hidden;
-        margin-right: 15px;
+        margin-right: 30rpx; /* 15px * 2 */
 
         image {
           width: 100%;
@@ -472,76 +250,76 @@ export default {
         justify-content: space-between;
 
         .product-name {
-          font-size: 15px;
+          font-size: 30rpx; /* 15px * 2 */
           color: #1A1A1A;
-          margin-bottom: 5px;
+          margin-bottom: 10rpx; /* 5px * 2 */
         }
 
         .product-spec {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 5px;
+          margin-bottom: 10rpx; /* 5px * 2 */
 
           .spec-tag {
             background: #F7F7F7;
             color: #999999;
-            font-size: 14px;
-            padding: 2px 8px;
-            border-radius: 6px;
+            font-size: 28rpx; /* 14px * 2 */
+            padding: 4rpx 16rpx; /* 2px 8px * 2 */
+            border-radius: 12rpx; /* 6px * 2 */
           }
 
           .product-quantity {
             color: #999999;
-            font-size: 14px;
+            font-size: 28rpx; /* 14px * 2 */
           }
         }
 
         .product-price {
-          font-size: 15px;
+          font-size: 30rpx; /* 15px * 2 */
           color: #1A1A1A;
         }
       }
     }
 
     .divider {
-      height: 0.5px;
+      height: 1rpx; /* 0.5px * 2 */
       background: #F0F0F0;
-      margin-bottom: 15px;
+      margin-bottom: 30rpx; /* 15px * 2 */
     }
 
     .logistics-status {
-      padding: 10px 15px;
+      padding: 20rpx 30rpx; /* 10px 15px * 2 */
       color: #000000;
-      font-size: 15px;
-      margin-bottom: 15px;
+      font-size: 30rpx; /* 15px * 2 */
+      margin-bottom: 30rpx; /* 15px * 2 */
       background-color: #F8F8F8;
-      border-radius: 4px;
+      border-radius: 8rpx; /* 4px * 2 */
       display: flex;
       align-items: center;
 
       image {
-        width: 20px;
-        height: 20px;
-        margin-right: 5px;
+        width: 40rpx; /* 20px * 2 */
+        height: 40rpx; /* 20px * 2 */
+        margin-right: 16rpx; /* 8px * 2 */
       }
 
       &.delivered {
         font-weight: 500;
 
         .delivered-icon {
-          width: 20px;
-          height: 20px;
+          width: 40rpx; /* 20px * 2 */
+          height: 40rpx; /* 20px * 2 */
           border-radius: 50%;
           background-color: #4CD964;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-right: 5px;
+          margin-right: 10rpx; /* 5px * 2 */
 
           .iconfont {
             color: #FFFFFF;
-            font-size: 12px;
+            font-size: 24rpx; /* 12px * 2 */
           }
         }
       }
@@ -553,16 +331,16 @@ export default {
       align-items: center;
 
       .not-found-btn {
-        height: 30px;
-        padding: 0 15px;
-        border-radius: 15px;
+        height: 60rpx; /* 30px * 2 */
+        padding: 0 30rpx; /* 0 15px * 2 */
+        border-radius: 30rpx; /* 15px * 2 */
         background: #FFFFFF;
         color: #4D4D4D;
-        font-size: 15px;
+        font-size: 30rpx; /* 15px * 2 */
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-right: 10px;
+        margin-right: 20rpx; /* 10px * 2 */
 
         &.active {
           background: #4D4D4D;
@@ -571,12 +349,12 @@ export default {
       }
 
       .confirm-btn {
-        height: 30px;
-        padding: 0 15px;
-        border-radius: 15px;
+        height: 60rpx; /* 30px * 2 */
+        padding: 0 30rpx; /* 0 15px * 2 */
+        border-radius: 30rpx; /* 15px * 2 */
         background: #FF840B;
         color: #FFFFFF;
-        font-size: 15px;
+        font-size: 30rpx; /* 15px * 2 */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -591,21 +369,36 @@ export default {
   // 查找订单提示
   .find-order-tip {
     text-align: center;
-    font-size: 13px;
-    color: #000000;
-    margin: 15px 0;
+    font-size: 26rpx; /* 13px * 2 */
+    color: #999999;
+    margin: 30rpx 0;
+    margin-top: 60rpx;
+    font-family: 'PingFang SC';
+    font-style: normal;
+    font-weight: 400;
+    line-height: 36rpx; /* 18px * 2 */
+
+    .link {
+      color: #47B9FB;
+      text-decoration: none;
+      cursor: pointer;
+      font-family: 'PingFang SC';
+      font-style: normal;
+      font-weight: 400;
+      font-size: 26rpx;
+      line-height: 36rpx;
+    }
   }
 
   // 猜你喜欢
   .guess-like {
-    background: #FFFFFF;
-    padding: 15px;
-    margin-top: 10px;
+    padding: 30rpx; /* 15px * 2 */
+    margin-top: 20rpx; /* 10px * 2 */
 
     .title {
-      font-size: 18px;
+      font-size: 36rpx; /* 18px * 2 */
       color: #000000;
-      margin-bottom: 15px;
+      margin-bottom: 30rpx; /* 15px * 2 */
     }
 
     .like-list {
@@ -614,100 +407,95 @@ export default {
       justify-content: space-between;
 
       .like-item {
+        display: flex;
+        flex-direction: column;
+        gap: 12rpx;
         width: 48%;
-        margin-bottom: 15px;
+        margin-bottom: 30rpx; /* 15px * 2 */
+        overflow: hidden;
 
         image {
           width: 100%;
-          height: 100px;
-          border-radius: 4px 4px 0 0;
+          height: 320rpx; /* Increased to match Figma design (approximately 161px) */
+          display: block;
           object-fit: cover;
+          border-radius: 8rpx 8rpx 0 0;
         }
 
-        .like-name {
-          font-size: 16px;
-          color: #1A1A1A;
-          margin-top: 8px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        .like-card {
+          background-color: #FFFFFF;
+          border-radius: 0 0 8rpx 8rpx;
+          padding: 16rpx;
+          box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 
-        .like-info {
-          font-size: 16px;
-          color: #EB3C3C;
-          margin-top: 4px;
+          .like-name {
+            font-size: 28rpx;
+            color: #1A1A1A;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 8rpx;
+          }
+
+          .like-info {
+            display: flex;
+            align-items: baseline;
+
+            .price {
+              font-size: 28rpx;
+              color: #333333;
+              font-weight: 550;
+              
+              &::before {
+                content: '￥';
+                font-size: 26rpx;
+                font-weight: normal;
+              }
+            }
+
+            .sales {
+              display: flex;
+              align-items: baseline;
+              margin-left: 8rpx;
+              
+              .sales-text {
+                font-size: 22rpx;
+                color: #CCCCCC;
+              }
+              
+              .sales-number {
+                font-size: 20rpx;
+                color: #CCCCCC;
+              }
+            }
+          }
         }
       }
     }
   }
 
   // 弹窗
-  .popup-mask {
+  .popup-text {
     position: fixed;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'PingFang SC';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 32rpx; /* 16px * 2 */
+    line-height: 44rpx; /* 22px * 2 */
+    text-align: center;
+    color: #FFFFFF;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 20rpx; /* 10px * 2 */
+    padding: 24rpx 40rpx; /* 12px 20px * 2 */
     z-index: 1000;
-
-    .popup-content {
-      background: #FFFFFF;
-      border-radius: 10px;
-      padding: 15px 20px;
-      width: 80%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      &.notfound-popup {
-        .popup-text {
-          background-color: rgba(0, 0, 0, 0.7);
-        }
-      }
-
-      .popup-text {
-        font-size: 16px;
-        color: #FFFFFF;
-        margin-bottom: 0;
-        text-align: center;
-        background-color: rgba(0, 0, 0, 0.7);
-        border-radius: 10px;
-        padding: 15px 20px;
-        width: 100%;
-      }
-
-      .popup-btn {
-        background: #FF840B;
-        color: #FFFFFF;
-        border-radius: 15px;
-        padding: 6px 30px;
-        font-size: 15px;
-        text-align: center;
-        margin-top: 15px;
-      }
-    }
+    white-space: nowrap; /* 强制单行显示 */
+    max-width: 90%; /* 最大宽度90%，避免超出屏幕 */
+    box-sizing: border-box;
   }
 
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-      opacity: 0.5;
-    }
 
-    70% {
-      transform: scale(2);
-      opacity: 0;
-    }
-
-    100% {
-      transform: scale(1);
-      opacity: 0;
-    }
-  }
 }
 </style>

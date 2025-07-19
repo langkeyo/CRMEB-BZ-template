@@ -159,6 +159,11 @@ export default {
 			getNavigation().then((res) => {
 				uni.setStorageSync('diyVersionNav', res.data);
 				this.setNavigationInfo(res.data);
+			}).catch((err) => {
+				console.log('获取导航配置失败，使用原生tabBar:', err);
+				// 接口调用失败时，显示原生tabBar
+				uni.showTabBar();
+				this.showTabBar = false;
 			});
 		},
 		navigationInfo() {
@@ -172,6 +177,11 @@ export default {
 						uni.setStorageSync('diyVersionNav', res.data.version + '0');
 						this.getNavigationInfo();
 					}
+				}).catch((err) => {
+					console.log('获取DIY版本失败，使用原生tabBar:', err);
+					// 接口调用失败时，显示原生tabBar
+					uni.showTabBar();
+					this.showTabBar = false;
 				});
 			} else {
 				this.getNavigationInfo();

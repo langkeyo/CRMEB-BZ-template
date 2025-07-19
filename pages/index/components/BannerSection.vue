@@ -281,7 +281,7 @@ export default {
             border-radius: 32rpx;  /* 16px * 2 = 32rpx */
             padding: 0 22rpx;  /* 调整内边距 */
             position: relative;
-            margin: 0 15rpx;
+            margin: 0 15rpx 0 25rpx;  /* 左边距增加10rpx，让搜索框往右移 */
             z-index: 100;  /* 提高层级 */
 
             .search-icon {

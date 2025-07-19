@@ -38,9 +38,7 @@
 			<!-- #endif -->
 		</view>
 		<shareInfo @setShareInfoStatus="setShareInfoStatus" :shareInfoStatus="shareInfoStatus"></shareInfo>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 	</view>
 </template>
 

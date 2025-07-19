@@ -36,7 +36,7 @@
         <!-- view-btn 查看按钮 -->
         <view class="view-btn" @click="viewShopDetail">
           <text class="view-text">查看</text>
-          <image src="/static/images/detail/arrow_right.svg" class="arrow-icon" mode="aspectFit" />
+          <image src="/static/icons/arrow-right.svg" class="arrow-icon" mode="aspectFit" />
         </view>
       </view>
 
@@ -97,7 +97,7 @@
       <!-- view-all 查看全部 -->
       <view class="view-all-section">
         <text class="view-all-text">查看全部</text>
-        <image src="/static/common/icons/navigation/arrow_right.svg" class="view-all-arrow" mode="aspectFit" />
+        <image src="/static/icons/view-all.svg" class="view-all-arrow" mode="aspectFit" />
       </view>
     </view>
 
@@ -124,7 +124,7 @@
       <!-- 查看更多 -->
       <view class="view-more-section">
         <text class="view-more-text">查看更多</text>
-        <image src="/static/common/icons/navigation/arrow_right.svg" class="view-more-arrow" mode="aspectFit" />
+        <image src="/static/icons/view-all.svg" class="view-more-arrow" mode="aspectFit" />
       </view>
     </view>
 
@@ -154,7 +154,7 @@
               <text class="shop-location">{{ item.location }}</text>
               <view class="shop-more">
                 <text class="shop-more-text">查看详情</text>
-                <image src="/static/images/detail/arrow_right.svg" class="shop-more-arrow" mode="aspectFit" />
+                <image src="/static/icons/arrow-right.svg" class="shop-more-arrow" mode="aspectFit" />
               </view>
             </view>
           </view>
@@ -168,7 +168,7 @@
     </view>
 
     <!-- 底部按钮 -->
-    <view class="bottom-actions">
+    <view class="bottom-actions" v-if="!showReservation">
       <view class="action-btn reserve-btn" @click="showReservationPopup">
         <text class="btn-text">预约看房</text>
       </view>
@@ -178,11 +178,15 @@
     </view>
 
     <!-- 预约弹窗 -->
-    <view class="popup-mask" v-if="showReservation" @click="hideReservationPopup"></view>
-    <view class="reservation-popup" :class="{ 'popup-show': showReservation }">
-      <view class="popup-content">
-        <view class="popup-btn confirm-btn" @click="submitReservation">提交预约</view>
-        <view class="popup-btn cancel-btn" @click="hideReservationPopup">取消</view>
+    <view v-if="showReservation" style="position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 2000; background: rgba(0,0,0,0.2); display: flex; align-items: flex-end; justify-content: center; padding: 0 30rpx 30rpx 30rpx;">
+      <view style="width: 100%; margin-bottom: 32rpx;">
+        <view style="background: #fff; border-radius: 12rpx; margin-bottom: 16rpx; display: flex; align-items: center; padding: 32rpx 0; justify-content: center;">
+          <image src='/static/icons/telephone.svg' style='width: 40rpx; height: 40rpx; transform: translate(-130rpx); margin-right: 8rpx; margin-left: 8rpx;' mode='aspectFit' />
+          <text style='color: #007AFF; font-size: 32rpx;'>呼叫({{ houseInfo.contactPhone || '(010)1235 8521' }})</text>
+        </view>
+        <view style="background: #fff; border-radius: 10rpx; display: flex; align-items: center; justify-content: center; padding: 32rpx 0;" @click="hideReservationPopup">
+          <text style='color: #007AFF; font-size: 32rpx;'>取消</text>
+        </view>
       </view>
     </view>
 
@@ -193,12 +197,36 @@
         <text class="toast-text">已经提交申请后会电话联系您</text>
       </view>
     </view>
+
+    <!-- 电话拨打弹窗 -->
+    <view class="phone-popup-mask" v-if="showPhonePopup" @click="hidePhoneCallPopup"></view>
+    <view class="phone-call-popup" v-if="showPhonePopup">
+      <!-- 主要内容卡片 -->
+      <view class="phone-popup-content">
+        <!-- 电话图标和号码 -->
+        <view class="phone-info">
+          <view class="phone-icon">📞</view>
+          <text class="phone-number">{{ houseInfo.contactPhone || '01012358521' }}</text>
+        </view>
+
+        <!-- 呼叫按钮 -->
+        <view class="phone-btn call-btn" @click="confirmCall">
+          <text class="btn-text">呼叫({{ houseInfo.contactPhone || '010)1235 8521' }})</text>
+        </view>
+      </view>
+
+      <!-- 取消按钮卡片 -->
+      <view class="phone-btn cancel-btn" @click="hidePhoneCallPopup">
+        <text class="btn-text">取消</text>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
 import DetailHeader from '@/components/DetailHeader.vue'
 import { getHouseRentalInfo, reserveHouseRental } from '@/api/group.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
   components: {
@@ -213,6 +241,7 @@ export default {
 
       showReservation: false, // 是否显示预约弹窗
       showSuccessToast: false, // 是否显示成功提示弹框
+      showPhonePopup: false, // 是否显示电话拨打弹窗
       houseInfo: {
         title: '',
         price: '',
@@ -272,7 +301,7 @@ export default {
       getHouseRentalInfo(this.houseId).then(res => {
         uni.hideLoading();
         
-        if (res.status === 0 && res.data) {
+        if (res.status === 200 && res.data) {
           const detail = res.data;
           
           // 处理房屋基本信息
@@ -281,19 +310,19 @@ export default {
             price: detail.price || '',
             unit: detail.type === 0 ? '元' : '元/月',
             address: `${detail.province || ''} ${detail.city || ''} ${detail.district || ''} ${detail.address || ''}`,
-            size: detail.acreage ? `${detail.acreage}㎡` : '',
-            floor: detail.storey ? `${detail.storey}楼` : '',
+            size: detail.acreage ? `${detail.acreage}㎡` : '面议',
+            floor: detail.storey ? `${detail.storey}楼` : '详询',
             layout: '',
             direction: '',
             decoration: '',
             elevator: '',
             description: detail.introduce || '',
-            images: detail.images ? detail.images.split(',') : (detail.image ? [detail.image] : []),
+            images: detail.images ? detail.images.split(',').map(img => this.setDomain(img)) : (detail.image ? [this.setDomain(detail.image)] : []),
             facilities: [],
-            contactName: '',
-            contactRole: '',
-            contactAvatar: '',
-            contactPhone: ''
+            contactName: detail.contact_name || '',
+            contactRole: detail.contact_role || '',
+            contactAvatar: detail.contact_avatar || '',
+            contactPhone: detail.contact_phone || detail.phone || '01012358521'
           };
           
           // 处理标签
@@ -303,31 +332,53 @@ export default {
           
           // 处理商铺信息
           this.shopInfo = {
-            transferPrice: detail.price || '',
-            remainingLease: detail.remaining_lease_term || '',
-            description: `租赁类型：${detail.type === 0 ? '出售' : detail.type === 1 ? '租商品' : '租房屋'}`
+            transferPrice: detail.price ? (detail.type === 0 ? `${detail.price}万元` : `${detail.price}元/月`) : '面议',
+            remainingLease: detail.remaining_lease_term || '面议',
+            description: `租赁类型：${detail.type === 0 ? '出售' : detail.type === 1 ? '租商铺' : '租房屋'}`
           };
           
           // 处理配套设施
           if (detail.facility) {
-            const facilities = detail.facility.split(',');
-            this.houseInfo.facilities = facilities.map(item => {
-              return {
-                name: item,
-                image: '/static/images/house-rental/house1.png' // 默认图片
-              };
-            });
+            try {
+              const facilities = JSON.parse(detail.facility);
+              this.houseInfo.facilities = facilities.map(item => {
+                return {
+                  name: item.name,
+                  image: this.setDomain(item.images) || '/static/images/house-rental/house1.png'
+                };
+              });
+            } catch (e) {
+              // 如果解析失败，按原来的方式处理
+              const facilities = detail.facility.split(',');
+              this.houseInfo.facilities = facilities.map(item => {
+                return {
+                  name: item,
+                  image: '/static/images/house-rental/house1.png'
+                };
+              });
+            }
           }
-          
+
           // 处理周边环境
           if (detail.surroundings) {
-            const surroundings = detail.surroundings.split(',');
-            this.environments = surroundings.map((item, index) => {
-              return {
-                name: item,
-                image: '/static/images/house-rental/house' + ((index % 4) + 1) + '.png' // 循环使用图片
-              };
-            });
+            try {
+              const surroundings = JSON.parse(detail.surroundings);
+              this.environments = surroundings.map(item => {
+                return {
+                  name: item.name,
+                  image: this.setDomain(item.images) || '/static/images/house-rental/house' + ((Math.floor(Math.random() * 4) + 1)) + '.png'
+                };
+              });
+            } catch (e) {
+              // 如果解析失败，按原来的方式处理
+              const surroundings = detail.surroundings.split(',');
+              this.environments = surroundings.map((item, index) => {
+                return {
+                  name: item,
+                  image: '/static/images/house-rental/house' + ((index % 4) + 1) + '.png'
+                };
+              });
+            }
           }
         } else {
           uni.showToast({
@@ -343,7 +394,7 @@ export default {
         });
       });
     },
-    
+
     // 预约看房
     showReservationPopup() {
       this.showReservation = true;
@@ -362,7 +413,7 @@ export default {
         uni.hideLoading();
         this.hideReservationPopup();
         
-        if (res.status === 0) {
+        if (res.status === 200) {
           this.showSuccessToast = true;
           setTimeout(() => {
             this.showSuccessToast = false;
@@ -388,8 +439,14 @@ export default {
       // 分享功能
     },
     
-    showPreview() {
+    showPreview(currentIndex) {
       // 预览图片
+      if (this.houseInfo.images && this.houseInfo.images.length > 0) {
+        uni.previewImage({
+          urls: this.houseInfo.images,
+          current: currentIndex || 0
+        });
+      }
     },
     
     switchMediaType() {
@@ -400,8 +457,8 @@ export default {
       this.isCollected = !this.isCollected;
     },
     
-    handleSwiperChange(e) {
-      this.currentSwiper = e.detail.current;
+    handleSwiperChange(currentIndex) {
+      this.currentSwiper = currentIndex;
     },
     
     toggleFollow() {
@@ -412,6 +469,25 @@ export default {
       // 查看店铺详情
     },
     
+    // 显示电话拨打弹窗
+    showPhoneCallPopup() {
+      this.showPhonePopup = true;
+    },
+
+    // 隐藏电话拨打弹窗
+    hidePhoneCallPopup() {
+      this.showPhonePopup = false;
+    },
+
+    // 确认拨打电话
+    confirmCall() {
+      this.hidePhoneCallPopup();
+      const phoneNumber = this.houseInfo.contactPhone || '01012358521';
+      uni.makePhoneCall({
+        phoneNumber: phoneNumber
+      });
+    },
+
     makePhoneCall() {
       // 拨打电话
       if (this.houseInfo.contactPhone) {
@@ -424,6 +500,25 @@ export default {
           icon: 'none'
         });
       }
+    },
+
+    // 处理图片URL
+    setDomain(url) {
+      if (!url) return '';
+      url = url.toString();
+
+      // 如果是相对路径，拼接域名
+      if (url.indexOf('/') === 0) {
+        return HTTP_REQUEST_URL + url;
+      }
+
+      // 如果已经是完整URL，直接返回
+      if (url.indexOf("http") === 0) {
+        return url;
+      }
+
+      // 其他情况拼接域名
+      return HTTP_REQUEST_URL + '/' + url;
     }
   }
 }
@@ -441,7 +536,7 @@ export default {
 .shop-transfer-card-section {
   width: 100%;
   background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 37.23%, #FFFFFF 100%);
-  border-radius: 8rpx 8rpx 0px 0px; /* 4px * 2 */
+  border-radius: 12rpx 12rpx 0px 0px; /* 4px * 2 */
   padding: 24rpx 22rpx; /* 12px 11px * 2 */
   margin-bottom: 20rpx;
   box-sizing: border-box;
@@ -490,7 +585,7 @@ export default {
   font-family: 'PingFang SC';
   font-style: normal;
   font-weight: 400;
-  font-size: 36rpx; /* 18px * 2 */
+  font-size: 35rpx; /* 18px * 2 */
   line-height: 50rpx; /* 25px * 2 */
   text-align: center;
   color: #FFFFFF;
@@ -501,12 +596,13 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 24rpx; /* 12px * 2 */
+  gap: 2rpx; /* 元素之间的间距 */
 }
 
 .location-icon {
-  width: 19.5rpx; /* 9.75px * 2 */
-  height: 23.24rpx; /* 11.62px * 2 */
-  margin-right: 10rpx;
+  width: 32rpx; /* 调整为32rpx */
+  height: 32rpx; /* 调整为32rpx */
+  margin-right: 6rpx; /* 减少间距，让图标和文字更紧密 */
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -525,6 +621,9 @@ export default {
   line-height: 40rpx; /* 20px * 2 */
   color: #333333;
   flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* 单行显示，超出显示省略号 */
 }
 
 /* view-btn 查看按钮 */
@@ -542,11 +641,12 @@ export default {
   font-size: 24rpx; /* 12px * 2 */
   line-height: 34rpx; /* 17px * 2 */
   color: #999999;
+  margin-right: 5rpx;
 }
 
 .arrow-icon {
-  width: 8rpx; /* 4px * 2 */
-  height: 14rpx; /* 7px * 2 */
+  width: 14rpx; /* 4px * 2 */
+  height: 24.5rpx; /* 7px * 2 */
   margin-left: 4rpx;
 }
 
@@ -710,9 +810,8 @@ export default {
 
 /* Vector 箭头 */
 .view-all-arrow {
-  width: 26rpx; /* 13px * 2 */
-  height: 26rpx; /* 13px * 2 */
-  margin-top: 10rpx;
+  width: 28rpx; /* 13px * 2 */
+  height: 28rpx; /* 13px * 2 */
 }
 
 /* 周边环境 */
@@ -827,15 +926,14 @@ export default {
 }
 
 .view-more-arrow {
-  width: 26rpx; /* 13px * 2 */
-  height: 26rpx; /* 13px * 2 */
-  margin-top: 10rpx;
+  width: 28rpx; /* 13px * 2 */
+  height: 28rpx; /* 13px * 2 */
 }
 
 /* 同商圈店铺 */
 .nearby-shops-section {
   width: 100%;
-  background: #FFFFFF;
+  // background: #FFFFFF;
   margin-bottom: 20rpx;
   box-sizing: border-box;
   display: flex;
@@ -1250,5 +1348,96 @@ export default {
   line-height: 36rpx; /* 18px * 2 */
   color: #FFFFFF;
   text-align: center;
+}
+
+/* 电话拨打弹窗 */
+.phone-popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.phone-call-popup {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: transparent;
+  z-index: 1001;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+.phone-popup-content {
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  overflow: hidden;
+}
+
+.phone-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 30rpx;
+  border-bottom: 1rpx solid #E5E5EA;
+}
+
+.phone-icon {
+  font-size: 40rpx;
+  margin-right: 20rpx;
+  color: #666666;
+}
+
+.phone-number {
+  font-family: 'PingFang SC';
+  font-size: 34rpx;
+  font-weight: 400;
+  color: #007AFF;
+  text-align: center;
+}
+
+.phone-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-btn {
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-bottom: 1rpx solid #E5E5EA;
+}
+
+.phone-btn:last-child {
+  border-bottom: none;
+}
+
+.call-btn {
+  background: #FFFFFF;
+}
+
+.call-btn .btn-text {
+  color: #007AFF;
+  font-size: 40rpx;
+  font-weight: 400;
+}
+
+.cancel-btn {
+  background: #FFFFFF;
+  margin-top: 20rpx;
+  border-radius: 28rpx;
+  border: none;
+}
+
+.cancel-btn .btn-text {
+  color: #007AFF;
+  font-size: 40rpx;
+  font-weight: 600;
 }
 </style>

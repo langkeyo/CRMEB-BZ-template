@@ -2,6 +2,9 @@
   <view class="account-security-page">
     <!-- 顶部导航栏 -->
     <view class="header">
+      <view class="back-btn" @click="goBack">
+        <image src="/static/icons/back-arrow.svg" class="back-icon" />
+      </view>
       <view class="title">账号与安全</view>
     </view>
     
@@ -31,6 +34,19 @@
         </view>
         <view class="item-content">
           <view class="item-text">修改密码</view>
+        </view>
+        <view class="arrow-icon">
+          <image src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
+        </view>
+      </view>
+      
+      <!-- 注销账号 -->
+      <view class="settings-item cancel-account" @click="goToCancelAccount">
+        <view class="item-icon">
+          <image src="/static/images/user/cancel_account_icon.svg" mode="aspectFit"></image>
+        </view>
+        <view class="item-content">
+          <view class="item-text cancel-text">注销账号</view>
         </view>
         <view class="arrow-icon">
           <image src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
@@ -73,6 +89,9 @@ export default {
     }
   },
   methods: {
+    goBack() {
+      uni.navigateBack();
+    },
     goToChangePassword() {
       uni.navigateTo({
         url: '/pages/users/user_settings/change_password'
@@ -89,6 +108,11 @@ export default {
       uni.navigateTo({
         url: '/pages/users/user_phone/index?type=1'
       });
+    },
+    goToCancelAccount() {
+      uni.navigateTo({
+        url: '/pages/users/user_cancellation/index'
+      });
     }
   }
 }
@@ -100,9 +124,26 @@ export default {
   background-color: #FFFFFF;
   
   .header {
-    padding: 44px 15px 15px;
+    padding: 0;
     position: relative;
-    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100rpx;
+    background: #fff;
+    border-bottom: 1rpx solid #F2F2F2;
+    .back-btn {
+      position: absolute;
+      left: 20rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .back-icon {
+      width: 32rpx;
+      height: 32rpx;
+    }
     .title {
       font-size: 18px;
       color: #1A1A1A;
@@ -126,6 +167,14 @@ export default {
       padding: 15px 0;
       position: relative;
       box-shadow: 0px 0.5px 0px 0px rgba(245, 245, 245, 1);
+      
+      &.cancel-account {
+        margin-top: 20rpx;
+        
+        .cancel-text {
+          color: #FF4D4F;
+        }
+      }
       
       .item-icon {
         width: 20px;
@@ -157,12 +206,15 @@ export default {
       }
       
       .arrow-icon {
-        width: 16px;
-        height: 16px;
+        width: 20rpx;
+        height: 20rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         
         image {
-          width: 100%;
-          height: 100%;
+          width: 20rpx;
+          height: 20rpx;
         }
       }
     }

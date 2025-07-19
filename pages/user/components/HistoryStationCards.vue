@@ -3,10 +3,12 @@
     <!-- 团购足迹卡片 -->
     <view class="history-card">
       <view class="card-header">
-        <text class="card-title">团购足迹</text>
-        <view class="card-link" @click="onHistoryClick">
-          <text class="card-link-text">浏览和收藏</text>
-          <image class="arrow-right-small" src="/static/common/icons/navigation/arrow_right.svg" />
+        <view class="header-left">
+          <text class="card-title">团购足迹</text>
+          <view class="card-link" @click="onHistoryClick">
+            <text class="card-link-text">浏览和收藏</text>
+            <image class="arrow-right-small" src="/static/common/icons/navigation/arrow_right.svg" />
+          </view>
         </view>
       </view>
       <view class="card-content">
@@ -21,10 +23,12 @@
     <!-- 我的站点卡片 -->
     <view class="station-card">
       <view class="card-header">
-        <text class="card-title">我的站点</text>
-        <view class="card-link" @click="onStationClick">
-          <text class="card-link-text">进入站点</text>
-          <image class="arrow-right-small" src="/static/common/icons/navigation/arrow_right.svg" />
+        <view class="header-left">
+          <text class="card-title">我的站点</text>
+          <view class="card-link" @click="onStationClick">
+            <text class="card-link-text">进入站点</text>
+            <image class="arrow-right-small" src="/static/common/icons/navigation/arrow_right.svg" />
+          </view>
         </view>
       </view>
       <view class="card-content">
@@ -74,8 +78,8 @@ export default {
 .history-station-section {
   display: flex;
   justify-content: space-between;
-  padding: 0 30rpx;
-  margin-top: 30rpx;
+  padding: 0 22rpx 0 30rpx;
+  margin-top: 20rpx;
   gap: 20rpx;
   position: relative;
   z-index: 1;
@@ -95,18 +99,21 @@ export default {
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20rpx;
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-end; /* 底部对齐 */
 }
 
 .card-title {
   font-family: 'PingFang SC', sans-serif;
-  font-weight: 400;
-  font-size: 26rpx;
+  font-weight: bold;
+  font-size: 32rpx;
   line-height: 36rpx;
-  color: #1A1A1A;
+  color: #232A43;
+  margin-right: 30rpx;
 }
 
 .card-link {

@@ -60,9 +60,7 @@
 			<image :src="imgHost + '/statics/images/no-thing.png'"></image>
 			<text>{{ $t(`商家暂未上架活动哦`) }}～</text>
 		</view>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 	</view>
 </template>
 

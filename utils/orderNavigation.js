@@ -80,6 +80,15 @@ export function navigateToOrderList() {
 }
 
 /**
+ * 跳转到全部订单页面
+ */
+export function navigateToAllOrders() {
+  uni.navigateTo({
+    url: '/pages/goods/order_list/all_orders'
+  });
+}
+
+/**
  * 返回首页
  */
 export function navigateToHome() {

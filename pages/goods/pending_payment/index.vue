@@ -778,9 +778,18 @@ export default {
   }
 
   .payment-modal {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #FFFFFF;
+    border-radius: 32rpx 32rpx 0 0;
+    z-index: 1000;
     padding-top: 0;
     padding-bottom: 0;
     min-height: 420rpx;
+    max-height: 80vh;
+    overflow-y: auto;
     .close-btn {
       position: absolute;
       top: 32rpx;

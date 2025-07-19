@@ -202,6 +202,11 @@
 </template>
 
 <script>
+import {
+  getGroupGoodsList,
+  getGroupGoodsCategory
+} from '@/api/group.js';
+
 export default {
   data() {
     return {
@@ -302,6 +307,8 @@ export default {
   onLoad() {
     // 创建必要的目录结构
     this.createRequiredDirectories();
+    // 加载团购商品数据
+    this.loadGroupBuyingData();
   },
   methods: {
     // 创建必要的目录结构
@@ -315,6 +322,77 @@ export default {
 
       // 在真机上运行时会自动创建目录，这里不做实际创建
       console.log('确保目录存在:', directories);
+    },
+
+    // 加载团购数据
+    loadGroupBuyingData() {
+      this.loadGroupCategories();
+      this.loadGroupProducts();
+    },
+
+    // 加载团购分类
+    loadGroupCategories() {
+      getGroupGoodsCategory().then(res => {
+        if (res.status === 200 && res.data && res.data.goods) {
+          // 将API返回的分类数据转换为页面需要的格式
+          const categories = [];
+          Object.keys(res.data.goods).forEach(key => {
+            const category = res.data.goods[key];
+            categories.push({
+              id: category.cate_id,
+              name: category.cate_name,
+              icon: '/static/images/index/categories/default_icon.png', // 使用默认图标
+              isHot: false
+            });
+          });
+
+          // 保留推荐分类，添加API分类
+          if (categories.length > 0) {
+            this.categoryList = [
+              {
+                name: '推荐',
+                icon: '/static/images/index/categories/recommend_icon.png',
+                isHot: true
+              },
+              ...categories.slice(0, 7) // 最多显示7个分类，加上推荐总共8个
+            ];
+          }
+        }
+      }).catch(err => {
+        console.log('获取团购分类失败:', err);
+      });
+    },
+
+    // 加载团购商品
+    loadGroupProducts() {
+      const params = {
+        page: 1,
+        limit: 10,
+        is_hot: '1', // 获取热门商品
+        is_recommend: '1' // 获取推荐商品
+      };
+
+      getGroupGoodsList(params).then(res => {
+        if (res.status === 200 && res.data && res.data.goodsList) {
+          // 将API返回的商品数据转换为页面需要的格式
+          const products = res.data.goodsList.map(item => ({
+            id: item.id,
+            name: item.title,
+            image: item.image || '/static/images/today-group-buying/default.png',
+            currentPrice: item.min_price,
+            originalPrice: item.max_price,
+            discount: '5', // 默认折扣
+            groupTime: '每周一到周五可团',
+            hotInfo: `热卖${item.fake_sales || 0}+单，每单省10元`
+          }));
+
+          if (products.length > 0) {
+            this.groupBuyingProducts = products;
+          }
+        }
+      }).catch(err => {
+        console.log('获取团购商品失败:', err);
+      });
     },
 
 
@@ -340,7 +418,7 @@ export default {
 
     goToDetail(id) {
       uni.navigateTo({
-        url: `/pages/product/detail?id=${id}`
+        url: `/pages/promotional_items/detail?id=${id}&type=group`
       });
     },
 

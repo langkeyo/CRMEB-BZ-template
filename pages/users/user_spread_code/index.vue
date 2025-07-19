@@ -33,9 +33,7 @@
 		<!-- #ifdef MP -->
 		<!-- <authorize @onLoadFun="onLoadFun" :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
 		<!-- #endif -->
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 		<view class="qrimg">
 			<zb-code ref="qrcode" :show="codeShow" :cid="cid" :val="val" :size="size" :unit="unit"
 				:background="background" :foreground="foreground" :pdground="pdground" :icon="icon" :iconSize="iconsize"
@@ -63,7 +61,7 @@
 	// #ifdef MP
 	import authorize from '@/components/Authorize';
 	// #endif
-	import home from '@/components/home';
+
 	import {
 		TOKENNAME,
 		HTTP_REQUEST_URL
@@ -74,7 +72,6 @@
 			// #ifdef MP
 			authorize,
 			// #endif
-			home,
 			zbCode
 		},
 		mixins: [colors],

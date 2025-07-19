@@ -297,7 +297,7 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 142rpx; /* 71px * 2 */
+    // width: 142rpx; /* 71px * 2 */
 
     .product-img-wrapper {
         width: 66rpx; /* 33px * 2 */

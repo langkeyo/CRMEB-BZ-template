@@ -104,15 +104,15 @@
       <view class="house-grid">
         <view class="house-card" v-for="item in houseList" :key="item.id" @click="viewDetail(item.id)">
           <view class="house-img">
-            <image :src="item.image" mode="aspectFill"></image>
+            <image :src="setDomain(item.image)" mode="aspectFill"></image>
           </view>
           <view class="house-info">
-            <view class="house-title">{{ item.shopName }}</view>
+            <view class="house-title">{{ item.title }}</view>
             <view class="house-bottom-row">
-              <view class="house-address">{{ item.address }}</view>
+              <view class="house-address">{{ item.district }}{{ item.business_district ? ' ' + item.business_district : '' }}</view>
               <view class="house-detail-link">
                 <text>查看详情</text>
-                <view class="arrow-icon"></view>
+                <image src="/static/icons/arrow-right.svg" class="arrow-icon"></image>
               </view>
             </view>
           </view>
@@ -126,6 +126,7 @@
 
 <script>
 import { getHouseRentalList } from '@/api/group.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
   data() {
@@ -307,13 +308,13 @@ export default {
         uni.hideLoading();
         this.loading = false;
         
-        if (res.status === 0 && res.data) {
+        if (res.status === 200 && res.data) {
           if (isLoadMore) {
             this.houseList = [...this.houseList, ...res.data.list];
           } else {
             this.houseList = res.data.list || [];
           }
-          
+
           this.total = res.data.count || 0;
           this.finished = this.houseList.length >= this.total;
         } else {
@@ -336,6 +337,25 @@ export default {
       uni.navigateTo({
         url: '/pages/index/house-rental/detail?id=' + id
       });
+    },
+
+    // 处理图片URL
+    setDomain(url) {
+      if (!url) return '';
+      url = url.toString();
+
+      // 如果是相对路径，拼接域名
+      if (url.indexOf('/') === 0) {
+        return HTTP_REQUEST_URL + url;
+      }
+
+      // 如果已经是完整URL，直接返回
+      if (url.indexOf("http") === 0) {
+        return url;
+      }
+
+      // 其他情况拼接域名
+      return HTTP_REQUEST_URL + '/' + url;
     }
   }
 };
@@ -600,7 +620,7 @@ export default {
     /* shop-name 商铺名称 */
     .house-title {
       position: absolute;
-      width: 128rpx; /* 64px * 2 */
+      width: 272rpx; /* 64px * 2 */
       height: 44rpx; /* 22px * 2 */
       left: 16rpx; /* 8px * 2 */
       top: 22rpx; /* 11px * 2 */
@@ -644,7 +664,7 @@ export default {
 
     /* view-detail-btn 查看详情按钮 */
     .house-detail-link {
-      width: 118rpx; /* 59px * 2 */
+      // width: 118rpx; /* 59px * 2 */
       height: 34rpx; /* 17px * 2 */
       display: flex;
       align-items: center;
@@ -663,13 +683,9 @@ export default {
 
       /* Vector 16 箭头 */
       .arrow-icon {
-        width: 10rpx; /* 5px * 2 */
+        width: 18rpx; /* 9px * 2 */
         height: 18rpx; /* 9px * 2 */
         margin-left: 8rpx; /* 4px * 2 */
-        border-right: 3rpx solid #B3B3B3; /* 1.5px * 2 */
-        border-bottom: 3rpx solid #B3B3B3;
-        transform: rotate(-45deg);
-        border-radius: 0.4rpx; /* 0.2px * 2 */
       }
     }
   }

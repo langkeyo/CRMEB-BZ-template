@@ -123,13 +123,18 @@ export default {
         flex-wrap: wrap;
         justify-content: space-between;
         margin-top: 20rpx;
-        
+
         .recommend-item {
             width: 340rpx;
             margin-bottom: 20rpx;
             border-radius: 12rpx;
             overflow: hidden;
             box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+
+            /* 瀑布流错开效果 */
+            &:nth-child(even) {
+                margin-top: 40rpx;  /* 偶数项向下偏移，创建错开效果 */
+            }
 
             .item-container {
                 width: 100%;

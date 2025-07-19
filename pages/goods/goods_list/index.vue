@@ -71,9 +71,7 @@
 			</view>
 			<recommend :hostProduct="hostProduct"></recommend>
 		</view>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 		<view v-if="scrollTopShow" class="back-top" @click="goTop">
 			<text class="iconfont icon-xiangshang"></text>
 		</view>
@@ -81,11 +79,15 @@
 </template>
 
 <script>
-	import home from '@/components/home';
+
 	import {
 		getProductslist,
 		getProductHot
 	} from '@/api/store.js';
+	import {
+		getGroupGoodsList,
+		getGroupGoodsCategory
+	} from '@/api/group.js';
 	import recommend from '@/components/recommend';
 	import {
 		mapGetters
@@ -100,8 +102,7 @@
 	export default {
 		computed: mapGetters(['uid']),
 		components: {
-			recommend,
-			home
+			recommend
 		},
 		mixins: [colors],
 		data() {
@@ -245,19 +246,61 @@
 				if (isPage === true) that.$set(that, 'productList', []);
 				that.loading = true;
 				that.loadTitle = '';
-				getProductslist(that.where).then(res => {
-					let list = res.data;
-					let productList = that.$util.SplitArray(list, that.productList);
-					let loadend = list.length < that.where.limit;
-					that.loadend = loadend;
-					that.loading = false;
-					that.loadTitle = loadend ? that.$t(`没有更多内容啦~`) : that.$t(`加载更多`);
-					that.$set(that, 'productList', productList);
-					that.$set(that.where, 'page', that.where.page + 1);
-					if (!that.productList.length) this.get_host_product();
-				}).catch(err => {
-					that.loading = false;
-					that.loadTitle = that.$t(`加载更多`);
+
+				// 优先使用团购商品接口
+				this.getGroupProductList(isPage).catch(() => {
+					// 如果团购接口失败，回退到原有接口
+					getProductslist(that.where).then(res => {
+						let list = res.data;
+						let productList = that.$util.SplitArray(list, that.productList);
+						let loadend = list.length < that.where.limit;
+						that.loadend = loadend;
+						that.loading = false;
+						that.loadTitle = loadend ? that.$t(`没有更多内容啦~`) : that.$t(`加载更多`);
+						that.$set(that, 'productList', productList);
+						that.$set(that.where, 'page', that.where.page + 1);
+						if (!that.productList.length) this.get_host_product();
+					}).catch(err => {
+						that.loading = false;
+						that.loadTitle = that.$t(`加载更多`);
+					});
+				});
+			},
+
+			// 获取团购商品列表
+			getGroupProductList: function(isPage) {
+				let that = this;
+				return new Promise((resolve, reject) => {
+					// 构建团购接口参数
+					let groupParams = {
+						page: that.where.page,
+						limit: that.where.limit,
+						cate_id: that.where.cid || '',
+						search: that.where.keyword || '',
+						sort: that.where.priceOrder ? 'price' : (that.where.salesOrder ? 'sales' : ''),
+						sort_order: that.where.priceOrder || that.where.salesOrder || '',
+						is_new: that.where.news ? '1' : '0'
+					};
+
+					getGroupGoodsList(groupParams).then(res => {
+						if (res.status === 200 && res.data && res.data.goodsList) {
+							let list = res.data.goodsList;
+							let productList = that.$util.SplitArray(list, that.productList);
+							let loadend = list.length < that.where.limit;
+							that.loadend = loadend;
+							that.loading = false;
+							that.loadTitle = loadend ? that.$t(`没有更多内容啦~`) : that.$t(`加载更多`);
+							that.$set(that, 'productList', productList);
+							that.$set(that.where, 'page', that.where.page + 1);
+							if (!that.productList.length) this.get_host_product();
+							resolve(res);
+						} else {
+							reject(new Error('团购商品数据格式错误'));
+						}
+					}).catch(err => {
+						console.log('团购商品接口调用失败:', err);
+						reject(err);
+					});
 				});
 			},
 			scrolltolower() {

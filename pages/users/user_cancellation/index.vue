@@ -2,36 +2,40 @@
 	<view class="cancellation-page" :style="colorStyle">
 		<view class="header">
 			<view class="back-icon" @click="navigateBack">
-				<text class="iconfont icon-left"></text>
+				<image src="/static/icons/back-arrow.svg" class="back-icon" />
 			</view>
-			<view class="page-title">更换手机号</view>
-		</view>
-		
-		<!-- 顶部警告提示 -->
-		<view class="warning-box">
-			<view class="warning-text">账户注销后，您将在一个月内无法再登录进行团购，您确定要注销么？</view>
+			<view class="page-title">账号注销</view>
 		</view>
 		
 		<!-- 验证部分 -->
-		<view class="verification-section">
-			<view class="section-title">请完成以下验证</view>
+		<view class="verification-section" v-if="currentStep === 1">
+			<view class="section-title">请完成身份验证</view>
 			
 			<!-- 手机号验证提示 -->
-			<view class="phone-tip">
-				请输入{{ maskPhone(phone) }}收到的短信验证码
-			</view>
+			<view class="phone-tip">请输入{{ maskPhone(phone) }}收到的短信验证码</view>
 			
 			<!-- 验证码输入区 -->
-			<view class="verification-code-input">
-				<view class="input-label">短信验证码</view>
-				<view class="input-box">
-					<input type="number" v-model="smsCode" placeholder="请输入验证码" />
-					<view class="get-code" @click="sendSmsCode" :class="{ disabled: codeSending }">{{ codeText }}</view>
-				</view>
+			<view class="input-label">短信验证码</view>
+			<view class="input-box-row">
+				<input type="number" v-model="smsCode" placeholder="请输入验证码" class="sms-input" />
+				<view class="get-code-btn" @click="sendSmsCode" :class="{ disabled: codeSending }">{{ codeText }}</view>
+			</view>
+			<view class="divider"></view>
+			<!-- 下一步按钮 -->
+			<view class="submit-btn" @click="nextStep">下一步</view>
+		</view>
+		
+		<!-- 警告确认部分 -->
+		<view class="verification-section" v-if="currentStep === 2">
+			<!-- 顶部警告提示 -->
+			<view class="warning-box">
+				<view class="warning-text">账户注销后，您将在一个月内无法再登录进行团购，您确定要注销么？</view>
 			</view>
 			
-			<!-- 提交按钮 -->
-			<view class="submit-button" @click="submitCancellation">确定注销</view>
+			<view class="confirm-actions">
+				<view class="back-btn" @click="currentStep = 1">返回修改</view>
+				<view class="confirm-btn" @click="submitCancellation">确定注销</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -42,7 +46,7 @@
 	import {
 		getUserAgreement,
 		cancelUser,
-		getPhoneNumber,
+		getUserInfo,
 		sendVerificationCode
 	} from '@/api/user.js'
 	const app = getApp();
@@ -53,7 +57,8 @@
 				phone: '', // 用户手机号
 				smsCode: '', // 短信验证码
 				codeSending: false, // 是否正在发送验证码
-				codeText: '获取验证码'
+				codeText: '获取验证码',
+				currentStep: 1 // 当前步骤：1=验证码输入, 2=确认警告
 			}
 		},
 		onLoad() {
@@ -62,8 +67,10 @@
 		methods: {
 			// 获取用户手机号
 			getUserPhone() {
-				getPhoneNumber().then(res => {
-					this.phone = res.data || '';
+				getUserInfo().then(res => {
+					if (res.data && res.data.phone) {
+						this.phone = res.data.phone || '';
+					}
 				}).catch(err => {
 					this.$util.Tips({
 						title: err || '获取手机号失败'
@@ -116,14 +123,20 @@
 				}, 1000);
 			},
 			
-			// 提交注销申请
-			submitCancellation() {
+			// 进入下一步
+			nextStep() {
 				if (!this.smsCode) {
 					return this.$util.Tips({
 						title: '请输入验证码'
 					});
 				}
 				
+				// 验证验证码是否正确
+				this.currentStep = 2;
+			},
+			
+			// 提交注销申请
+			submitCancellation() {
 				// 调用注销接口
 				cancelUser({
 					code: this.smsCode
@@ -167,7 +180,7 @@
 
 	.header {
 		position: relative;
-		height: 88rpx;
+		height: 100rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -175,20 +188,25 @@
 		
 		.back-icon {
 			position: absolute;
-			left: 30rpx;
-			font-size: 36rpx;
+			left: 20rpx;
+			width: 32rpx;
+			height: 32rpx;
+			display: flex;
+			align-items: center;
 		}
 		
 		.page-title {
 			font-size: 36rpx;
-			font-weight: 500;
+			font-weight: 400;
+			color: #1A1A1A;
 		}
 	}
 
 	.warning-box {
 		background-color: #FFF9F2;
-		padding: 20rpx 30rpx;
-		margin-bottom: 30rpx;
+		padding: 24rpx 30rpx;
+		margin-bottom: 40rpx;
+		border-radius: 8rpx;
 		
 		.warning-text {
 			color: #FF9500;
@@ -198,63 +216,99 @@
 	}
 
 	.verification-section {
-		padding: 30rpx;
+		margin-top: 40rpx;
+		padding: 0 30rpx;
 		
 		.section-title {
-			font-size: 40rpx;
+			font-size: 36rpx;
+			color: #1A1A1A;
 			font-weight: 500;
-			margin-bottom: 40rpx;
+			margin-bottom: 12rpx;
 		}
 		
 		.phone-tip {
-			color: #999;
+			font-size: 26rpx;
+			color: #CCCCCC;
+			margin-bottom: 40rpx;
+		}
+		
+		.input-label {
 			font-size: 28rpx;
-			margin-bottom: 60rpx;
+			color: #1A1A1A;
+			margin-bottom: 12rpx;
 		}
 		
-		.verification-code-input {
-			margin-bottom: 60rpx;
+		.input-box-row {
+			display: flex;
+			align-items: center;
+			margin-bottom: 24rpx;
 			
-			.input-label {
-				font-size: 30rpx;
-				margin-bottom: 20rpx;
+			.sms-input {
+				flex: 1;
+				font-size: 32rpx;
+				color: #1A1A1A;
+				border: none;
+				outline: none;
+				background: transparent;
+				height: 80rpx;
+				line-height: 80rpx;
 			}
 			
-			.input-box {
-				display: flex;
-				align-items: center;
-				border-bottom: 1rpx solid #f0f0f0;
-				padding-bottom: 20rpx;
+			.get-code-btn {
+				color: #1890FF;
+				font-size: 28rpx;
+				margin-left: 24rpx;
 				
-				input {
-					flex: 1;
-					height: 80rpx;
-					font-size: 32rpx;
-				}
-				
-				.get-code {
-					color: #1989fa;
-					font-size: 28rpx;
-					padding: 0 20rpx;
-					
-					&.disabled {
-						color: #999;
-					}
+				&.disabled {
+					color: #CCCCCC;
 				}
 			}
 		}
 		
-		.submit-button {
+		.divider {
 			width: 100%;
-			height: 90rpx;
-			background: linear-gradient(90deg, #FF9500 0%, #FF5E00 100%);
-			border-radius: 45rpx;
-			color: #fff;
+			height: 1rpx;
+			background: #F2F2F2;
+			margin-bottom: 60rpx;
+		}
+		
+		.submit-btn {
+			width: 90%;
+			height: 96rpx;
+			background: #FE8D00;
+			color: #FFFFFF;
 			font-size: 32rpx;
 			display: flex;
 			align-items: center;
 			justify-content: center;
+			margin: 60rpx auto;
+			border-radius: 48rpx;
+		}
+		
+		.confirm-actions {
+			display: flex;
+			justify-content: space-between;
 			margin-top: 60rpx;
+			
+			.back-btn, .confirm-btn {
+				width: 45%;
+				height: 96rpx;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 32rpx;
+				border-radius: 48rpx;
+			}
+			
+			.back-btn {
+				background: #F5F5F5;
+				color: #999999;
+			}
+			
+			.confirm-btn {
+				background: #FE8D00;
+				color: #FFFFFF;
+			}
 		}
 	}
 </style>

@@ -1,6 +1,6 @@
 <template>
 	<view class="empty-box">
-		<image :src="imgHost + '/statics/images/empty-box.png'"></image>
+		<image :src="image || imgHost + '/statics/images/empty-box.png'" mode="aspectFit"></image>
 		<view class="txt">{{title || $t(`暂无记录`)}}</view>
 	</view>
 </template>
@@ -13,6 +13,10 @@
 				type: String,
 				default: '',
 			},
+			image: {
+				type: String,
+				default: '',
+			}
 		},
 		data(){
 			return{
@@ -29,14 +33,17 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		padding-top: 200rpx;
+		padding-top: 100rpx;
 		image{
-			width: 414rpx;
-			height: 240rpx;
+			width: 296rpx;
+			height: 206rpx;
+			margin-bottom: 20rpx;
 		}
 		.txt{
 			font-size: 26rpx;
-			color: #999;
+			color: #777777;
+			font-family: 'PingFang SC';
+			font-weight: 400;
 		}
 	}
 </style>

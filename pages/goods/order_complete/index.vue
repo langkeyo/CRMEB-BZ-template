@@ -1,35 +1,27 @@
 <template>
 	<view class="order-complete-container">
-		<!-- 顶部状态栏 -->
+		<!-- 顶部导航栏 -->
 		<view class="header">
-			<view class="status-bar">
+			<view class="nav-bar">
 				<!-- 返回按钮 -->
-				<view class="back-btn" @click="goBack">
+				<view class="left" @click="goBack">
 					<image src="/static/images/order-complete/back-arrow.svg" mode="aspectFit"></image>
 					<text>返回</text>
 				</view>
+				<view class="title">订单详情</view>
 			</view>
 		</view>
 
 		<view v-if="loading" class="loading-box">
-			<u-loading-icon mode="circle" size="36"></u-loading-icon>
+			<view class="loading-spinner"></view>
+			<text class="loading-text">加载中...</text>
 		</view>
 
-		<template v-else-if="orderInfo">
+		<view v-else>
 			<!-- 订单完成状态 -->
 			<view class="order-complete-status">
 				<view class="complete-title">订单已完成</view>
-				<view class="complete-message">感谢您对本平台的支持与信任，期待您再此光临!请厉行节约,拒绝浪费</view>
-				<!-- 售后申请按钮 -->
-				<view class="after-sale-btn" @click="goToAfterSale">申请售后</view>
-				<!-- 评价提示 -->
-				<view class="review-section">
-					<view class="review-text">您对本单还满意么?</view>
-					<view class="go-review" @click="goToReview">
-						<text>去评价</text>
-						<image src="/static/images/order-complete/arrow-right.svg" mode="aspectFit"></image>
-					</view>
-				</view>
+				<view class="complete-message">感谢您对本平台的支持与信任，期待您再此光临!</view>
 			</view>
 
 			<!-- 商品详情 -->
@@ -114,13 +106,7 @@
 					</view>
 				</view>
 			</view>
-		</template>
-
-		<template v-else>
-			<view class="empty-data">
-				<u-empty mode="data" text="暂无订单数据"></u-empty>
-			</view>
-		</template>
+		</view>
 
 		<!-- 底部安全区域 -->
 		<view class="safe-area">
@@ -130,9 +116,8 @@
 </template>
 
 <script>
-import { navigateToOrderDetails, navigateToHome } from '@/utils/orderNavigation.js'
-
 export default {
+	name: 'OrderComplete',
 	data () {
 		return {
 			orderInfo: null,
@@ -180,15 +165,29 @@ export default {
 	methods: {
 		getOrderDetail (orderId) {
 			this.loading = true
-			this.$u.api.getOrderDetail(orderId)
-				.then(res => {
-					this.orderInfo = res.data
+			// 使用uni.request或已有的API方法
+			uni.request({
+				url: '/api/order/detail',
+				data: { orderId },
+				success: (res) => {
+					if (res.data.status === 200) {
+						this.orderInfo = res.data.data
+					} else {
+						uni.showToast({
+							title: res.data.msg || '获取订单详情失败',
+							icon: 'none'
+						})
+					}
 					this.loading = false
-				})
-				.catch(err => {
-					this.$u.toast(err.msg || '获取订单详情失败')
+				},
+				fail: () => {
+					uni.showToast({
+						title: '网络请求失败',
+						icon: 'none'
+					})
 					this.loading = false
-				})
+				}
+			})
 		},
 		goBack () {
 			uni.navigateBack()
@@ -222,7 +221,7 @@ export default {
 			})
 		},
 		// 进入商品详情
-		goToProductDetail (item) {
+		goToProductDetail () {
 			uni.navigateTo({
 				url: '/pages/goods/goods_details_store/index?id=1'
 			})
@@ -235,35 +234,20 @@ export default {
 .order-complete-container {
 	background-color: #F0F0F0;
 	min-height: 100vh;
-	padding-bottom: 30rpx;
-
-	.loading-box {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		height: 200rpx;
-		margin-top: 100rpx;
-	}
-
-	.empty-data {
-		margin-top: 100rpx;
-	}
 
 	.header {
-		background: #FFFFFF;
-		padding-top: 44px;
-		/* 状态栏高度 */
+		background-color: #FFFFFF;
 
-		.status-bar {
+		.nav-bar {
 			position: relative;
-			height: 44px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
+			height: 44px;
 
-			.back-btn {
+			.left {
 				position: absolute;
-				left: 20rpx;
+				left: 15px;
 				display: flex;
 				align-items: center;
 
@@ -278,8 +262,29 @@ export default {
 					font-size: 18px;
 				}
 			}
+
+			.title {
+				font-size: 18px;
+				font-weight: 400;
+				color: #1A1A1A;
+			}
 		}
 	}
+	padding-bottom: 30rpx;
+
+	.loading-box {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 200rpx;
+		margin-top: 100rpx;
+	}
+
+	.empty-data {
+		margin-top: 100rpx;
+	}
+
+
 
 	.order-complete-status {
 		background-color: #FFFFFF;
@@ -551,6 +556,35 @@ export default {
 			height: 5px;
 			opacity: 0.9;
 		}
+	}
+
+	// Loading样式
+	.loading-box {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 60rpx;
+
+		.loading-spinner {
+			width: 60rpx;
+			height: 60rpx;
+			border: 4rpx solid #f3f3f3;
+			border-top: 4rpx solid #007AFF;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+			margin-bottom: 20rpx;
+		}
+
+		.loading-text {
+			font-size: 28rpx;
+			color: #999999;
+		}
+	}
+
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
 	}
 }
 </style>

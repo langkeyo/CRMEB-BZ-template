@@ -3,14 +3,17 @@
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="back-btn" @click="goBack">
-        <text class="iconfont icon-fanhui"></text>
+        <image src="/static/icons/back-arrow.svg" class="back-icon" />
       </view>
       <view class="title">我的站点</view>
-      <view class="right-btn" @click="goToSelect">选择</view>
+      <view class="right-btn" @click="toggleSelectMode">{{ isSelectMode ? '取消' : '选择' }}</view>
     </view>
     
     <!-- 站点卡片 -->
-    <view class="site-card">
+    <view class="site-card" :class="{ 'select-mode': isSelectMode }">
+      <view v-if="isSelectMode" class="radio-wrap" @click.stop="selectedSiteId = currentSite.id">
+        <view class="radio-circle" :class="{ checked: selectedSiteId === currentSite.id }"></view>
+      </view>
       <view class="site-address">
         <text class="address-text">{{ currentSite.fullAddress }}</text>
         <text class="default-tag" v-if="currentSite.isDefault">默认</text>
@@ -20,13 +23,32 @@
         <text class="contact-name">{{ currentSite.contactName }}</text>
         <text class="contact-phone">{{ currentSite.contactPhone }}</text>
       </view>
-      <view class="edit-btn" @click="editSite">编辑</view>
+      <view class="edit-btn" v-if="!isSelectMode" @click="editSite">编辑</view>
     </view>
     
-    <!-- 底部按钮和提示 -->
-    <view class="footer">
+    <!-- 中部提示文字 -->
+    <view class="tip-text-center">
+      <text>提示 《更改取货站点一月限一次》</text>
+    </view>
+    <!-- 底部按钮：选择模式下显示 -->
+    <view class="footer" v-if="isSelectMode">
+      <view class="add-site-btn confirm-btn" :class="{ disabled: !selectedSiteId }" @click="onSetMySiteClick">设为我的站点</view>
+    </view>
+    <!-- 底部按钮：非选择模式下显示 -->
+    <view class="footer" v-else>
       <view class="add-site-btn" @click="addSite">添加站点</view>
-      <view class="tip-text">提示 《更改取货站点一月限一次》</view>
+    </view>
+
+    <!-- 更换站点确认弹窗 -->
+    <view v-if="showConfirmModal" class="modal-mask" @touchmove.stop.prevent>
+      <view class="confirm-modal">
+        <view class="modal-content">您确定要更换站点么？</view>
+        <view class="modal-actions">
+          <view class="modal-btn cancel" @click="showConfirmModal = false">取消</view>
+          <view class="modal-divider"></view>
+          <view class="modal-btn confirm" @click="confirmSetMySite">确定</view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -43,29 +65,39 @@ export default {
         contactName: '王小明',
         contactPhone: '18567213652'
       },
-      hasSite: false
+      hasSite: false,
+      isSelectMode: false,
+      selectedSiteId: null,
+      showConfirmModal: false
     };
   },
   onLoad() {
-    // 页面加载时从缓存获取站点信息
     this.getSiteInfo();
   },
   onShow() {
-    // 每次页面显示时刷新站点信息，以确保从其他页面返回时能看到更新
     this.getSiteInfo();
   },
   methods: {
     goBack() {
       uni.navigateBack();
     },
-    goToSelect() {
-      // 跳转到站点选择页面
-      uni.navigateTo({
-        url: '../my_site/select'
-      });
+    toggleSelectMode() {
+      this.isSelectMode = !this.isSelectMode;
+      if (!this.isSelectMode) this.selectedSiteId = null;
+    },
+    onSetMySiteClick() {
+      if (!this.selectedSiteId) return;
+      this.showConfirmModal = true;
+    },
+    confirmSetMySite() {
+      if (!this.selectedSiteId) return;
+      uni.setStorageSync('CURRENT_SITE_ID', this.selectedSiteId);
+      this.isSelectMode = false;
+      this.showConfirmModal = false;
+      this.getSiteInfo();
+      uni.showToast({ title: '已设为我的站点', icon: 'success' });
     },
     editSite() {
-      // 编辑当前站点
       if (!this.currentSite.id) {
         uni.showToast({
           title: '站点信息不完整，无法编辑',
@@ -73,31 +105,18 @@ export default {
         });
         return;
       }
-      
-      uni.navigateTo({
-        url: './edit?id=' + this.currentSite.id
-      });
+      uni.navigateTo({ url: './edit?id=' + this.currentSite.id });
     },
     addSite() {
-      // 添加新站点
-      uni.navigateTo({
-        url: './add'
-      });
+      uni.navigateTo({ url: './add' });
     },
     getSiteInfo() {
-      // 从缓存获取站点信息
       try {
-        // 获取当前站点ID
         const currentSiteId = uni.getStorageSync('CURRENT_SITE_ID');
-        
-        // 获取所有站点列表
         let siteList = uni.getStorageSync('SITE_LIST') || '[]';
         siteList = JSON.parse(siteList);
-        
         if (siteList.length > 0) {
           this.hasSite = true;
-          
-          // 如果有当前站点ID，则获取对应站点
           if (currentSiteId) {
             const site = siteList.find(item => item.id == currentSiteId);
             if (site) {
@@ -105,25 +124,15 @@ export default {
               return;
             }
           }
-          
-          // 如果没有当前站点ID或未找到对应站点，则使用第一个站点
           this.currentSite = siteList[0];
           uni.setStorageSync('CURRENT_SITE_ID', this.currentSite.id);
           uni.setStorageSync('CURRENT_SITE', JSON.stringify(this.currentSite));
         } else {
           this.hasSite = false;
-          // 如果没有站点，可以使用默认值或提示用户添加
         }
       } catch (e) {
         console.error('获取站点信息失败', e);
       }
-    },
-    
-    goToSiteList() {
-      // 跳转到站点列表页面
-      uni.navigateTo({
-        url: './site_list'
-      });
     }
   }
 };
@@ -135,127 +144,242 @@ export default {
   min-height: 100vh;
   padding-bottom: 40rpx;
 }
-
-/* 顶部导航栏 */
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  height: 88rpx;
-  padding: 0 30rpx;
+  height: 100rpx;
   background-color: #FFFFFF;
   position: relative;
-  
-  .back-btn {
-    width: 44rpx;
-    height: 44rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    .iconfont {
-      font-size: 36rpx;
-      color: #333333;
-    }
-  }
-  
-  .title {
-    font-size: 36rpx;
-    font-weight: 500;
-    color: #333333;
-  }
-  
-  .right-btn {
-    font-size: 32rpx;
-    color: #333333;
-  }
+  border-bottom: 1rpx solid #F2F2F2;
 }
-
-/* 站点卡片 */
+.back-btn {
+  position: absolute;
+  left: 20rpx;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.back-icon {
+  width: 32rpx;
+  height: 32rpx;
+}
+.title {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: #333333;
+  text-align: center;
+}
+.right-btn {
+  position: absolute;
+  right: 30rpx;
+  font-size: 32rpx;
+  color: #333333;
+}
 .site-card {
-  margin: 30rpx;
+  margin: 30rpx 30rpx 0 30rpx;
   padding: 30rpx;
   background-color: #FFFFFF;
   border-radius: 16rpx;
   box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
   position: relative;
-  
-  .site-address {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20rpx;
-    
-    .address-text {
-      font-size: 28rpx;
-      color: #333333;
-      font-weight: 500;
-    }
-    
-    .default-tag {
-      margin-left: 20rpx;
-      font-size: 24rpx;
-      color: #FFFFFF;
-      background-color: #FF6C00;
-      padding: 4rpx 10rpx;
-      border-radius: 4rpx;
-    }
-  }
-  
-  .site-building {
-    font-size: 32rpx;
-    color: #333333;
-    font-weight: bold;
-    margin-bottom: 30rpx;
-  }
-  
-  .site-contact {
-    display: flex;
-    align-items: center;
-    font-size: 28rpx;
-    color: #666666;
-    
-    .contact-name {
-      margin-right: 20rpx;
-    }
-  }
-  
-  .edit-btn {
-    position: absolute;
-    right: 30rpx;
-    top: 30rpx;
-    font-size: 28rpx;
-    color: #666666;
+  transition: box-shadow 0.2s, background 0.2s;
+  &.select-mode {
+    box-shadow: 0 8rpx 24rpx rgba(254, 141, 0, 0.08);
+    background: #fffbe9;
+    padding-left: 70rpx;
   }
 }
-
-/* 底部按钮和提示 */
+.radio-wrap {
+  position: absolute;
+  left: 30rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.radio-circle {
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid #FE8D00;
+  border-radius: 50%;
+  background: #fff;
+  position: relative;
+  transition: border 0.2s;
+  &.checked {
+    background: #FE8D00;
+    box-shadow: 0 0 0 4rpx #fffbe9;
+  }
+  &.checked::after {
+    content: '';
+    display: block;
+    width: 16rpx;
+    height: 16rpx;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+.site-address {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+.address-text {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+.default-tag {
+  margin-left: 12rpx;
+  font-size: 20rpx;
+  color: #FFFFFF;
+  background-color: #FE8D00;
+  padding: 2rpx 8rpx;
+  border-radius: 4rpx;
+  line-height: 1.2;
+}
+.site-building {
+  font-size: 32rpx;
+  color: #333333;
+  font-weight: bold;
+  margin-bottom: 30rpx;
+}
+.site-contact {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: #666666;
+}
+.contact-name {
+  margin-right: 20rpx;
+}
+.edit-btn {
+  position: absolute;
+  right: 30rpx;
+  top: 30rpx;
+  font-size: 28rpx;
+  color: #B3B3B3;
+}
+.tip-text-center {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 55%;
+  left: 0;
+  z-index: 1;
+  color: #E0E0E0;
+  font-size: 26rpx;
+  text-align: center;
+}
 .footer {
-  padding: 0 30rpx;
+  background: #fff;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  padding: 40rpx 0 60rpx 0;
   position: fixed;
-  bottom: 40rpx;
+  bottom: 0;
   left: 0;
   right: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  
-  .add-site-btn {
-    width: 100%;
-    height: 90rpx;
-    background-color: #FF6C00;
-    color: #FFFFFF;
-    font-size: 32rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 45rpx;
-    margin-bottom: 30rpx;
+  z-index: 10;
+}
+.add-site-btn.confirm-btn {
+  width: 90%;
+  height: 96rpx;
+  background: #FE8D00;
+  color: #FFFFFF;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  border-radius: 48rpx;
+  transition: background 0.2s;
+  &.disabled {
+    background: #FFD9A0;
+    color: #fff;
   }
-  
-  .tip-text {
-    font-size: 24rpx;
-    color: #999999;
-    text-align: center;
-  }
+}
+.add-site-btn {
+  width: 90%;
+  height: 96rpx;
+  background-color: #FE8D00;
+  color: #FFFFFF;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+  border-radius: 48rpx;
+}
+
+/* 弹窗样式 */
+.modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.15);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm-modal {
+  width: 540rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx 0 rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.modal-content {
+  font-size: 32rpx;
+  color: #222;
+  text-align: center;
+  padding: 60rpx 30rpx 50rpx 30rpx;
+}
+.modal-actions {
+  display: flex;
+  border-top: 1rpx solid #eee;
+  height: 100rpx;
+}
+.modal-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  color: #222;
+  background: #fff;
+  cursor: pointer;
+}
+.modal-btn.cancel {
+  border-bottom-left-radius: 24rpx;
+}
+.modal-btn.confirm {
+  border-bottom-right-radius: 24rpx;
+  color: #222;
+}
+.modal-divider {
+  width: 1rpx;
+  background: #eee;
+  height: 100%;
 }
 </style>

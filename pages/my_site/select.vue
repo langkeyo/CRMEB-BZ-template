@@ -1,13 +1,6 @@
 <template>
-  <view class="select-page">
-    <!-- 顶部导航栏 -->
-    <view class="header">
-      <view class="back-btn" @click="goBack">
-        <text class="iconfont icon-fanhui"></text>
-      </view>
-      <view class="title">添加站点</view>
-      <view class="right-placeholder"></view>
-    </view>
+  <view class="select-overlay" @click.stop>
+    <!-- 顶部导航栏 - 移除 -->
     
     <!-- 收货姓名输入 -->
     <view class="input-section">
@@ -95,11 +88,15 @@ export default {
     if (options.district) {
       this.selectedRegion.district = decodeURIComponent(options.district);
     }
+    
+    // 获取父页面的收货人姓名
+    const pages = getCurrentPages();
+    const prevPage = pages[pages.length - 2];
+    if (prevPage && prevPage.$vm && prevPage.$vm.form && prevPage.$vm.form.contactName) {
+      this.form.name = prevPage.$vm.form.contactName;
+    }
   },
   methods: {
-    goBack() {
-      uni.navigateBack();
-    },
     validateField(field) {
       // 重置错误
       this.errors[field] = '';
@@ -165,19 +162,16 @@ export default {
           const pages = getCurrentPages();
           const prevPage = pages[pages.length - 2];
           
-          // 参数传递方式一：直接修改上一页数据（不推荐，仅在特殊场景使用）
+          // 参数传递方式一：直接修改上一页数据
           if (prevPage && prevPage.$vm) {
             prevPage.$vm.form.province = this.selectedRegion.province;
             prevPage.$vm.form.city = this.selectedRegion.city;
             prevPage.$vm.form.district = this.selectedRegion.district;
+            prevPage.$vm.form.contactName = this.form.name; // 同步收货人姓名
           }
           
-          // 参数传递方式二：通过url参数传递
-          const url = `../${this.sourceFrom}?province=${encodeURIComponent(this.selectedRegion.province)}&city=${encodeURIComponent(this.selectedRegion.city)}&district=${encodeURIComponent(this.selectedRegion.district)}`;
-          
-          uni.navigateTo({
-            url: url
-          });
+          // 关闭当前页面，返回上一页
+          uni.navigateBack();
         } else {
           // 默认跳转到站点列表
           uni.navigateTo({
@@ -191,43 +185,16 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.select-page {
-  background-color: #FFFFFF;
-  min-height: 100vh;
-}
-
-/* 顶部导航栏 */
-.header {
+.select-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.95);
+  z-index: 999;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 88rpx;
-  padding: 0 30rpx;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #F5F5F5;
-  
-  .back-btn {
-    width: 44rpx;
-    height: 44rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    .iconfont {
-      font-size: 36rpx;
-      color: #333333;
-    }
-  }
-  
-  .title {
-    font-size: 36rpx;
-    font-weight: 500;
-    color: #333333;
-  }
-  
-  .right-placeholder {
-    width: 44rpx;
-  }
+  flex-direction: column;
 }
 
 /* 输入区域 */
@@ -236,9 +203,12 @@ export default {
   align-items: center;
   padding: 30rpx;
   border-bottom: 1rpx solid #EEEEEE;
+  background-color: #FFFFFF;
+  position: relative;
+  z-index: 1000;
   
   .input-label {
-    font-size: 28rpx;
+    font-size: 32rpx;
     color: #333333;
     width: 180rpx;
   }
@@ -246,13 +216,18 @@ export default {
   .input-field {
     flex: 1;
     height: 60rpx;
-    font-size: 28rpx;
+    font-size: 32rpx;
   }
 }
 
 /* 配送区域 */
 .delivery-section {
+  flex: 1;
   padding: 30rpx;
+  background-color: #FFFFFF;
+  position: relative;
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
   
   .delivery-title {
     font-size: 32rpx;
@@ -280,7 +255,7 @@ export default {
       }
       
       &.highlight {
-        color: #FF6C00;
+        color: #FE8D00;
         font-weight: 500;
       }
       
@@ -307,9 +282,20 @@ export default {
       border-bottom: 1rpx solid #F5F5F5;
       
       &.active {
-        color: #FF6C00;
+        color: #FE8D00;
       }
     }
   }
 }
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
 </style>
+
+

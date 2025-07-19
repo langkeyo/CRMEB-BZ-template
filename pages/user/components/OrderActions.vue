@@ -53,7 +53,7 @@ export default {
 .order-actions-section {
   background-color: #FFFFFF;
   border-radius: 20rpx;
-  margin: 70rpx 60rpx;
+  margin: 20rpx 22rpx 20rpx 30rpx;
   padding: 30rpx 0;
   display: flex;
   justify-content: space-around;

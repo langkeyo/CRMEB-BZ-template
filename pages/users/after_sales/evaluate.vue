@@ -1,5 +1,5 @@
 <template>
-    <view :style="colorStyle">
+    <view :style="colorStyle" class="evaluate-page">
         <!-- 顶部导航栏 -->
         <view class="page-header">
             <view class="header-left" @click="goBack">
@@ -10,7 +10,7 @@
         </view>
 
         <!-- 搜索框 -->
-        <view class="search-box">
+        <view class="search-box" v-if="orderList.length > 0">
             <view class="search-input">
                 <text class="iconfont icon-sousuo"></text>
                 <input type="text" :placeholder="$t(`搜索评价订单`)" v-model="keyword" @confirm="searchOrder" />
@@ -49,20 +49,30 @@
                         <view class="goods-detail">
                             <view class="goods-name">{{ item.goods_name }}</view>
                             <view class="goods-count">{{ $t(`共一件商品`) }}</view>
+                            
+                            <!-- 评价输入框和按钮 -->
+                            <view class="evaluate-input-box">
+                                <view class="input-placeholder" @click="goEvaluateEdit(item)">{{ $t(`展开说说吧`) }}</view>
+                                <view class="like-icon" :class="{'active': item.isLiked}" @click="toggleLike(item)">
+                                    <text class="iconfont icon-dianzan1"></text>
+                                </view>
+                                <view class="evaluate-btn" @click="goEvaluateEdit(item)">{{ $t(`评价`) }}</view>
+                            </view>
                         </view>
                     </view>
-
-                    <!-- 评价按钮 -->
-                    <view class="evaluate-input-box">
-                        <view class="input-placeholder" @click="goEvaluateEdit(item)">{{ $t(`展开说说吧`) }}</view>
-                        <view class="evaluate-btn" @click="goEvaluateEdit(item)">{{ $t(`评价`) }}</view>
-                    </view>
+                    
+                    <!-- 分割线 -->
+                    <view class="divider" v-if="index < orderList.length - 1"></view>
                 </view>
             </view>
 
             <!-- 空状态显示 -->
             <view v-if="orderList.length === 0 && !loading && !initialLoading" class="empty-state">
-                <emptyPage :title="$t(`您没有待评价订单`)" :image="emptyImage"></emptyPage>
+                <!-- Custom empty state that matches the Figma design -->
+                <view class="custom-empty">
+                    <image class="empty-image" :src="emptyImage" mode="aspectFit"></image>
+                    <view class="empty-text">{{ $t(`您没有待评价订单`) }}</view>
+                </view>
 
                 <!-- 猜你喜欢 -->
                 <view class="guess-like" v-if="recommendGoods.length > 0">
@@ -77,7 +87,9 @@
                             <image class="goods-img" :src="goods.image" mode="aspectFill"></image>
                             <view class="goods-name">{{ goods.store_name }}</view>
                             <view class="goods-desc">{{ goods.desc }}</view>
-                            <view class="goods-price">{{ $t(`￥`) }}{{ goods.price }}</view>
+                            <view class="goods-price">
+                                <text class="yuan">{{ $t(`￥`) }}</text>{{ goods.price }}
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -98,14 +110,11 @@
             </view>
         </view>
 
-        <!-- #ifndef MP -->
-        <home></home>
-        <!-- #endif -->
+        <!-- 移除home组件 -->
     </view>
 </template>
 
 <script>
-import home from '@/components/home'
 import emptyPage from '@/components/emptyPage'
 import { getEvaluateList, getRecommendGoods } from '@/api/order.js'
 import { toLogin } from '@/libs/login.js'
@@ -114,7 +123,6 @@ import colors from '@/mixins/color.js'
 
 export default {
     components: {
-        home,
         emptyPage
     },
     mixins: [colors],
@@ -128,7 +136,7 @@ export default {
             limit: 10, // 每页数量
             orderList: [], // 评价订单列表
             recommendGoods: [], // 推荐商品列表
-            emptyImage: require('@/static/images/empty_evaluate.png'), // 空状态图片
+            emptyImage: '/static/images/user/no-orders.png', // 空状态图片，使用本地图片
             showSuccess: false, // 是否显示成功提示
         }
     },
@@ -216,6 +224,12 @@ export default {
             }
         },
 
+        // 切换点赞状态
+        toggleLike(item) {
+            item.isLiked = !item.isLiked;
+            // 这里可以添加点赞API调用
+        },
+
         // 跳转到评价编辑页
         goEvaluateEdit (item) {
             uni.navigateTo({
@@ -251,6 +265,12 @@ export default {
                     keyword: this.keyword
                 }).then(res => {
                     const list = res.data.list || []
+                    
+                    // 添加点赞状态字段
+                    list.forEach(item => {
+                        item.isLiked = false; // 默认未点赞
+                    });
+                    
                     this.orderList = this.orderList.concat(list)
                     this.loadend = list.length < this.limit
                     this.loading = false
@@ -276,13 +296,84 @@ export default {
             // 使用真实API调用，替换模拟数据
             return new Promise((resolve, reject) => {
                 getRecommendGoods().then(res => {
-                    this.recommendGoods = res.data || []
-                    resolve(res.data)
+                    this.recommendGoods = res.data || [];
+                    // 如果API没有返回数据，使用模拟数据
+                    if (!this.recommendGoods.length) {
+                        this.recommendGoods = [
+                            {
+                                id: 1,
+                                store_name: '乐事薯片',
+                                desc: '会员活动大礼包',
+                                price: '15.8',
+                                image: '/static/images/goods/snack6.png'
+                            },
+                            {
+                                id: 2,
+                                store_name: '百草味坚果',
+                                desc: '一盒15包随机口味',
+                                price: '35',
+                                image: '/static/images/goods/snack6.png'
+                            },
+                            {
+                                id: 3,
+                                store_name: '格力高饼干',
+                                desc: '一箱10袋口味随机',
+                                price: '65',
+                                image: '/static/images/goods/snack6.png'
+                            },
+                            {
+                                id: 4,
+                                store_name: '上等雪牛肉A5',
+                                desc: '日本进口和牛肉',
+                                price: '158',
+                                image: '/static/images/goods/snack6.png'
+                            },
+                            {
+                                id: 5,
+                                store_name: '战斧牛排',
+                                desc: '精选散养牛肉',
+                                price: '188',
+                                image: '/static/images/goods/snack6.png'
+                            },
+                            {
+                                id: 6,
+                                store_name: '云南大蓝莓',
+                                desc: '云南新鲜大个蓝莓',
+                                price: '66',
+                                image: '/static/images/goods/snack6.png'
+                            }
+                        ];
+                    }
+                    resolve(this.recommendGoods);
                 }).catch(err => {
-                    this.recommendGoods = []
-                    reject(err)
-                })
-            })
+                    // 发生错误时也使用模拟数据
+                    this.recommendGoods = [
+                        {
+                            id: 1,
+                            store_name: '乐事薯片',
+                            desc: '会员活动大礼包',
+                            price: '15.8',
+                            image: '/static/images/goods/snack6.png'
+                        },
+                        {
+                            id: 2,
+                            store_name: '百草味坚果',
+                            desc: '一盒15包随机口味',
+                            price: '35',
+                            image: '/static/images/goods/snack6.png'
+                        },
+                        {
+                            id: 3,
+                            store_name: '格力高饼干',
+                            desc: '一箱10袋口味随机',
+                            price: '65',
+                            image: '/static/images/goods/snack6.png'
+                        }
+                    ];
+                    resolve(this.recommendGoods);
+                    reject(err);
+                });
+            });
         },
 
         // 显示成功提示
@@ -306,13 +397,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.evaluate-page {
+    background-color: #F0F0F0;
+    min-height: 100vh;
+}
+
 .page-header {
     height: 90rpx;
     display: flex;
     align-items: center;
     position: relative;
     background-color: #fff;
-    padding: 0 30rpx;
 
     .header-left {
         display: flex;
@@ -323,13 +418,15 @@ export default {
 
         .iconfont {
             font-size: 36rpx;
-            color: #333;
+            color: #333333;
         }
 
         .back-text {
-            font-size: 32rpx;
-            color: #333;
+            font-size: 36rpx;
+            color: #333333;
             margin-left: 10rpx;
+            font-family: 'PingFang SC';
+            font-weight: 400;
         }
     }
 
@@ -337,8 +434,9 @@ export default {
         flex: 1;
         text-align: center;
         font-size: 36rpx;
-        font-weight: 500;
+        font-weight: 400;
         color: #1A1A1A;
+        font-family: 'PingFang SC';
     }
 }
 
@@ -387,9 +485,7 @@ export default {
 }
 
 .evaluate-container {
-    background-color: #F0F0F0;
-    min-height: calc(100vh - 162rpx);
-    padding-bottom: 100rpx;
+    min-height: calc(100vh - 240rpx);
 }
 
 // 初始加载状态骨架屏
@@ -448,26 +544,27 @@ export default {
 }
 
 .evaluate-list {
+    padding: 0 24rpx;
+    
     .store-item {
-        margin-top: 20rpx;
-        background-color: #fff;
-        padding: 30rpx;
+        padding: 30rpx 0;
+        position: relative;
 
         .store-name {
             font-size: 32rpx;
-            font-weight: 500;
-            color: #000;
+            font-weight: 400;
+            color: #000000;
             margin-bottom: 20rpx;
+            font-family: 'PingFang SC';
         }
 
         .goods-info {
             display: flex;
             flex-direction: row;
-            margin-bottom: 30rpx;
 
             .goods-img {
-                width: 160rpx;
-                height: 160rpx;
+                width: 198rpx;
+                height: 190rpx;
                 border-radius: 8rpx;
                 margin-right: 20rpx;
             }
@@ -476,22 +573,21 @@ export default {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
 
                 .goods-name {
                     font-size: 28rpx;
-                    color: #000;
+                    color: #000000;
                     margin-bottom: 10rpx;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
+                    font-family: 'PingFang SC';
+                    font-weight: 400;
                 }
 
                 .goods-count {
-                    font-size: 24rpx;
-                    color: #999;
+                    font-size: 28rpx;
+                    color: #999999;
+                    margin-bottom: 20rpx;
+                    font-family: 'PingFang SC';
+                    font-weight: 400;
                 }
             }
         }
@@ -501,14 +597,30 @@ export default {
             justify-content: space-between;
             align-items: center;
             background-color: #F9F9F9;
-            height: 80rpx;
+            height: 60rpx;
             border-radius: 8rpx;
             padding: 0 20rpx;
+            margin-top: auto;
 
             .input-placeholder {
                 font-size: 28rpx;
-                color: #999;
+                color: #999999;
                 flex: 1;
+                font-family: 'PingFang SC';
+                font-weight: 400;
+            }
+            
+            .like-icon {
+                margin-right: 20rpx;
+                
+                .iconfont {
+                    font-size: 32rpx;
+                    color: #F0F0F0;
+                }
+                
+                &.active .iconfont {
+                    color: #FF8C1B;
+                }
             }
 
             .evaluate-btn {
@@ -517,16 +629,49 @@ export default {
                 line-height: 60rpx;
                 text-align: center;
                 background-color: #FF8C1B;
-                color: #fff;
+                color: #FFFFFF;
                 border-radius: 8rpx;
                 font-size: 28rpx;
+                font-family: 'PingFang SC';
+                font-weight: 400;
             }
+        }
+        
+        .divider {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1rpx;
+            background-color: #F2F2F2;
         }
     }
 }
 
 .empty-state {
-    padding: 60rpx 30rpx;
+    padding: 20rpx 30rpx;
+    background-color: #F0F0F0;
+
+    .custom-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 100rpx;
+        
+        .empty-image {
+            width: 296rpx;
+            height: 206rpx;
+            margin-bottom: 20rpx;
+            object-fit: contain;
+        }
+        
+        .empty-text {
+            font-size: 26rpx;
+            color: #777777;
+            font-family: 'PingFang SC';
+            font-weight: 400;
+        }
+    }
 
     .guess-title {
         display: flex;
@@ -535,15 +680,17 @@ export default {
         margin: 60rpx 0 30rpx;
 
         text {
-            font-size: 32rpx;
-            color: #333;
+            font-size: 40rpx;
+            color: #333333;
             padding: 0 20rpx;
+            font-weight: 400;
+            font-family: 'PingFang SC';
         }
 
         .line {
-            width: 100rpx;
-            height: 1px;
-            background-color: #333;
+            width: 37rpx;
+            height: 3rpx;
+            background-color: #333333;
         }
     }
 
@@ -553,41 +700,53 @@ export default {
         justify-content: space-between;
 
         .goods-item {
-            width: 31%;
+            width: 220rpx;
             background-color: #fff;
-            border-radius: 8rpx;
+            border-radius: 16rpx;
             overflow: hidden;
-            margin-bottom: 20rpx;
-            padding-bottom: 20rpx;
+            margin-bottom: 24rpx;
+            box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04);
 
             .goods-img {
                 width: 100%;
-                height: 200rpx;
+                height: 180rpx;
+                object-fit: cover;
+                border-top-left-radius: 16rpx;
+                border-top-right-radius: 16rpx;
             }
 
             .goods-name {
                 font-size: 28rpx;
-                color: #000;
-                padding: 10rpx;
-                white-space: nowrap;
+                color: #222;
+                font-weight: 500;
+                padding: 12rpx 12rpx 0 12rpx;
+                line-height: 36rpx;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .goods-desc {
-                font-size: 24rpx;
-                color: #666;
-                padding: 0 10rpx;
-                white-space: nowrap;
+                font-size: 22rpx;
+                color: #999;
+                padding: 0 12rpx 0 12rpx;
+                line-height: 30rpx;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .goods-price {
                 font-size: 28rpx;
-                color: #FF8C1B;
-                padding: 10rpx;
+                color: #FE8D00;
                 font-weight: bold;
+                padding: 8rpx 12rpx 12rpx 12rpx;
+                display: flex;
+                align-items: baseline;
+                .yuan {
+                    font-size: 26rpx;
+                    margin-right: 2rpx;
+                }
             }
         }
     }

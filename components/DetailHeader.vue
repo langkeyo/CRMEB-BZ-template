@@ -31,7 +31,7 @@
 
         <!-- favorites-icon 收藏按钮 -->
         <view class="favorites-btn" @click="toggleCollect" v-if="showCollect">
-          <text class="star-icon" :class="{ 'collected': isCollected }">☆</text>
+          <image class="star-icon" :class="{ 'collected': isCollected }" src="/static/icons/star.svg" mode="aspectFit" />
         </view>
 
         <!-- shar-icon 分享按钮 -->
@@ -217,11 +217,12 @@ export default {
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      border-radius: 50%; /* 圆形背景 */
 
       .back-icon {
         width: 22.6rpx; /* 11.3px * 2 */
         height: 42rpx; /* 21px * 2 */
-        filter: brightness(0) invert(1); /* 将图标变为白色 */
+        filter: brightness(0) invert(1) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 将图标变为白色并添加微妙阴影 */
       }
     }
 
@@ -240,13 +241,13 @@ export default {
       cursor: pointer;
 
       .star-icon {
-        font-size: 45rpx; /* 18px * 2 - 调整为与加盟详情页相似大小 */
-        color: #FFFFFF;
-        line-height: 1;
-        text-align: center;
+        width: 44rpx; /* 与您调整的分享图标大小一致 */
+        height: 44rpx;
+        margin-top: 4rpx;
+        filter: brightness(0) invert(1) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 白色图标并添加微妙阴影 */
 
         &.collected {
-          color: #FFD700; /* 收藏时显示金色 */
+          filter: brightness(0) saturate(100%) invert(77%) sepia(89%) saturate(1257%) hue-rotate(3deg) brightness(103%) contrast(103%) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 收藏时显示金色 */
         }
       }
     }
@@ -261,8 +262,10 @@ export default {
       cursor: pointer;
 
       .share-icon {
-        width: 42rpx; /* 21px * 2 */
-        height: 42rpx; /* 21px * 2 */
+        width: 44rpx; /* 21px * 2 */
+        height: 40rpx; /* 21px * 2 */
+        filter: drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 添加微妙阴影 */
+        margin-top: 4rpx;
       }
     }
   }

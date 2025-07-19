@@ -1563,6 +1563,36 @@
 							"scrollIndicator": "none"
 						}
 					}
+				},
+				{
+					"path": "user_avatar/index",
+					"style": {
+						"navigationBarTitleText": "头像设置",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "user_nickname/index",
+					"style": {
+						"navigationBarTitleText": "修改昵称",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
+					"path": "user_birthday/index",
+					"style": {
+						"navigationBarTitleText": "设置生日",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
 				}
 			],
 			"plugins": {

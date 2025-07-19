@@ -63,6 +63,9 @@ import {
 	getNewOrderList
 } from '@/api/order.js'
 import {
+	getAfterSalesList
+} from '@/api/group.js'
+import {
 	toLogin
 } from '@/libs/login.js'
 import {
@@ -174,35 +177,87 @@ export default {
 				title: that.$t(`加载中`)
 			})
 
-			getNewOrderList({
-				page: that.page,
-				limit: that.limit,
-				refund_status: type ? type : that.type
-			}).then(res => {
-				let list = res.data.list || []
-				let loadend = list.length < that.limit
-				that.orderList = that.orderList.concat(list)
-				that.$set(that, 'orderList', that.orderList)
-				that.loadend = loadend
-				that.loading = false
-				that.loadTitle = loadend ? that.$t(`我也是有底线的`) : that.$t(`加载更多`)
-				that.page = that.page + 1
+			// 优先尝试团购售后接口
+			this.getGroupAfterSalesList(type).catch(() => {
+				// 团购接口失败，使用原有接口
+				getNewOrderList({
+					page: that.page,
+					limit: that.limit,
+					refund_status: type ? type : that.type
+				}).then(res => {
+					let list = res.data.list || []
+					let loadend = list.length < that.limit
+					that.orderList = that.orderList.concat(list)
+					that.$set(that, 'orderList', that.orderList)
+					that.loadend = loadend
+					that.loading = false
+					that.loadTitle = loadend ? that.$t(`我也是有底线的`) : that.$t(`加载更多`)
+					that.page = that.page + 1
 
-				// 隐藏加载提示
-				uni.hideLoading()
-			}).catch(err => {
-				that.loading = false
-				that.loadTitle = that.$t(`加载更多`)
+					// 隐藏加载提示
+					uni.hideLoading()
+				}).catch(err => {
+					that.loading = false
+					that.loadTitle = that.$t(`加载更多`)
 
-				// 隐藏加载提示
-				uni.hideLoading()
+					// 隐藏加载提示
+					uni.hideLoading()
 
-				// 显示错误提示
-				that.$util.Tips({
-					title: err || that.$t(`加载失败，请稍后重试`),
-					icon: 'none'
+					// 显示错误提示
+					that.$util.Tips({
+						title: err || that.$t(`加载失败，请稍后重试`),
+						icon: 'none'
+					})
 				})
 			})
+		},
+
+		// 获取团购售后列表
+		getGroupAfterSalesList(type) {
+			let that = this;
+			return new Promise((resolve, reject) => {
+				getAfterSalesList({
+					page: that.page,
+					limit: that.limit,
+					status: type ? type : that.type
+				}).then(res => {
+					if (res.status === 200 && res.data) {
+						let list = res.data.list || res.data;
+
+						// 转换数据格式以适配页面显示
+						const formattedList = list.map(item => ({
+							id: item.id,
+							order_id: item.order_id,
+							refund_reason_wap_explain: item.reason || '售后申请',
+							refund_price: item.refund_amount || '0.00',
+							status_name: item.status_text || '处理中',
+							add_time: item.created_at || item.add_time,
+							cart_info: item.goods || [],
+							...item
+						}));
+
+						let loadend = formattedList.length < that.limit;
+						that.orderList = that.orderList.concat(formattedList);
+						that.$set(that, 'orderList', that.orderList);
+						that.loadend = loadend;
+						that.loading = false;
+						that.loadTitle = loadend ? that.$t(`我也是有底线的`) : that.$t(`加载更多`);
+						that.page = that.page + 1;
+
+						// 隐藏加载提示
+						uni.hideLoading();
+						resolve(res);
+					} else {
+						reject(new Error('团购售后数据格式错误'));
+					}
+				}).catch(err => {
+					that.loading = false;
+					that.loadTitle = that.$t(`加载更多`);
+					uni.hideLoading();
+					console.log('获取团购售后失败:', err);
+					reject(err);
+				});
+			});
 		}
 	}
 }

@@ -41,7 +41,7 @@
 				<recommend :hostProduct='hostProduct' v-if="bastList.length == 0 && page > 1"></recommend>
 			</view>
 		</scroll-view>
-		<home></home>
+
 		<view v-if="scrollTopShow" class="back-top" @click="goTop">
 			<text class="iconfont icon-xiangshang"></text>
 		</view>
@@ -60,7 +60,7 @@
 	} from '@/api/api.js';
 	import goodList from '@/components/goodList';
 	import recommend from '@/components/recommend';
-	import home from '@/components/home';
+
 	import colors from "@/mixins/color";
 	import {
 		HTTP_REQUEST_URL
@@ -68,8 +68,7 @@
 	export default {
 		components: {
 			goodList,
-			recommend,
-			home
+			recommend
 		},
 		mixins: [colors],
 		data() {

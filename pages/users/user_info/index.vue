@@ -1,200 +1,92 @@
 <template>
-	<view>
-		<form @submit="formSubmit">
-			<view class='personal-data' :style="colorStyle">
-				<!-- 顶部导航栏 -->
-				<view class="header">
-					<view class="back-icon" @click="navigateBack">
-						<text class="iconfont icon-left"></text>
-					</view>
-					<view class="page-title">个人资料</view>
+	<view class="user-info-page">
+		<!-- 顶部导航栏 -->
+		<view class="header">
+			<view class="back-btn" @click="navigateBack">
+				<image src="/static/icons/back-arrow.svg" class="back-icon" />
+			</view>
+			<view class="page-title">个人资料</view>
+		</view>
+		<view class="list">
+			<!-- 头像 -->
+			<view class="item" @click="navigateTo('/pages/users/user_avatar/index')">
+				<view>头像</view>
+				<view class="right-content">
+					<image class="avatar-img" :src="userInfo.avatar"></image>
+					<image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
+				</view>
+			</view>
+			<view class="divider"></view>
+			<!-- 昵称 -->
+			<view class="item" @click="navigateTo('/pages/users/user_nickname/index')">
+				<view>昵称</view>
+				<view class="right-content">
+					<text class="value-text">{{ userInfo.nickname || '加载中...' }}</text>
+					<image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
+				</view>
+			</view>
+			<view class="divider"></view>
+			<!-- 性别（高亮） -->
+			<view class="item highlight" @click="showGenderPickerFlag = true">
+				<view>性别</view>
+				<view class="right-content">
+					<text class="value-text">{{ userInfo.sex == 1 ? '男' : (userInfo.sex == 2 ? '女' : '未设置') }}</text>
+					<image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
+				</view>
+			</view>
+			<view class="divider"></view>
+			<!-- 生日 -->
+			<view class="item" @click="showBirthdayPicker = true">
+				<view>生日</view>
+				<view class="right-content">
+					<text class="value-text">{{ userInfo.birthday || '未设置' }}</text>
+					<image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
+				</view>
+			</view>
+		</view>
+		<!-- 自定义底部性别选择弹窗（无动画，静态弹出） -->
+		<view v-if="showGenderPickerFlag">
+			<view class="popup-mask" @click="hideGenderPicker"></view>
+			<view class="gender-popup-container">
+				<!-- 选项弹窗 -->
+				<view class="gender-popup-options">
+					<view class="gender-option" @click="selectGender(1)">男</view>
+					<view class="gender-divider"></view>
+					<view class="gender-option" @click="selectGender(2)">女</view>
+				</view>
+				<!-- 取消按钮 -->
+				<view class="gender-popup-cancel" @click="hideGenderPicker">取消</view>
+			</view>
+		</view>
+		<!-- 生日底部弹窗 -->
+		<view v-if="showBirthdayPicker">
+			<view class="popup-mask" @click="hideBirthdayPicker"></view>
+			<view class="birthday-popup-full">
+				<view class="birthday-popup-title">生日</view>
+				
+				<!-- 简单的日期选择器 -->
+				<view class="birthday-picker-container">
+					<!-- 高亮背景条 -->
+					<view class="picker-highlight-left"></view>
+					<view class="picker-highlight-right"></view>
+					
+					<picker-view :value="[birthdayMonth-1, birthdayDay-1]" @change="onBirthdayChange" class="birthday-picker" :indicator-style="'height: 80rpx;'">
+						<picker-view-column>
+							<view class="picker-item" v-for="(m, i) in 12" :key="'m'+i">{{ (i+1) < 10 ? '0'+(i+1) : (i+1) }}月</view>
+						</picker-view-column>
+						<picker-view-column>
+							<view class="picker-item" v-for="(d, i) in daysInMonth(birthdayMonth)" :key="'d'+i">{{ (i+1) < 10 ? '0'+(i+1) : (i+1) }}日</view>
+						</picker-view-column>
+					</picker-view>
 				</view>
 				
-				<view class='list'>
-					<!-- 头像 -->
-					<view class='item acea-row row-between-wrapper' @click="navigateTo('/pages/users/user_avatar/index')">
-						<view>头像</view>
-						<view class="right-content">
-							<image class="avatar-img" :src="userInfo.avatar"></image>
-							<text class="iconfont icon-xiangyou right-arrow"></text>
-						</view>
-					</view>
-					
-					<!-- 昵称 -->
-					<view class='item acea-row row-between-wrapper' @click="navigateTo('/pages/users/user_nickname/index')">
-						<view>昵称</view>
-						<view class="right-content">
-							<text class="value-text">{{ userInfo.nickname || '加载中...' }}</text>
-							<text class="iconfont icon-xiangyou right-arrow"></text>
-						</view>
-					</view>
-					
-					<!-- 性别 -->
-					<view class='item acea-row row-between-wrapper' @click="showGenderPicker">
-						<view>性别</view>
-						<view class="right-content">
-							<text class="value-text">{{ userInfo.sex == 1 ? '男' : (userInfo.sex == 2 ? '女' : '未设置') }}</text>
-							<text class="iconfont icon-xiangyou right-arrow"></text>
-						</view>
-					</view>
-					
-					<!-- 生日 -->
-					<view class='item acea-row row-between-wrapper' @click="navigateTo('/pages/users/user_birthday/index')">
-						<view>生日</view>
-						<view class="right-content">
-							<text class="value-text">{{ userInfo.birthday || '未设置' }}</text>
-							<text class="iconfont icon-xiangyou right-arrow"></text>
-						</view>
-					</view>
-					
-					<!-- 其他保留项 -->
-					<view class='item acea-row row-between-wrapper'>
-						<view>手机号码</view>
-						<!-- #ifdef MP -->
-						<button class="input" open-type="getPhoneNumber" @getphonenumber="getphonenumber"
-							v-if="!userInfo.phone">点击绑定手机号
-							<text class="iconfont icon-xiangyou"></text>
-						</button>
-						<!-- #endif -->
-						<!-- #ifndef MP -->
-						<navigator url="/pages/users/user_phone/index" hover-class="none" class="input"
-							v-if="!userInfo.phone">
-							点击绑定手机号<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-						<!-- #endif -->
-
-						<view class='input acea-row row-between-wrapper' v-else>
-							<view class=""></view>
-							<view class="acea-row row-middle">
-								<input type='text' disabled='true' name='phone' :value='userInfo.phone'
-									class='id'></input>
-								<text class='iconfont icon-suozi'></text>
-							</view>
-						</view>
-					</view>
-					
-					<!-- 其他项目保留不变 -->
-					<view class='item acea-row row-between-wrapper'>
-						<view>ID号</view>
-						<view class='input acea-row row-between-wrapper'>
-							<view class=""></view>
-							<view class="">
-								<text>{{userInfo.uid}}</text>
-								<text class='iconfont icon-suozi'></text>
-							</view>
-						</view>
-					</view>
-					
-					<!-- 其他原有项目 -->
-					<!-- #ifdef MP -->
-					<view class='item acea-row row-between-wrapper'>
-						<view>权限设置</view>
-						<view class="input" @click="Setting">
-							点击管理<text class="iconfont icon-xiangyou"></text>
-						</view>
-					</view>
-					<!-- #endif -->
-					<!-- #ifdef H5 -->
-					<view class="item acea-row row-between-wrapper" v-if="userInfo.phone && !this.$wechat.isWeixin()">
-						<view>密码</view>
-						<navigator url="/pages/users/user_settings/change_password" hover-class="none" class="input">
-							点击修改密码<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<!-- #endif -->
-					
-					<!-- 其他保留项 -->
-					<view class="item acea-row row-between-wrapper" v-if="userInfo.phone">
-						<view>更换手机号码</view>
-						<navigator url="/pages/users/user_phone/index?type=1" hover-class="none" class="input">
-							{{$t(`点击更换手机号码`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<!-- #ifdef APP-PLUS -->
-					<view class="item acea-row row-between-wrapper" v-if="userInfo.phone">
-						<view>密码</view>
-						<navigator url="/pages/users/user_settings/change_password" hover-class="none" class="input">
-							{{$t(`点击修改密码`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<view class="item acea-row row-between-wrapper" @click="initData">
-						<view>{{$t(`缓存大小`)}}</view>
-						<view class="input">
-							{{fileSizeString}}<text class="iconfont icon-xiangyou"></text>
-						</view>
-					</view>
-					<view class="item acea-row row-between-wrapper" @click="updateApp">
-						<view>{{$t(`当前版本`)}}</view>
-						<view class="input">
-							{{version}}<text class="iconfont icon-xiangyou"></text>
-						</view>
-					</view>
-					<!-- #endif -->
-					<view class="item acea-row row-between-wrapper" v-if="array.length">
-						<view>{{$t(`语言切换`)}}</view>
-						<view class="uni-list-cell-db">
-							<picker @change="bindPickerChange" range-key="name" :value="setIndex" :range="array">
-								<view class="uni-input input">{{array[setIndex].name}}<text
-										class="iconfont icon-xiangyou"></text></view>
-							</picker>
-						</view>
-					</view>
-					<view class="item acea-row row-between-wrapper">
-						<view>{{$t(`地址管理`)}}</view>
-						<navigator url="/pages/users/user_address_list/index" hover-class="none" class="input">
-							{{$t(`点击前往`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<view class="item acea-row row-between-wrapper" v-if="userInfo.invioce_func">
-						<view>{{$t(`发票管理`)}}</view>
-						<navigator url="/pages/users/user_invoice_list/index" hover-class="none" class="input">
-							{{$t(`点击前往`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<view class="item acea-row row-between-wrapper">
-						<view>{{$t(`账号注销`)}}</view>
-						<navigator url="/pages/users/user_cancellation/index" hover-class="none" class="input">
-							{{$t(`注销后无法恢复`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<view class="item acea-row row-between-wrapper">
-						<view>{{$t(`用户协议`)}}</view>
-						<navigator url="/pages/users/privacy/index?type=4" hover-class="none" class="input">
-							{{$t(`点击查看`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-					<view class="item acea-row row-between-wrapper">
-						<view>{{$t(`隐私协议`)}}</view>
-						<navigator url="/pages/users/privacy/index?type=3" hover-class="none" class="input">
-							{{$t(`点击查看`)}}<text class="iconfont icon-xiangyou"></text>
-						</navigator>
-					</view>
-
+				<!-- 底部按钮 -->
+				<view class="birthday-popup-btns-row">
+					<view class="birthday-popup-btn-item cancel" @click="hideBirthdayPicker">取消</view>
+					<view class="birthday-popup-btn-item confirm" @click="confirmBirthday">确定</view>
 				</view>
-
-				<button class='modifyBnt bg-color' formType="submit">{{$t(`保存修改`)}}</button>
-				<!-- #ifdef H5 || APP-PLUS || MP -->
-				<view class="logOut cartcolor acea-row row-center-wrapper" @click="outLogin">{{$t(`退出登录`)}}</view>
-				<!-- #endif -->
-				<!-- #ifdef APP-PLUS -->
-				<app-update ref="appUpdate" :force="true" :tabbar="false" :getVer='true' @isNew="isNew"></app-update>
-				<!-- #endif -->
 			</view>
-		</form>
-		
-		<!-- 性别选择弹窗 -->
-		<view class="gender-picker-mask" v-if="showGenderPickerFlag" @click="hideGenderPicker"></view>
-		<view class="gender-picker-panel" v-if="showGenderPickerFlag">
-			<view class="gender-option" @click="selectGender(1)">男</view>
-			<view class="gender-option" @click="selectGender(2)">女</view>
-			<view class="gender-cancel" @click="hideGenderPicker">取消</view>
 		</view>
-		
-		<!-- #ifdef MP -->
-		<!-- <authorize @onLoadFun="onLoadFun" :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
-		<!-- #endif -->
-		<canvas canvas-id="canvas" v-if="canvasStatus"
-			:style="{width: canvasWidth + 'px', height: canvasHeight + 'px',position: 'absolute',left:'-100000px',top:'-100000px'}"></canvas>
 	</view>
 </template>
 
@@ -251,6 +143,9 @@
 				setIndex: 0,
 				mp_is_new: this.$Cache.get('MP_VERSION_ISNEW') || false,
 				showGenderPickerFlag: false, // 是否显示性别选择器
+				showBirthdayPicker: false,
+				birthdayMonth: 1,
+				birthdayDay: 1
 			};
 		},
 		computed: mapGetters(['isLogin']),
@@ -604,125 +499,337 @@
 					});
 				});
 			},
+			hideBirthdayPicker() {
+				this.showBirthdayPicker = false;
+			},
+			daysInMonth(month) {
+				const days = [31,28,31,30,31,30,31,31,30,31,30,31];
+				return days[month-1];
+			},
+			onBirthdayChange(e) {
+				const [m, d] = e.detail.value;
+				this.birthdayMonth = m + 1;
+				this.birthdayDay = d + 1;
+			},
+			confirmBirthday() {
+				const birthday = `${this.birthdayMonth < 10 ? '0'+this.birthdayMonth : this.birthdayMonth}-${this.birthdayDay < 10 ? '0'+this.birthdayDay : this.birthdayDay}`;
+				// 保存到后端
+				this.$api.userEdit({ birthday }).then(() => {
+					this.userInfo.birthday = birthday;
+					this.hideBirthdayPicker();
+					this.$util.Tips({ title: '生日设置成功', icon: 'success' });
+				}).catch(err => {
+					this.$util.Tips({ title: err || '生日设置失败' });
+				});
+			},
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
-.personal-data {
-	background-color: #fff;
+.user-info-page {
 	min-height: 100vh;
+	background: #fff;
 }
-
 .header {
-	position: relative;
-	height: 88rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	border-bottom: 1rpx solid #f5f5f5;
-	
-	.back-icon {
-		position: absolute;
-		left: 30rpx;
-		font-size: 36rpx;
-	}
-	
-	.page-title {
-		font-size: 36rpx;
-		font-weight: 500;
-	}
+	height: 100rpx;
+	background: #fff;
+	position: relative;
+	border-bottom: 1rpx solid #F2F2F2;
 }
-
+.back-btn {
+	position: absolute;
+	left: 20rpx;
+	display: flex;
+	align-items: center;
+	height: 100%;
+}
+.back-icon {
+	width: 32rpx;
+	height: 32rpx;
+}
+.page-title {
+	font-size: 36rpx;
+	color: #1A1A1A;
+	font-weight: 400;
+	text-align: center;
+}
 .list {
-	margin-top: 12rpx;
-	
-	.item {
-		padding: 30rpx;
-		border-bottom: 1rpx solid #f5f5f5;
-		font-size: 30rpx;
-		
-		.right-content {
-			display: flex;
-			align-items: center;
-			
-			.avatar-img {
-				width: 80rpx;
-				height: 80rpx;
-				border-radius: 50%;
-				margin-right: 10rpx;
-			}
-			
-			.value-text {
-				color: #999;
-				margin-right: 10rpx;
-			}
-			
-			.right-arrow {
-				color: #999;
-				font-size: 24rpx;
-			}
-		}
-	}
+	background: #fff;
 }
-
-.modifyBnt {
-	width: 690rpx;
-	height: 90rpx;
-	border-radius: 45rpx;
-	margin: 60rpx auto 0 auto;
-	text-align: center;
-	line-height: 90rpx;
-	color: #FFFFFF;
-	font-size: 30rpx;
+.item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 30rpx;
+	height: 100rpx;
+	background: #fff;
+	position: relative;
 }
-
-.logOut {
-	padding: 20rpx 0;
-	text-align: center;
-	margin: 50rpx 0;
-	color: var(--view-theme);
-	font-size: 30rpx;
+.item.highlight {
+	border: none;
+	border-radius: 0;
+	box-sizing: border-box;
 }
-
-// 性别选择弹窗
-.gender-picker-mask {
+.right-content {
+	display: flex;
+	align-items: center;
+}
+.avatar-img {
+	width: 60rpx;
+	height: 60rpx;
+	border-radius: 50%;
+	margin-right: 10rpx;
+}
+.value-text {
+	color: #B3B3B3;
+	font-size: 25rpx;
+	margin-right: 10rpx;
+}
+.item > view:first-child {
+	font-size: 32rpx;
+}
+.arrow-icon {
+	width: 20rpx;
+	height: 20rpx;
+	opacity: 0.5;
+}
+.divider {
+	height: 1rpx;
+	background: #F2F2F2;
+	margin-left: 30rpx;
+}
+.popup-mask {
 	position: fixed;
+	left: 0;
+	right: 0;
 	top: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.5);
+	z-index: 998;
+}
+.gender-popup-container {
+	position: fixed;
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: rgba(0, 0, 0, 0.5);
-	z-index: 998;
-}
-
-.gender-picker-panel {
-	position: fixed;
-	left: 50%;
-	bottom: 0;
-	transform: translateX(-50%);
-	width: 100%;
-	background-color: #fff;
 	z-index: 999;
-	border-radius: 20rpx 20rpx 0 0;
+	padding: 16rpx 24rpx 40rpx 24rpx;
+	display: flex;
+	flex-direction: column;
+	gap: 16rpx;
+}
+.gender-popup-options {
+	background: #fff;
+	border-radius: 16rpx;
 	overflow: hidden;
-	
-	.gender-option {
-		height: 100rpx;
-		line-height: 100rpx;
-		text-align: center;
-		font-size: 32rpx;
-		border-bottom: 1rpx solid #f5f5f5;
-		color: #1989fa;
-	}
-	
-	.gender-cancel {
-		height: 100rpx;
-		line-height: 100rpx;
-		text-align: center;
-		font-size: 32rpx;
-		margin-top: 10rpx;
-		color: #333;
-	}
+}
+.gender-option {
+	font-size: 32rpx;
+	color: #2196f3;
+	text-align: center;
+	padding: 32rpx 0;
+}
+.gender-divider {
+	height: 1rpx;
+	background: #eee;
+}
+.gender-popup-cancel {
+	font-size: 32rpx;
+	color: #2196f3;
+	text-align: center;
+	padding: 32rpx 0;
+	background: #fff;
+	border-radius: 16rpx;
+}
+.birthday-popup {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 999;
+	display: flex;
+	justify-content: center;
+	align-items: flex-end;
+}
+.birthday-popup-content {
+	width: 96%;
+	background: #fff;
+	border-radius: 16rpx;
+	padding: 0 0 24rpx 0;
+	box-sizing: border-box;
+	margin-bottom: 24rpx;
+}
+.birthday-picker-row {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 32rpx 0 16rpx 0;
+}
+.birthday-picker {
+	width: 100%;
+	height: 300rpx;
+}
+.birthday-picker-item {
+	text-align: center;
+	font-size: 32rpx;
+	line-height: 80rpx;
+	color: #333;
+}
+.birthday-popup-divider {
+	height: 1rpx;
+	background: #eee;
+	margin: 0 24rpx;
+}
+.birthday-popup-btns {
+	display: flex;
+	flex-direction: column;
+	gap: 16rpx;
+	margin-top: 16rpx;
+	padding: 0 24rpx;
+}
+.birthday-popup-btn {
+	background: #fff;
+	color: #2196f3;
+	font-size: 32rpx;
+	text-align: center;
+	padding: 32rpx 0;
+	border-radius: 12rpx;
+}
+.birthday-popup-btn.confirm {
+	background: #f7f7f7;
+	margin-top: 0;
+}
+.birthday-popup-full {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 999;
+	background: #fff;
+	border-radius: 16rpx 16rpx 0 0;
+	box-sizing: border-box;
+	padding: 30rpx;
+}
+.birthday-popup-title {
+	text-align: center;
+	font-size: 32rpx;
+	font-weight: 500;
+	margin-bottom: 30rpx;
+}
+.birthday-empty-space {
+	height: 240rpx;
+	width: 100%;
+	margin-bottom: 30rpx;
+}
+.birthday-picker-container {
+	position: relative;
+	height: 240rpx;
+	margin-bottom: 30rpx;
+}
+.picker-highlight-left, .picker-highlight-right {
+	position: absolute;
+	width: 44%;
+	height: 80rpx;
+	background-color: #f5f5f5;
+	border-radius: 12rpx;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 1;
+	pointer-events: none;
+}
+.picker-highlight-left {
+	left: 3%;
+}
+.picker-highlight-right {
+	right: 3%;
+}
+.birthday-picker {
+	height: 240rpx;
+	width: 100%;
+	z-index: 2;
+}
+.picker-item {
+	line-height: 80rpx;
+	text-align: center;
+	font-size: 32rpx;
+	color: #999;
+}
+.birthday-popup-btns-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 20rpx;
+}
+.birthday-popup-btn-item {
+	flex: 1;
+	height: 80rpx;
+	line-height: 80rpx;
+	text-align: center;
+	font-size: 32rpx;
+	border-radius: 40rpx;
+	background: #f5f5f5;
+}
+.birthday-popup-btn-item.cancel {
+	color: #333;
+}
+.birthday-popup-btn-item.confirm {
+	color: #ff9500;
+}
+.birthday-picker-row-flex {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	gap: 32rpx;
+	margin-bottom: 24rpx;
+}
+.birthday-picker-flex {
+	display: flex;
+	width: 100vw;
+	height: 180rpx;
+	background: none;
+}
+.birthday-picker-item-flex {
+	width: 160rpx;
+	height: 48rpx;
+	line-height: 48rpx;
+	text-align: center;
+	font-size: 28rpx;
+	color: #bbb;
+	margin: 8rpx auto;
+	border-radius: 12rpx;
+	background: none;
+	font-weight: normal;
+}
+.birthday-picker-item-flex.active {
+	background: #f5f5f5;
+	color: #111;
+	font-weight: bold;
+}
+.birthday-popup-btns-flex {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 24rpx;
+	margin: 0 24rpx;
+}
+.birthday-popup-btn-flex {
+	flex: 1;
+	height: 48rpx;
+	line-height: 48rpx;
+	text-align: center;
+	font-size: 28rpx;
+	border-radius: 24rpx;
+	background: #f5f5f5;
+	color: #999;
+}
+.birthday-popup-btn-flex.confirm {
+	color: #ff9500;
+	font-weight: 500;
+}
+.birthday-popup-btn-flex.cancel {
+	color: #999;
 }
 </style>

@@ -115,6 +115,11 @@ import {
   cartDel,
   getResetCart,
 } from "@/api/order.js";
+import {
+  getCartInfo,
+  updateCart,
+  removeCartItem
+} from "@/api/group.js";
 import { getProductHot } from "@/api/store.js";
 import { collectAll } from "@/api/user.js";
 import { mapGetters } from "vuex";
@@ -598,22 +603,74 @@ export default {
       let that = this;
       if (init) that.loading = true;
       uni.showLoading({ title: that.$t(`正在加载`) });
-      getCartList()
-        .then(res => {
-          uni.hideLoading();
-          that.getCartData(res.data);
-          that.loading = false;
-          that.loadend = true;
-          that.loadTitle = that.$t(`没有更多了`);
-          that.getCartNum();
-        })
-        .catch(err => {
-          uni.hideLoading();
-          that.loading = false;
-          that.loadend = true;
-          that.loadTitle = that.$t(`没有更多了`);
-          that.$util.Tips({ title: err });
+
+      // 优先尝试团购购物车接口
+      this.getGroupCartList().catch(() => {
+        // 团购接口失败，使用原有接口
+        getCartList()
+          .then(res => {
+            uni.hideLoading();
+            that.getCartData(res.data);
+            that.loading = false;
+            that.loadend = true;
+            that.loadTitle = that.$t(`没有更多了`);
+            that.getCartNum();
+          })
+          .catch(err => {
+            uni.hideLoading();
+            that.loading = false;
+            that.loadend = true;
+            that.loadTitle = that.$t(`没有更多了`);
+            that.$util.Tips({ title: err });
+          });
+      });
+    },
+
+    // 获取团购购物车
+    getGroupCartList() {
+      let that = this;
+      return new Promise((resolve, reject) => {
+        getCartInfo().then(res => {
+          if (res.status === 200 && res.data) {
+            uni.hideLoading();
+
+            // 转换团购购物车数据格式以适配页面显示
+            const cartData = {
+              valid: res.data.items || [],
+              invalid: res.data.invalid_items || []
+            };
+
+            // 格式化购物车数据
+            if (cartData.valid.length > 0) {
+              cartData.valid = cartData.valid.map(item => ({
+                id: item.id,
+                product_id: item.product_id,
+                cart_num: item.quantity || item.cart_num,
+                productInfo: {
+                  store_name: item.title || item.name,
+                  image: item.image,
+                  price: item.price,
+                  ...item
+                },
+                attrInfo: item.attr_info || {},
+                ...item
+              }));
+            }
+
+            that.getCartData(cartData);
+            that.loading = false;
+            that.loadend = true;
+            that.loadTitle = that.$t(`没有更多了`);
+            that.getCartNum();
+            resolve(res);
+          } else {
+            reject(new Error('团购购物车数据格式错误'));
+          }
+        }).catch(err => {
+          console.log('获取团购购物车失败:', err);
+          reject(err);
         });
+      });
     },
     getInvalidList() {
       let that = this;

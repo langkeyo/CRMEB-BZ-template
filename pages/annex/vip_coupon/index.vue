@@ -35,9 +35,7 @@
 		<!-- #ifdef MP -->
 		<!-- <authorize @onLoadFun="onLoadFun" :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
 		<!-- #endif -->
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 	</view>
 </template>
 

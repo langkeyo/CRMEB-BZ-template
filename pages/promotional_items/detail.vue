@@ -285,6 +285,7 @@
 import recommendList from "@/components/recommend";
 import { mapGetters } from "vuex";
 import colors from "@/mixins/color";
+import { getGroupGoodsDetail } from "@/api/group.js";
 
 export default {
   components: {
@@ -294,6 +295,7 @@ export default {
   data() {
     return {
       id: null,
+      productType: 'normal', // 商品类型：normal-普通商品，group-团购商品
       product: {
         id: 3,
         image: "https://via.placeholder.com/750x750.png?text=小龙虾",
@@ -382,10 +384,56 @@ export default {
   onLoad(options) {
     if (options.id) {
       this.id = options.id;
+      this.productType = options.type || 'normal'; // 获取商品类型
       this.getProductDetail();
     }
   },
   methods: {
+    // 获取商品详情
+    getProductDetail() {
+      if (this.productType === 'group') {
+        this.getGroupProductDetail();
+      } else {
+        // 原有的普通商品详情获取逻辑
+        console.log('获取普通商品详情:', this.id);
+      }
+    },
+
+    // 获取团购商品详情
+    getGroupProductDetail() {
+      getGroupGoodsDetail(this.id).then(res => {
+        if (res.status === 200 && res.data) {
+          // 将API返回的数据转换为页面需要的格式
+          const apiData = res.data;
+          this.product = {
+            id: apiData.id,
+            image: apiData.image || "https://via.placeholder.com/750x750.png?text=商品图片",
+            store_name: apiData.title,
+            description: apiData.description || "暂无描述",
+            price: apiData.min_price + (apiData.max_price !== apiData.min_price ? '-' + apiData.max_price : ''),
+            original_price: apiData.max_price,
+            sales: apiData.sales || 0,
+            stock: 1000, // 默认库存
+            unit_name: "件",
+            content: apiData.description || "<p>暂无详细描述</p>",
+            review_count: 0,
+            reviews: [],
+            attr_groups: [
+              {
+                name: "规格",
+                values: ["默认规格"]
+              }
+            ]
+          };
+        }
+      }).catch(err => {
+        console.log('获取团购商品详情失败:', err);
+        uni.showToast({
+          title: '获取商品详情失败',
+          icon: 'none'
+        });
+      });
+    },
     getProductDetail() {
       // 在实际应用中，这里应该调用API获取商品详情
       // 目前使用模拟数据

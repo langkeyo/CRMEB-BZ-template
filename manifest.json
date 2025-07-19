@@ -209,7 +209,14 @@
     },
     "h5" : {
         "devServer" : {
-            "https" : false
+            "https" : false,
+            "proxy" : {
+                "/api" : {
+                    "target" : "http://wx.laizhangluo.com",
+                    "changeOrigin" : true,
+                    "secure" : false
+                }
+            }
         },
         "router" : {
             "mode" : "history",

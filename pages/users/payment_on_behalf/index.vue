@@ -76,9 +76,7 @@
 			<image src="../static/share-info2.png" @click="shareModal = false"></image>
 		</view>
 		<payment :payMode="payMode" :pay_close="pay_close" :friendPay="true" @onChangeFun="onChangeFun" :order_id="order_id" :totalPrice="resData.pay_price"></payment>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 	</view>
 </template>
 
@@ -86,7 +84,7 @@
 import orderGoods from '@/components/orderGoods';
 import colors from '@/mixins/color';
 import payment from '@/components/payment';
-import home from '@/components/home/index.vue';
+
 import { friendDetail } from '@/api/user.js';
 import { HTTP_REQUEST_URL } from '@/config/app.js';
 import { toLogin } from '@/libs/login.js';

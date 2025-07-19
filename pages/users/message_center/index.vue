@@ -66,9 +66,7 @@
 			</view>
 			<view>{{$t(`亲、暂无消息记录哟！`)}}</view>
 		</view>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 	</view>
 </template>
 
@@ -79,7 +77,7 @@
 		msgLookDel
 	} from '@/api/user.js';
 	import colors from '@/mixins/color.js';
-	import home from '@/components/home';
+
 	import tuiDrawer from '@/components/tuiDrawer/index.vue'
 	import {
 		HTTP_REQUEST_URL
@@ -87,7 +85,6 @@
 	export default {
 		mixins: [colors],
 		components: {
-			home,
 			tuiDrawer
 		},
 		data() {

@@ -1,42 +1,115 @@
 <template>
 	<view :style="colorStyle">
-		<view class='collectionGoods' v-if="collectProductList.length">
-			<view class="title-admin">
-				<view>{{$t(`当前共`)}} <text class="text"> {{count}} </text> {{$t(`件商品`)}}</view>
-				<view class="admin" @click="showRadio">{{checkbox_show?$t(`取消`):$t(`管理`)}}</view>
+		<!-- 顶部导航栏 -->
+		<view class="page-header">
+			<view class="header-left" @click="goBack">
+				<image class="back-icon" src="/static/images/order/back_arrow.svg"></image>
+				<text class="back-text">返回</text>
 			</view>
-			<checkbox-group @change.stop="checkboxChange">
-				<view class='item acea-row' v-for="(item,index) in collectProductList" :key="index">
-					<view class="left">
-						<checkbox v-show="checkbox_show" :value="item.pid.toString()" :checked="item.checked" />
-						<view class='pictrue' @click="jump(item)">
-							<image :src="item.image"></image>
-							<view class="invalid acea-row row-center-wrapper" v-if="!item.is_show">
-								已下架
+			<view class="header-title">足迹/收藏</view>
+			<view class="header-right" @click="showRadio">
+				<text>{{checkbox_show ? '取消' : '编辑'}}</text>
+			</view>
+		</view>
+		
+		<!-- 选项卡 -->
+		<view class="tabs">
+			<view class="tab" :class="{active: activeTab === 'browse'}" @click="switchTab('browse')">
+				<text>浏览</text>
+				<view class="tab-line" v-if="activeTab === 'browse'"></view>
+			</view>
+			<view class="tab" :class="{active: activeTab === 'collect'}" @click="switchTab('collect')">
+				<text>收藏</text>
+				<view class="tab-line" v-if="activeTab === 'collect'"></view>
+			</view>
+		</view>
+		
+		<!-- 浏览记录内容 -->
+		<view class="browse-content" v-if="activeTab === 'browse'">
+			<!-- 按日期分组 -->
+			<view class="date-group" v-for="(group, groupIndex) in groupedBrowseList" :key="groupIndex">
+				<!-- 日期标题 -->
+				<view class="date-title">
+					<view class="date-dot" :style="{backgroundColor: '#e93323'}"></view>
+					<text style="color: #FE8D00">{{group.date}}</text>
+				</view>
+				
+				<!-- 商品列表 -->
+				<view class="product-list">
+					<view class="product-item" v-for="(item, index) in group.items" :key="index" @click="jump(item)">
+						<image class="product-image" :src="item.image"></image>
+						<view class="product-info">
+							<view class="product-name">{{item.store_name}}</view>
+							<view class="product-spec">{{item.spec || '单份' + item.store_name + '/40g'}}</view>
+							<view class="product-price">¥ {{item.price}}</view>
+						</view>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 加载更多 -->
+			<view class='loadingicon acea-row row-center-wrapper'>
+				<text class='loading iconfont icon-jiazai' :hidden='browseLoading==false'></text>{{loadTitle}}
+			</view>
+		</view>
+		
+		<!-- 收藏内容 -->
+		<view class="collect-content" v-if="activeTab === 'collect'">
+			<!-- 广告区域 -->
+			<view class="ad-container">
+				<view class="ad-card">
+					<view class="ad-left">
+						<image class="ad-logo" src="/static/images/luckin-coffee.png"></image>
+					</view>
+					<view class="ad-info">
+						<view class="ad-title">瑞幸咖啡Coffee</view>
+						<view class="ad-subtitle">加盟费：12万-18万</view>
+						<view class="ad-desc">全国加盟上万家，饮品行业领头者</view>
+						<view class="ad-status">全国连锁</view>
+					</view>
+					<view class="ad-action">
+						<view class="ad-button">查看</view>
+					</view>
+				</view>
+			</view>
+			
+			<view class='collectionGoods' v-if="collectProductList.length">
+				<checkbox-group @change.stop="checkboxChange">
+					<view class='item acea-row' v-for="(item,index) in collectProductList" :key="index">
+						<view class="left">
+							<checkbox v-show="checkbox_show" :value="item.pid.toString()" :checked="item.checked" />
+							<view class='pictrue' @click="jump(item)">
+								<image :src="item.image"></image>
+								<view class="invalid acea-row row-center-wrapper" v-if="!item.is_show">
+									已下架
+								</view>
+							</view>
+						</view>
+						<view class='text acea-row row-column-between' @click="jump(item)">
+							<view class='name line2'>{{item.store_name}}</view>
+							<view class='acea-row row-between-wrapper'>
+								<view class='money font-color'>{{$t(`￥`)}}{{item.price}}</view>
 							</view>
 						</view>
 					</view>
-					<view class='text acea-row row-column-between' @click="jump(item)">
-						<view class='name line2'>{{item.store_name}}</view>
-						<view class='acea-row row-between-wrapper'>
-							<view class='money font-color'>{{$t(`￥`)}}{{item.price}}</view>
-							<!-- <view class='delete' @click.stop='delCollection(item.pid,index)'>删除</view> -->
-						</view>
-					</view>
-				</view>
+				</checkbox-group>
+				
+				<!-- 加载更多 -->
 				<view class='loadingicon acea-row row-center-wrapper'>
 					<text class='loading iconfont icon-jiazai' :hidden='loading==false'></text>{{loadTitle}}
 				</view>
-			</checkbox-group>
-		</view>
-
-		<view class='noCommodity' v-else-if="!collectProductList.length && page > 1">
-			<view class='pictrue'>
-				<image :src="imgHost + '/statics/images/noCollection.png'"></image>
 			</view>
-			<recommend :hostProduct="hostProduct"></recommend>
+			
+			<view class='noCommodity' v-else-if="!collectProductList.length && page > 1">
+				<view class='pictrue'>
+					<image :src="imgHost + '/statics/images/noCollection.png'"></image>
+				</view>
+				<recommend :hostProduct="hostProduct"></recommend>
+			</view>
 		</view>
-		<view class='footer acea-row row-between-wrapper' v-if="checkbox_show && collectProductList.length">
+		
+		<!-- 底部操作栏 -->
+		<view class='footer acea-row row-between-wrapper' v-if="checkbox_show && collectProductList.length && activeTab === 'collect'">
 			<view>
 				<checkbox-group @change="checkboxAllChange">
 					<checkbox value="all" :checked="!!isAllSelect" />
@@ -47,11 +120,9 @@
 				<button class='bnt' formType="submit" @click="subDel">{{$t(`取关`)}}</button>
 			</view>
 		</view>
-		<!-- #ifdef MP -->
-		<!-- <authorize @onLoadFun="onLoadFun" :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
-		<!-- #endif -->
+		
 		<!-- #ifndef MP -->
-		<home></home>
+		<!-- 移除home组件 -->
 		<!-- #endif -->
 	</view>
 </template>
@@ -74,7 +145,7 @@
 	// #ifdef MP
 	import authorize from '@/components/Authorize';
 	// #endif
-	import home from '@/components/home';
+	// 移除home组件导入
 	import colors from '@/mixins/color.js';
 	import {
 		HTTP_REQUEST_URL
@@ -85,7 +156,7 @@
 			// #ifdef MP
 			authorize,
 			// #endif
-			home
+			// 移除home组件注册
 		},
 		mixins: [colors],
 		data() {
@@ -107,15 +178,31 @@
 				hotPage: 1,
 				hotLimit: 10,
 				isAllSelect: false, //全选
+				activeTab: 'browse', // 当前激活的选项卡，默认显示浏览记录
+				groupedBrowseList: [], // 按日期分组的浏览记录
+				browseProductList: [], // 原始浏览记录
+				browseLoading: false, // 浏览记录加载状态
+				browseLoadend: false, // 浏览记录是否加载完毕
 			};
 		},
 		computed: mapGetters(['isLogin']),
+		created() {
+			// 页面创建时初始化数据
+			if (this.activeTab === 'browse') {
+				this.getBrowseHistory();
+			}
+		},
 		onLoad() {
 			if (this.isLogin) {
 				this.loadend = false;
 				this.page = 1;
-				this.collectProductList = [];
-				this.getUserCollectProduct();
+				
+				if (this.activeTab === 'browse') {
+					this.getBrowseHistory();
+				} else {
+					this.collectProductList = [];
+					this.getUserCollectProduct();
+				}
 			} else {
 				toLogin();
 			}
@@ -123,14 +210,24 @@
 		onShow() {
 			this.loadend = false;
 			this.page = 1;
-			this.$set(this, 'collectProductList', []);
-			this.getUserCollectProduct();
+			
+			if (this.activeTab === 'browse') {
+				this.getBrowseHistory();
+			} else {
+				this.$set(this, 'collectProductList', []);
+				this.getUserCollectProduct();
+			}
 		},
 		/**
 		 * 页面上拉触底事件的处理函数
 		 */
 		onReachBottom: function() {
-			this.getUserCollectProduct();
+			if (this.activeTab === 'collect') {
+				this.getUserCollectProduct();
+			} else {
+				// 浏览记录加载更多逻辑，这里暂时不实现
+				// 实际项目中可以在这里添加分页加载浏览记录的逻辑
+			}
 		},
 		methods: {
 			showRadio() {
@@ -308,12 +405,277 @@
 			// 授权关闭
 			authColse: function(e) {
 				this.isShowAuth = e
+			},
+			goBack() {
+				uni.navigateBack();
+			},
+			switchTab(tab) {
+				this.activeTab = tab;
+				this.page = 1; // 切换选项卡时重置页码
+				
+				if (tab === 'browse') {
+					// 切换到浏览记录时获取浏览记录
+					this.getBrowseHistory();
+				} else {
+					// 切换到收藏时获取收藏列表
+					this.collectProductList = []; // 切换选项卡时清空收藏列表
+					this.getUserCollectProduct();
+				}
+			},
+			// 模拟获取浏览记录
+			getBrowseHistory() {
+				const today = `今天`;
+				const yesterday = `3月26日`;
+
+				this.groupedBrowseList = [
+					{
+						date: today,
+						items: [
+							{ 
+								id: 1, 
+								image: '/static/images/goods/goods1.jpg', 
+								store_name: '巧克力-提拉米苏', 
+								price: '105', 
+								spec: '单份巧克力蛋糕/40g' 
+							}
+						]
+					},
+					{
+						date: yesterday,
+						items: [
+							{ 
+								id: 3, 
+								image: '/static/images/goods/goods3.jpg', 
+								store_name: '三面软毛牙刷', 
+								price: '4.9', 
+								spec: '【店长补贴 与本冲量】' 
+							}
+						]
+					}
+				];
+				
+				// 设置加载状态
+				this.browseLoading = false;
+				this.browseLoadend = true;
+				this.loadTitle = this.$t(`我也是有底线的`);
 			}
 		}
 	};
 </script>
 
 <style scoped lang="scss">
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20rpx 30rpx;
+		background-color: #fff;
+		border-bottom: none;
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		z-index: 99;
+	}
+
+	.header-left, .header-right {
+		display: flex;
+		align-items: center;
+	}
+
+	.back-icon {
+		width: 40rpx;
+		height: 40rpx;
+		margin-right: 10rpx;
+	}
+
+	.back-text {
+		font-size: 32rpx;
+		color: #333;
+	}
+
+	.header-title {
+		font-size: 36rpx;
+		font-weight: bold;
+		color: #333;
+	}
+
+	.tabs {
+		display: flex;
+		justify-content: space-around;
+		background-color: #fff;
+		border-bottom: 1px solid #ededed;
+		position: fixed;
+		top: 96rpx;
+		left: 0;
+		width: 100%;
+		z-index: 98;
+	}
+
+	.tab {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		flex: 1;
+		padding: 20rpx 0 10rpx 0;
+	}
+
+	.tab.active .tab-line {
+		width: 40rpx;
+		height: 4rpx;
+		background-color: #FE8D00;
+		border-radius: 2rpx;
+		margin-top: 10rpx;
+	}
+
+	.tab text {
+		font-size: 32rpx;
+		color: #222;
+	}
+
+	.tab.active text {
+		color: #222;
+		font-weight: bold;
+	}
+
+	/* 页面背景色 */
+	.browse-content, .collect-content {
+		padding-top: 184rpx;
+		padding-bottom: 100rpx;
+		background-color: #f7f8fa;
+	}
+
+	/* 广告区域样式 */
+	.ad-container {
+		padding: 20rpx 30rpx;
+	}
+
+	.ad-card {
+		display: flex;
+		align-items: center;
+		background-color: #fff;
+		padding: 20rpx;
+	}
+
+	.ad-left {
+		margin-right: 20rpx;
+	}
+
+	.ad-logo {
+		width: 100rpx;
+		height: 100rpx;
+		border-radius: 10rpx;
+	}
+
+	.ad-info {
+		flex: 1;
+	}
+
+	.ad-title {
+		font-size: 30rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 5rpx;
+	}
+
+	.ad-subtitle, .ad-desc, .ad-status {
+		font-size: 24rpx;
+		color: #999;
+		margin-bottom: 5rpx;
+	}
+
+	.ad-action {
+		display: flex;
+		align-items: center;
+	}
+
+	.ad-button {
+		background-color: #ff7900;
+		color: #fff;
+		font-size: 28rpx;
+		padding: 10rpx 30rpx;
+		border-radius: 30rpx;
+	}
+
+	/* 日期分组 */
+	.date-group {
+		margin-bottom: 0;
+		background-color: transparent;
+	}
+	.date-title {
+		display: flex;
+		align-items: center;
+		padding: 0 0 0 16rpx;
+		height: 50rpx;
+		background-color: transparent;
+		font-size: 24rpx;
+		color: #FE8D00;
+		line-height: 50rpx;
+		margin-top: 10rpx;
+	}
+	.date-dot {
+		width: 8rpx;
+		height: 8rpx;
+		background-color: #FE8D00;
+		border-radius: 50%;
+		margin-right: 8rpx;
+	}
+	.date-title text {
+		font-size: 24rpx;
+		font-weight: 400;
+		color: #FE8D00;
+	}
+
+	/* 商品卡片 */
+	.product-list {
+		padding: 0;
+	}
+	.product-item {
+		display: flex;
+		align-items: center;
+		margin: 0 16rpx 16rpx 16rpx;
+		// background: #fff;
+		border-radius: 16rpx;
+		// border: 1px solid #f0f0f0;
+		box-shadow: none;
+		padding: 16rpx;
+	}
+	.product-image {
+		width: 120rpx;
+		height: 120rpx;
+		border-radius: 8rpx;
+		margin-right: 16rpx;
+		object-fit: cover;
+		background: #f5f5f5;
+	}
+	.product-info {
+		flex: 1;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		height: 136rpx;
+	}
+	.product-name {
+		font-size: 28rpx;
+		color: #222;
+		font-weight: 600;
+		margin-bottom: 6rpx;
+		line-height: 1.3;
+	}
+	.product-spec {
+		font-size: 22rpx;
+		color: #b2b2b2;
+		margin-bottom: 6rpx;
+		line-height: 1.3;
+	}
+	.product-price {
+		font-size: 30rpx;
+		color: #222;
+		font-weight: bold;
+		margin-top: 6rpx;
+	}
+
 	.collectionGoods {
 		background-color: #fff;
 		border-top: 1rpx solid #eee;
@@ -390,22 +752,6 @@
 		background-color: #fff;
 		padding-top: 1rpx;
 		border-top: 0;
-	}
-
-	.title-admin {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 20rpx;
-		border-bottom: 1px solid #f2f2f2;
-
-		.text {
-			color: var(--view-theme);
-		}
-
-		.admin {
-			color: var(--view-theme);
-		}
 	}
 
 	.footer {

@@ -292,6 +292,10 @@
 		scombinationCode
 	} from '@/api/activity.js';
 	import {
+		getUserCombinationDetail,
+		joinCombination
+	} from '@/api/group.js';
+	import {
 		postCartAdd,
 		collectAdd,
 		collectDel
@@ -325,7 +329,7 @@
 		HTTP_REQUEST_URL
 	} from '@/config/app';
 	import homeList from '@/components/homeList';
-	import { getUserCombinationDetail, getRecommendCombination } from '@/api/activity.js';
+	import { getRecommendCombination } from '@/api/activity.js';
 	let sysHeight = uni.getSystemInfoSync().statusBarHeight + 'px';
 	export default {
 		components: {

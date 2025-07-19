@@ -127,6 +127,8 @@ export default {
             .tag-content {
                 display: flex;
                 align-items: center;
+                position: relative;
+                z-index: 10;  /* 确保内容在同一层级 */
 
                 .tag-text {
                     color: #FCFCFC;
@@ -134,12 +136,19 @@ export default {
                     font-family: 'PingFang SC', sans-serif;
                     font-weight: 400;
                     line-height: 34rpx;
+                    position: relative;
+                    z-index: 11;  /* 确保文字在正确层级 */
                 }
 
                 .arrow-icon {
                     width: 10rpx;
                     height: 18rpx;
                     margin-left: 8rpx;
+                    position: relative;
+                    z-index: 11;  /* 确保箭头图标在正确层级 */
+                    flex-shrink: 0;  /* 防止图标被压缩 */
+                    filter: brightness(5);
+                    transform: translate(6rpx);
                 }
             }
         }

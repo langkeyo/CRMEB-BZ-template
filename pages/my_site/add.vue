@@ -11,11 +11,24 @@
     
     <!-- 表单内容 -->
     <view class="form-content">
+      <!-- 收货姓名 -->
+      <view class="form-item" id="nameInput">
+        <view class="form-label required">收货姓名</view>
+        <input 
+          class="form-input" 
+          type="text" 
+          v-model="form.contactName"
+          placeholder="请输入收货人姓名"
+          @blur="validateField('contactName')"
+        />
+        <view class="error-tip" v-if="errors.contactName">{{ errors.contactName }}</view>
+      </view>
+      
       <!-- 地区选择 -->
       <view class="form-item">
         <view class="form-label required">所在地区</view>
         <view class="form-input location-picker" @click="selectLocation">
-          <text v-if="form.province && form.city && form.district">{{ form.province + form.city + form.district }}</text>
+          <text v-if="form.province && form.city && form.district">{{ form.province + ' ' + form.city + ' ' + form.district }}</text>
           <text v-else class="placeholder">请选择所在地区</text>
           <text class="iconfont icon-right"></text>
         </view>
@@ -48,19 +61,6 @@
         <view class="error-tip" v-if="errors.building">{{ errors.building }}</view>
       </view>
       
-      <!-- 联系人 -->
-      <view class="form-item">
-        <view class="form-label required">联系人</view>
-        <input 
-          class="form-input" 
-          type="text" 
-          v-model="form.contactName"
-          placeholder="请输入联系人姓名"
-          @blur="validateField('contactName')"
-        />
-        <view class="error-tip" v-if="errors.contactName">{{ errors.contactName }}</view>
-      </view>
-      
       <!-- 手机号码 -->
       <view class="form-item">
         <view class="form-label required">手机号码</view>
@@ -85,16 +85,44 @@
         />
       </view>
     </view>
+    <SelectPopup v-if="showSelectPopup" :top="popupTop" @close="showSelectPopup=false">
+      <!-- 配送地址选择 -->
+      <view class="delivery-section">
+        <view class="delivery-title">配送至</view>
+        <view class="region-selector">
+          <view class="region-item" :class="{'active': currentStep === 'province'}" @click="switchStep('province')">{{ form.province || '北京' }}</view>
+          <view class="region-item" :class="{'active': currentStep === 'city'}" @click="switchStep('city')">{{ form.city || '朝阳区' }}</view>
+          <view class="region-item" :class="{'active': currentStep === 'district'}" @click="switchStep('district')">{{ form.district || '安贞街道' }}</view>
+          <view class="region-item" :class="{'active': currentStep === 'street'}" @click="switchStep('street')">街道</view>
+          <view class="region-item" :class="{'active': currentStep === 'site'}" @click="switchStep('site')">站点</view>
+        </view>
+        
+        <!-- 街道列表 -->
+        <scroll-view class="street-list" scroll-y>
+          <view 
+            class="street-item" 
+            v-for="(item, index) in currentList" 
+            :key="index"
+            :class="{'active': getIsActive(item)}"
+            @click="selectItem(item)"
+          >
+            {{ item }}
+          </view>
+        </scroll-view>
+      </view>
+    </SelectPopup>
   </view>
 </template>
 
 <script>
+import SelectPopup from '@/components/select-popup.vue';
 export default {
+  components: { SelectPopup },
   data() {
     return {
       form: {
-        province: '',
-        city: '',
+        province: '北京',
+        city: '朝阳区',
         district: '',
         address: '',
         building: '',
@@ -108,8 +136,46 @@ export default {
         building: '',
         contactName: '',
         contactPhone: ''
-      }
+      },
+      showSelectPopup: false,
+      popupTop: 0,
+      streetList: [
+        '安贞街道',
+        '奥运村街道',
+        '八里庄街道',
+        '常营街道',
+        '朝外街道',
+        '崔各庄地区',
+        '大屯街道',
+        '东坝地区',
+        '东风地区',
+        '东湖街道',
+        '豆各庄街道',
+        '高碑店地区',
+        '和平街街道'
+      ],
+      provinceList: ['北京', '天津', '上海', '重庆', '河北', '山西', '辽宁'],
+      cityList: ['朝阳区', '海淀区', '东城区', '西城区', '丰台区', '石景山区'],
+      currentStep: 'district', // 控制弹窗中的步骤
+      selectedStreet: '' // 记录当前选中的街道
     };
+  },
+  computed: {
+    currentList() {
+      switch(this.currentStep) {
+        case 'province':
+          return this.provinceList;
+        case 'city':
+          return this.cityList;
+        case 'district':
+        case 'street':
+          return this.streetList;
+        case 'site':
+          return ['暂无站点'];
+        default:
+          return this.streetList;
+      }
+    }
   },
   onLoad(options) {
     // 如果从地址选择页面返回，处理选择的地址数据
@@ -124,10 +190,55 @@ export default {
       uni.navigateBack();
     },
     selectLocation() {
-      // 跳转到地址选择页面
-      uni.navigateTo({
-        url: './select?from=add'
-      });
+      // 动态获取收货姓名输入框底部
+      uni.createSelectorQuery().in(this).select('#nameInput').boundingClientRect(rect => {
+        if (rect) {
+          this.popupTop = rect.bottom;
+          this.showSelectPopup = true;
+          this.currentStep = 'district'; // 打开弹窗时默认显示区域选择
+          this.selectedStreet = ''; // 清空选中的街道
+        } else {
+          // 如果获取不到元素，使用默认值
+          this.popupTop = 200;
+          this.showSelectPopup = true;
+          console.log('无法获取nameInput元素位置，使用默认值');
+        }
+      }).exec();
+    },
+    // 切换步骤
+    switchStep(step) {
+      this.currentStep = step;
+    },
+    // 判断列表项是否激活
+    getIsActive(item) {
+      switch(this.currentStep) {
+        case 'province':
+          return this.form.province === item;
+        case 'city':
+          return this.form.city === item;
+        case 'district':
+        case 'street':
+          return this.selectedStreet === item || this.form.district === item;
+        default:
+          return false;
+      }
+    },
+    // 选择列表项
+    selectItem(item) {
+      switch(this.currentStep) {
+        case 'province':
+          this.form.province = item;
+          this.currentStep = 'city';
+          break;
+        case 'city':
+          this.form.city = item;
+          this.currentStep = 'district';
+          break;
+        case 'district':
+        case 'street':
+          this.selectStreet(item);
+          break;
+      }
     },
     validateField(field) {
       // 重置错误
@@ -155,7 +266,7 @@ export default {
           break;
         case 'contactName':
           if (!this.form.contactName.trim()) {
-            this.errors.contactName = '请输入联系人姓名';
+            this.errors.contactName = '请输入收货人姓名';
             return false;
           }
           break;
@@ -174,7 +285,7 @@ export default {
     },
     validateForm() {
       // 验证所有字段
-      const fields = ['location', 'address', 'building', 'contactName', 'contactPhone'];
+      const fields = ['contactName', 'location', 'address', 'building', 'contactPhone'];
       let isValid = true;
       
       fields.forEach(field => {
@@ -253,6 +364,17 @@ export default {
           icon: 'none'
         });
       }
+    },
+    selectStreet(street) {
+      this.selectedStreet = street;
+      this.form.district = street;
+      
+      // 确保省市区都有值
+      if (!this.form.province) this.form.province = '北京';
+      if (!this.form.city) this.form.city = '朝阳区';
+      
+      // 关闭弹窗
+      this.showSelectPopup = false;
     }
   }
 };
@@ -359,6 +481,58 @@ export default {
       
       .form-label {
         margin-bottom: 0;
+      }
+    }
+  }
+}
+
+/* 弹窗样式 */
+.delivery-section {
+  padding: 0 30rpx 30rpx 30rpx;
+  background: #fff;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+
+  .delivery-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #222;
+    text-align: center;
+    margin: 32rpx 0 36rpx 0;
+  }
+
+  .region-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 36rpx;
+    
+    .region-item {
+      font-size: 28rpx;
+      color: #222;
+      margin: 0 18rpx;
+      font-weight: 500;
+      position: relative;
+      &.active {
+        color: #FE8D00;
+      }
+      &.highlight {
+        color: #FE8D00;
+      }
+    }
+  }
+
+  .street-list {
+    max-height: 420rpx;
+    overflow-y: auto;
+    .street-item {
+      font-size: 26rpx;
+      color: #B3B3B3;
+      padding: 22rpx 0;
+      text-align: left;
+      transition: color 0.2s;
+      &.active {
+        color: #FE8D00;
       }
     }
   }

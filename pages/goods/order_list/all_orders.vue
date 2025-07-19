@@ -11,7 +11,7 @@
 		
 		<!-- 订单列表 -->
 		<view class="order-list">
-			<view class="order-item" v-for="(item, index) in orderList" :key="index" @click="goOrderDetails(item.order_id)">
+			<view class="order-item" v-for="(item, index) in orderList" :key="index">
 				<!-- 订单时间和状态 -->
 				<view class="order-header">
 					<view class="order-time">下单时间：{{item.order_time || item._add_time}}</view>
@@ -19,7 +19,7 @@
 				</view>
 				
 				<!-- 商品信息 -->
-				<view class="product-info">
+				<view class="product-info" @click="goOrderDetails(item.order_id)">
 					<image class="product-image" :src="item.cartInfo && item.cartInfo[0] && item.cartInfo[0].productInfo.image"></image>
 					<view class="product-detail">
 						<view class="product-name">{{item.cartInfo && item.cartInfo[0] && item.cartInfo[0].productInfo.store_name}}</view>
@@ -30,7 +30,7 @@
 				
 				<!-- 订单总计 -->
 				<view class="order-total">
-					<view class="total-left">共一件商品</view>
+					<view class="total-left">共{{item.total_num || 1}}件商品</view>
 					<view class="total-right">实际支付 ¥ {{item.pay_price}} (含配送费0)</view>
 				</view>
 				
@@ -58,6 +58,7 @@
 
 <script>
 import { getOrderList, orderData } from '@/api/order.js';
+import { getGroupOrderList } from '@/api/group.js';
 import emptyPage from '@/components/emptyPage.vue';
 import { mapGetters } from "vuex";
 import colors from '@/mixins/color.js';
@@ -69,7 +70,32 @@ export default {
 	mixins: [colors],
 	data() {
 		return {
-			orderList: [],
+			orderList: [
+				// 模拟数据 - 巧克力蛋糕订单
+				{
+					order_id: '202503081234567',
+					order_time: '2025-03-15',
+					_add_time: '2025-03-15',
+					pay_price: '105',
+					status_name: '订单完成',
+					cartInfo: [
+						{
+							productInfo: {
+								store_name: '巧克力-提拉米苏券',
+								image: '/static/images/order/coffee.png',
+								price: '105',
+								attrInfo: {
+									suk: '单份巧克力蛋糕/40g',
+									price: '105'
+								}
+							},
+							cart_num: 1,
+							unique: 'choc123456'
+						}
+					],
+					total_num: 1
+				}
+			],
 			page: 1,
 			limit: 10,
 			loading: false,
@@ -105,22 +131,67 @@ export default {
 		getOrderList() {
 			if (this.loading || this.loadend) return;
 			this.loading = true;
-			getOrderList({
-				page: this.page,
-				limit: this.limit,
-				type: 9 // 全部订单
-			}).then(res => {
-				this.loading = false;
-				let list = res.data;
-				let loadend = list.length < this.limit;
-				this.orderList = this.orderList.concat(list);
-				this.loadend = loadend;
-				this.loadTitle = loadend ? '我也是有底线的' : '加载更多';
-				this.page = this.page + 1;
-			}).catch(err => {
-				this.loading = false;
-				this.$util.Tips({
-					title: err
+
+			// 优先获取团购订单，失败则获取普通订单
+			this.getGroupOrderList().catch(() => {
+				getOrderList({
+					page: this.page,
+					limit: this.limit,
+					type: 9 // 全部订单
+				}).then(res => {
+					this.loading = false;
+					let list = res.data;
+					let loadend = list.length < this.limit;
+					this.orderList = this.orderList.concat(list);
+					this.loadend = loadend;
+					this.loadTitle = loadend ? '我也是有底线的' : '加载更多';
+					this.page = this.page + 1;
+				}).catch(err => {
+					this.loading = false;
+					this.$util.Tips({
+						title: err
+					});
+				});
+			});
+		},
+
+		// 获取团购订单列表
+		getGroupOrderList() {
+			return new Promise((resolve, reject) => {
+				getGroupOrderList({
+					page: this.page,
+					limit: this.limit,
+					status: '' // 全部状态
+				}).then(res => {
+					this.loading = false;
+					if (res.status === 200 && res.data) {
+						let list = res.data.list || res.data;
+						let loadend = list.length < this.limit;
+
+						// 转换团购订单数据格式以适配页面显示
+						const formattedList = list.map(item => ({
+							order_id: item.id || item.order_id,
+							order_time: item.created_at || item.order_time,
+							_add_time: item.created_at || item._add_time,
+							total_price: item.total_amount || item.total_price,
+							status_name: item.status_text || '订单完成',
+							cart_info: item.goods || item.cart_info || [],
+							// 其他必要字段的映射
+							...item
+						}));
+
+						this.orderList = this.orderList.concat(formattedList);
+						this.loadend = loadend;
+						this.loadTitle = loadend ? '我也是有底线的' : '加载更多';
+						this.page = this.page + 1;
+						resolve(res);
+					} else {
+						reject(new Error('团购订单数据格式错误'));
+					}
+				}).catch(err => {
+					this.loading = false;
+					console.log('获取团购订单失败:', err);
+					reject(err);
 				});
 			});
 		},
@@ -159,7 +230,7 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
-	background-color: #f5f5f5;
+	background-color: #F0F0F0;
 	min-height: 100vh;
 }
 
@@ -170,99 +241,110 @@ export default {
 	height: 44px;
 	background-color: #fff;
 	position: relative;
-	padding: 0 15px;
 	
 	.header-left {
 		display: flex;
 		align-items: center;
 		position: absolute;
-		left: 15px;
+		left: 13px;
+		top: 50%;
+		transform: translateY(-50%);
 		
 		.back-icon {
-			width: 20px;
-			height: 20px;
-			margin-right: 5px;
+			width: 7px;
+			height: 13px;
+			margin-right: 9px;
 		}
 		
 		.back-text {
-			font-size: 16px;
-			color: #333;
+			font-size: 18px;
+			font-weight: 400;
+			color: #333333;
+			font-family: 'PingFang SC';
 		}
 	}
 	
 	.header-title {
 		font-size: 18px;
-		font-weight: 500;
-		color: #333;
+		font-weight: 400;
+		color: #1A1A1A;
+		font-family: 'PingFang SC';
 	}
 }
 
 .order-list {
-	padding: 10px 15px;
+	padding: 10px 12px;
 	
 	.order-item {
 		background-color: #fff;
-		border-radius: 8px;
-		margin-bottom: 15px;
-		padding: 15px;
+		border-radius: 4px;
+		margin-bottom: 10px;
+		padding: 0;
 		
 		.order-header {
 			display: flex;
 			justify-content: space-between;
-			margin-bottom: 15px;
+			padding: 8px 7px;
+			border-bottom: 0.5px solid #F0F0F0;
 			
 			.order-time {
-				font-size: 14px;
-				color: #666;
+				font-size: 13px;
+				color: #B3B3B3;
+				font-family: 'PingFang SC';
+				font-weight: 400;
 			}
 			
 			.order-status {
-				font-size: 14px;
-				color: #333;
-				font-weight: 500;
+				font-size: 15px;
+				color: #333333;
+				font-family: 'PingFang SC';
+				font-weight: 400;
 			}
 		}
 		
 		.product-info {
 			display: flex;
-			margin-bottom: 15px;
+			padding: 12px 7px;
 			
 			.product-image {
-				width: 80px;
-				height: 80px;
+				width: 99px;
+				height: 95px;
 				border-radius: 4px;
-				flex-shrink: 0;
+				margin-right: 10px;
+				background-color: #f7f7f7;
 			}
 			
 			.product-detail {
 				flex: 1;
-				margin-left: 10px;
-				display: flex;
-				flex-direction: column;
-				justify-content: space-between;
 				
 				.product-name {
-					font-size: 15px;
-					color: #333;
-					line-height: 1.4;
-					overflow: hidden;
-					text-overflow: ellipsis;
-					display: -webkit-box;
-					-webkit-line-clamp: 2;
-					-webkit-box-orient: vertical;
+					font-size: 18px;
+					color: #000000;
+					font-family: 'PingFang SC';
+					font-weight: 400;
+					margin-bottom: 8px;
+					line-height: 25px;
 				}
 				
 				.product-spec {
-					font-size: 13px;
-					color: #999;
-					margin-top: 5px;
+					display: inline-block;
+					background-color: #F7F7F7;
+					padding: 1.5px 7px;
+					border-radius: 6px;
+					font-size: 14px;
+					color: #999999;
+					font-family: 'PingFang SC';
+					font-weight: 400;
+					margin-bottom: 8px;
+					line-height: 20px;
 				}
 				
 				.product-price {
 					font-size: 15px;
-					color: #333;
-					font-weight: 500;
-					margin-top: 5px;
+					color: #1A1A1A;
+					font-family: 'PingFang SC';
+					font-weight: 400;
+					line-height: 21px;
 				}
 			}
 		}
@@ -270,42 +352,53 @@ export default {
 		.order-total {
 			display: flex;
 			justify-content: space-between;
-			padding: 10px 0;
-			border-top: 1px solid #f5f5f5;
-			border-bottom: 1px solid #f5f5f5;
-			margin-bottom: 15px;
+			padding: 8px 7px;
+			border-top: 0.5px solid #F0F0F0;
 			
 			.total-left {
-				font-size: 14px;
-				color: #666;
+				font-size: 15px;
+				color: #999999;
+				font-family: 'PingFang SC';
+				font-weight: 400;
+				line-height: 21px;
 			}
 			
 			.total-right {
-				font-size: 14px;
-				color: #333;
-				font-weight: 500;
+				font-size: 15px;
+				color: #1A1A1A;
+				font-family: 'PingFang SC';
+				font-weight: 400;
+				line-height: 21px;
 			}
 		}
 		
 		.order-actions {
 			display: flex;
 			justify-content: flex-end;
+			padding: 8px 7px;
 			
 			.action-btn {
-				padding: 8px 20px;
-				border-radius: 20px;
-				font-size: 14px;
+				height: 30px;
+				border-radius: 15px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0 15px;
 				margin-left: 10px;
+				font-size: 15px;
+				font-family: 'PingFang SC';
+				font-weight: 400;
+				line-height: 21px;
 			}
 			
 			.service-btn {
-				border: 1px solid #ddd;
-				color: #666;
+				border: 1px solid #E5E5E5;
+				color: #000000;
 			}
 			
 			.comment-btn {
-				background-color: #ff8c1b;
-				color: #fff;
+				background-color: #FE8D00;
+				color: #FFFFFF;
 			}
 		}
 	}
@@ -318,10 +411,6 @@ export default {
 			font-size: 14px;
 			color: #999;
 		}
-	}
-	
-	.empty-state {
-		padding-top: 30px;
 	}
 }
 </style>

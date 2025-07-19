@@ -24,9 +24,7 @@
 			<GoodList :bastList="goodsList" :is-sort="false"></GoodList>
 			<emptyPage v-if="goodsList.length == 0 && !isScroll" :title="$t(`暂无数据`)"></emptyPage>
 		</view>
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+
 		<!-- <pageFooter></pageFooter> -->
 	</div>
 </template>
@@ -40,14 +38,13 @@
 	import {
 		goPage
 	} from '@/libs/order.js';
-	import home from '@/components/home/index.vue'
+
 	import colors from "@/mixins/color";
 	export default {
 		name: 'HotNewGoods',
 		components: {
 			GoodList,
 			emptyPage,
-			home,
 			pageFooter
 		},
 		props: {},

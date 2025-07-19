@@ -2,15 +2,15 @@
 	<view class="birthday-page" :style="colorStyle">
 		<!-- 头部导航栏 -->
 		<view class="header">
-			<view class="back-icon" @click="navigateBack">
-				<text class="iconfont icon-left"></text>
+			<view class="back-btn" @click="navigateBack">
+				<image src="/static/icons/back-arrow.svg" class="back-icon" />
 			</view>
 			<view class="page-title">生日</view>
 		</view>
 		
 		<!-- 日期选择器 -->
 		<view class="date-picker">
-			<view class="picker-title">生日</view>
+			<!-- picker-title 移除 -->
 			
 			<!-- 选择器 -->
 			<view class="picker-container">
@@ -214,10 +214,17 @@ export default {
 	background-color: #fff;
 	border-bottom: 1rpx solid #f0f0f0;
 	
-	.back-icon {
+	.back-btn {
 		position: absolute;
 		left: 30rpx;
-		font-size: 36rpx;
+		height: 100%;
+		display: flex;
+		align-items: center;
+	}
+	
+	.back-icon {
+		width: 32rpx;
+		height: 32rpx;
 	}
 	
 	.page-title {

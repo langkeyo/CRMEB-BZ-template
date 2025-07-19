@@ -1,6 +1,9 @@
 <template>
   <view class="promo-banner-container">
     <view class="promo-banner">
+      <!-- 添加浪条背景图 -->
+      <image class="wave-strip-bg" src="/static/images/user/eclipse-strip.png" mode="aspectFill" />
+      
       <view class="promo-banner-content">
         <image class="promo-icon" src="/static/icons/thumb_up_icon.svg" />
         <view class="promo-text">
@@ -40,8 +43,8 @@ export default {
 
 <style lang="scss" scoped>
 .promo-banner-container {
-  padding: 0 40rpx;
-  margin-top: 26rpx;
+  padding: 0 22rpx 0 30rpx;
+  margin-top: 20rpx;
   position: relative;
   z-index: 1;
 }
@@ -56,36 +59,23 @@ export default {
   color: white;
   position: relative;
   overflow: hidden;
+  height: 148rpx; /* 74px * 2 */
+}
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 200rpx;
-    height: 200rpx;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
-    border-radius: 50%;
-    transform: translate(50%, -50%);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 150rpx;
-    height: 150rpx;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
-    border-radius: 50%;
-    transform: translate(-30%, 30%);
-  }
+/* 浪条背景图 */
+.wave-strip-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 60%;
+  z-index: 1;
 }
 
 .promo-banner-content {
   display: flex;
   align-items: center;
-  z-index: 1;
+  z-index: 2;
 }
 
 .promo-icon {
@@ -132,7 +122,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
+  z-index: 2;
 }
 
 button::after {

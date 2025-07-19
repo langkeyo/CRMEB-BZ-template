@@ -332,6 +332,15 @@ export default {
 		 */
 		statusClick: function (status) {
 			if (status == this.orderStatus) return;
+			
+			// 如果是待收货状态(status=2)，跳转到全部订单页面
+			if (status == 2) {
+				uni.navigateTo({
+					url: '/pages/goods/order_list/all_orders'
+				});
+				return;
+			}
+			
 			this.orderStatus = status;
 			this.loadend = false;
 			this.page = 1;
