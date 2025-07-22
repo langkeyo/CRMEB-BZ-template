@@ -47,7 +47,7 @@
                 <view class="product-item" v-for="(item, index) in currentProducts" :key="`product-${index}`" @click="navigateToDetail(item)">
                     <!-- 商品图片 -->
                     <view class="product-img-wrapper">
-                        <image :src="item.image" class="product-img" mode="aspectFill"></image>
+                        <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
                     </view>
                     <!-- 商品信息 -->
                     <view class="product-info">
@@ -71,6 +71,7 @@
 
 <script>
 import SectionTitle from '@/components/SectionTitle/index.vue';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
     name: 'HotGroup',
@@ -163,6 +164,25 @@ export default {
                     });
                 }
             });
+        },
+
+        // 处理图片URL
+        setDomain(url) {
+            if (!url) return '';
+            url = url.toString();
+
+            // 如果是相对路径，拼接域名
+            if (url.indexOf('/') === 0) {
+                return HTTP_REQUEST_URL + url;
+            }
+
+            // 如果已经是完整URL，直接返回
+            if (url.indexOf("http") === 0) {
+                return url;
+            }
+
+            // 其他情况拼接域名
+            return HTTP_REQUEST_URL + '/' + url;
         }
     }
 }

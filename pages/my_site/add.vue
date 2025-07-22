@@ -1,13 +1,12 @@
 <template>
   <view class="add-page">
-    <!-- 顶部导航栏 -->
-    <view class="header">
-      <view class="back-btn" @click="goBack">
-        <text class="iconfont icon-fanhui"></text>
-      </view>
-      <view class="title">添加站点</view>
-      <view class="right-btn" @click="saveSite">保存</view>
-    </view>
+    <!-- 使用通用头部导航组件 -->
+    <CommonHeader
+      title="添加站点"
+      rightText="保存"
+      @back="goBack"
+      @rightClick="saveSite">
+    </CommonHeader>
     
     <!-- 表单内容 -->
     <view class="form-content">
@@ -116,8 +115,13 @@
 
 <script>
 import SelectPopup from '@/components/select-popup.vue';
+import CommonHeader from '@/components/CommonHeader/index.vue';
+
 export default {
-  components: { SelectPopup },
+  components: {
+    SelectPopup,
+    CommonHeader
+  },
   data() {
     return {
       form: {

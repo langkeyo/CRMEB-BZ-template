@@ -1,13 +1,12 @@
 <template>
   <view class="site-page">
-    <!-- 顶部导航栏 -->
-    <view class="header">
-      <view class="back-btn" @click="goBack">
-        <image src="/static/icons/back-arrow.svg" class="back-icon" />
-      </view>
-      <view class="title">我的站点</view>
-      <view class="right-btn" @click="toggleSelectMode">{{ isSelectMode ? '取消' : '选择' }}</view>
-    </view>
+    <!-- 使用通用头部导航组件 -->
+    <CommonHeader
+      title="我的站点"
+      :rightText="isSelectMode ? '取消' : '选择'"
+      @back="goBack"
+      @rightClick="toggleSelectMode">
+    </CommonHeader>
     
     <!-- 站点卡片 -->
     <view class="site-card" :class="{ 'select-mode': isSelectMode }">
@@ -54,7 +53,12 @@
 </template>
 
 <script>
+import CommonHeader from '@/components/CommonHeader/index.vue';
+
 export default {
+  components: {
+    CommonHeader
+  },
   data() {
     return {
       currentSite: {
@@ -144,38 +148,7 @@ export default {
   min-height: 100vh;
   padding-bottom: 40rpx;
 }
-.header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100rpx;
-  background-color: #FFFFFF;
-  position: relative;
-  border-bottom: 1rpx solid #F2F2F2;
-}
-.back-btn {
-  position: absolute;
-  left: 20rpx;
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-.back-icon {
-  width: 32rpx;
-  height: 32rpx;
-}
-.title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333333;
-  text-align: center;
-}
-.right-btn {
-  position: absolute;
-  right: 30rpx;
-  font-size: 32rpx;
-  color: #333333;
-}
+
 .site-card {
   margin: 30rpx 30rpx 0 30rpx;
   padding: 30rpx;

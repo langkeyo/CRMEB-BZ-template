@@ -124,7 +124,7 @@
       <view class="product-card" v-for="(product, index) in groupBuyingProducts" :key="index">
         <!-- 左侧商品图片 -->
         <view class="product-image-container">
-          <image :src="product.image" class="product-image" mode="aspectFill"></image>
+          <image :src="setDomain(product.image)" class="product-image" mode="aspectFill"></image>
         </view>
 
         <!-- 右侧商品信息 -->
@@ -206,6 +206,7 @@ import {
   getGroupGoodsList,
   getGroupGoodsCategory
 } from '@/api/group.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
   data() {
@@ -378,7 +379,7 @@ export default {
           const products = res.data.goodsList.map(item => ({
             id: item.id,
             name: item.title,
-            image: item.image || '/static/images/today-group-buying/default.png',
+            image: item.image || '/static/images/today-group-buying/default.png', // 图片URL会在模板中通过setDomain处理
             currentPrice: item.min_price,
             originalPrice: item.max_price,
             discount: '5', // 默认折扣
@@ -399,6 +400,25 @@ export default {
 
     goBack() {
       uni.navigateBack();
+    },
+
+    // 处理图片URL
+    setDomain(url) {
+      if (!url) return '';
+      url = url.toString();
+
+      // 如果是相对路径，拼接域名
+      if (url.indexOf('/') === 0) {
+        return HTTP_REQUEST_URL + url;
+      }
+
+      // 如果已经是完整URL，直接返回
+      if (url.indexOf("http") === 0) {
+        return url;
+      }
+
+      // 其他情况拼接域名
+      return HTTP_REQUEST_URL + '/' + url;
     },
 
     // 轮播图切换

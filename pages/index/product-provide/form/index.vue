@@ -1,18 +1,7 @@
 <template>
     <view class="form-page">
-        <!-- 状态栏占位 -->
-        <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
-
-        <!-- 顶部导航 -->
-        <view class="header">
-            <view class="left-area">
-                <text class="cancel-text" @tap="goBack">取消</text>
-            </view>
-            <text class="page-title">基本信息</text>
-            <view class="right-placeholder"></view>
-        </view>
-
-        <view class="divider"></view>
+        <!-- 使用通用头部导航组件 -->
+        <CommonHeader title="基本信息" rightText="取消" @back="goBack" @rightClick="goBack"></CommonHeader>
 
         <!-- 表单内容 -->
         <scroll-view scroll-y class="form-content">
@@ -141,7 +130,14 @@
 
 <script>
 import ArrowRight from '@/components/ArrowRight'
+import CommonHeader from '@/components/CommonHeader/index.vue';
+import { supplierApply } from '@/api/group.js';
+
 export default {
+    components: {
+        ArrowRight,
+        CommonHeader
+    },
     data() {
         return {
             statusBarHeight: 20,
@@ -155,9 +151,6 @@ export default {
                 productDesc: ''
             }
         }
-    },
-    components: {
-        ArrowRight
     },
     computed: {
         isFormValid() {
@@ -253,18 +246,43 @@ export default {
                 return
             }
 
-            // 模拟提交成功
+            // 提交供应商申请
             uni.showLoading({
                 title: '提交中...'
             })
 
-            setTimeout(() => {
+            // 准备提交数据，根据API文档要求的字段格式
+            const submitData = {
+                business_license: this.formData.businessLicense,
+                goods_images: this.formData.productImage,
+                hygienic_license: this.formData.hygieneLicense,
+                identity_card_r: this.formData.idCardFront,
+                identity_card_g: this.formData.idCardBack,
+                source: this.formData.productSource,
+                intro: this.formData.productDesc
+            }
+
+            supplierApply(submitData).then(res => {
                 uni.hideLoading()
-                // 跳转到审核状态页面
-                uni.navigateTo({
-                    url: '/pages/index/product-provide/review/index'
+                uni.showToast({
+                    title: '申请提交成功',
+                    icon: 'success'
                 })
-            }, 1500)
+
+                // 跳转到审核状态页面
+                setTimeout(() => {
+                    uni.navigateTo({
+                        url: '/pages/index/product-provide/review/index'
+                    })
+                }, 1500)
+
+            }).catch(err => {
+                uni.hideLoading()
+                uni.showToast({
+                    title: err.msg || '提交失败，请重试',
+                    icon: 'none'
+                })
+            })
         }
     }
 }

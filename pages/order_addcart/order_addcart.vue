@@ -2,11 +2,10 @@
   <view :style="colorStyle">
     <view class="shoppingCart copy-data" v-if="canShow">
       <!-- 购物车头部组件 -->
-      <cart-header 
-        :has-items="cartList.valid.length > 0 || cartList.invalid.length > 0"
-        :is-editing="footerswitch"
-        @manage="manage"
-      />
+      <view class="header-bar">
+        <view class="title">购物车</view>
+        <view class="edit-btn" @click="onEdit">编辑</view>
+      </view>
 
       <!-- 促销信息组件 -->
       <promotion-bar 
@@ -51,7 +50,7 @@
       />
       
       <!-- 猜你喜欢区域 -->
-      <view class="guess-you-like" v-if="cartList.valid.length > 0">
+      <view class="guess-you-like" v-if="cartList.valid.length > 0 || likeProducts.length > 0">
         <view class="divider"></view>
         <view class="section-title">—— 猜你喜欢 ——</view>
         <view class="product-grid">
@@ -751,6 +750,23 @@ export default {
           }
         }
       });
+    },
+    onEdit() {
+      this.footerswitch = !this.footerswitch;
+      let selectValue = [];
+      let selectCountPrice = 0.0;
+      if (this.footerswitch) {
+        for (let i = 0; i < this.cartList.valid.length; i++) {
+          this.cartList.valid[i].checked = false;
+        }
+      } else {
+        for (let i = 0; i < this.cartList.valid.length; i++) {
+          this.cartList.valid[i].checked = false;
+        }
+      }
+      this.isAllSelect = false;
+      this.selectValue = selectValue;
+      this.selectCountPrice = selectCountPrice.toFixed(2);
     }
   },
   onReachBottom() {
@@ -819,21 +835,21 @@ export default {
 
 /* 猜你喜欢区域样式 */
 .guess-you-like {
-  padding: 30rpx 30rpx;
+  padding: 20rpx;
   margin-top: 20rpx;
   background-color: #FFFFFF;
   
   .divider {
     height: 1rpx;
     background-color: #F0F0F0;
-    margin-bottom: 30rpx;
+    margin-bottom: 20rpx;
   }
   
   .section-title {
     text-align: center;
     font-size: 28rpx;
     color: #333333;
-    margin-bottom: 30rpx;
+    margin-bottom: 20rpx;
   }
   
   .product-grid {
@@ -844,24 +860,40 @@ export default {
     .product-item {
       width: 48%;
       margin-bottom: 20rpx;
-      background-color: #F8F8F8;
-      border-radius: 8rpx;
-      overflow: hidden;
-      
-      image {
-        width: 100%;
-        height: 200rpx;
-        object-fit: cover;
-      }
-      
-      .product-name {
-        padding: 16rpx;
-        font-size: 26rpx;
-        color: #333333;
-        text-align: center;
-      }
+      background-color: transparent;
+      border-radius: 0;
+      overflow: visible;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
   }
+}
+
+/* 猜你喜欢区域的图片样式 - 单独定义以确保兼容性 */
+.product-grid .product-item image {
+  width: 100%;
+  height: 180rpx;
+  object-fit: cover;
+  border-radius: 8rpx;
+  display: block;
+  background: #F8F8F8;
+}
+
+/* 猜你喜欢区域的商品名称样式 */
+.product-grid .product-item .product-name {
+  margin-top: 12rpx;
+  padding: 0 8rpx;
+  font-size: 26rpx;
+  color: #333333;
+  text-align: center;
+  background: transparent;
+  line-height: 1.3;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 加载更多样式 */
@@ -883,6 +915,31 @@ export default {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  background: #fff;
+  padding: 0 16px;
+  border-bottom: 1px solid #f0f0f0;
+
+  .title {
+    flex: 1;
+    text-align: center;
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+  .edit-btn {
+    font-size: 16px;
+    color: #333333; // 这里改为黑色
+    min-width: 40px;
+    text-align: right;
   }
 }
 </style>

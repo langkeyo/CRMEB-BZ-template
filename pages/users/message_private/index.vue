@@ -1,38 +1,5 @@
 <template>
   <view class="message-private-page">
-    <!-- 状态栏 -->
-    <view class="status-bar">
-      <!-- iPhone状态栏 -->
-      <view class="status-content">
-        <view class="left-side">
-          <text class="time">9:41</text>
-        </view>
-        <view class="right-side">
-          <view class="signal-icons">
-            <!-- 信号强度 -->
-            <view class="mobile-signal">
-              <view class="signal-bar bar1"></view>
-              <view class="signal-bar bar2"></view>
-              <view class="signal-bar bar3"></view>
-              <view class="signal-bar bar4"></view>
-            </view>
-            <!-- WiFi -->
-            <view class="wifi-icon">
-              <view class="wifi-arc arc1"></view>
-              <view class="wifi-arc arc2"></view>
-              <view class="wifi-arc arc3"></view>
-            </view>
-            <!-- 电池 -->
-            <view class="battery">
-              <view class="battery-body"></view>
-              <view class="battery-tip"></view>
-              <view class="battery-level"></view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="back-section" @click="goBack">
@@ -51,40 +18,43 @@
       <view class="notification-btn" @click="enableNotification">去开启</view>
     </view>
 
-    <!-- 消息列表 -->
-    <view class="message-list">
-      <!-- 服务通知 -->
-      <view class="message-item service-notice" @click="goToServiceNotice">
-        <view class="avatar-container">
-          <view class="service-avatar">
-            <view class="notification-icon">
-              <view class="bell-body"></view>
-              <view class="bell-handle"></view>
+    <!-- 页面内容区域 -->
+    <view class="page-content">
+      <!-- 消息列表 -->
+      <view class="message-list">
+        <!-- 服务通知 -->
+        <view class="message-item service-notice" @click="goToServiceNotice">
+          <view class="avatar-container">
+            <view class="service-avatar">
+              <view class="notification-icon">
+                <view class="bell-body"></view>
+                <view class="bell-handle"></view>
+              </view>
+            </view>
+            <view class="badge" v-if="unreadCount > 0">
+              <text>{{unreadCount}}</text>
             </view>
           </view>
-          <view class="badge" v-if="unreadCount > 0">
-            <text>{{unreadCount}}</text>
+          <view class="message-content">
+            <view class="message-title">服务通知</view>
+            <view class="message-preview">欢迎来到张罗~</view>
           </view>
+          <view class="message-time">16:58</view>
         </view>
-        <view class="message-content">
-          <view class="message-title">服务通知</view>
-          <view class="message-preview">欢迎来到张罗~</view>
-        </view>
-        <view class="message-time">16:58</view>
-      </view>
 
-      <!-- 商家消息列表 -->
-      <view
-        class="message-item"
-        v-for="(item, index) in messageList"
-        :key="index"
-        @click="goToChat(item)">
-        <image class="avatar" :src="item.avatar" mode="aspectFill"></image>
-        <view class="message-content">
-          <view class="message-title">{{item.title}}</view>
-          <view class="message-preview">{{item.lastMessage}}</view>
+        <!-- 商家消息列表 -->
+        <view
+          class="message-item"
+          v-for="(item, index) in messageList"
+          :key="index"
+          @click="goToChat(item)">
+          <image class="avatar" :src="item.avatar" mode="aspectFill"></image>
+          <view class="message-content">
+            <view class="message-title">{{item.title}}</view>
+            <view class="message-preview">{{item.lastMessage}}</view>
+          </view>
+          <view class="message-time">{{item.time}}</view>
         </view>
-        <view class="message-time">{{item.time}}</view>
       </view>
     </view>
 
@@ -131,17 +101,7 @@ export default {
       ]
     }
   },
-  onLoad() {
-    // 页面加载时的逻辑
-    this.setStatusBarStyle();
-  },
   methods: {
-    setStatusBarStyle() {
-      // 设置状态栏样式
-      // #ifdef APP-PLUS
-      plus.navigator.setStatusBarStyle('dark');
-      // #endif
-    },
     goBack() {
       uni.navigateBack();
     },
@@ -175,200 +135,63 @@ export default {
 <style lang="scss">
 .message-private-page {
   position: relative;
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   background: #F8F8F8;
-  font-family: 'PingFang SC', sans-serif;
-
-  // 状态栏样式
-  .status-bar {
-    position: fixed;
-    width: 100%;
-    height: 44px;
-    left: 0;
-    top: 0;
-    z-index: 1000;
-
-    .status-content {
-      position: relative;
-      width: 100%;
-      height: 100%;
-
-      .left-side {
-        position: absolute;
-        width: 54px;
-        height: 21px;
-        left: 21px;
-        top: 12px;
-
-        .time {
-          position: absolute;
-          width: 28.43px;
-          height: 11.09px;
-          left: 12.45px;
-          top: 5.17px;
-          font-family: 'PingFang SC';
-          font-style: normal;
-          font-weight: 400;
-          font-size: 18px;
-          line-height: 25px;
-          color: #000000;
-        }
-      }
-
-      .right-side {
-        position: absolute;
-        width: 66.66px;
-        height: 11.34px;
-        left: 293.67px;
-        top: 17.33px;
-
-        .signal-icons {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-
-          .mobile-signal {
-            display: flex;
-            align-items: flex-end;
-            gap: 1px;
-
-            .signal-bar {
-              background: #000000;
-              width: 3px;
-
-              &.bar1 { height: 4px; }
-              &.bar2 { height: 6px; }
-              &.bar3 { height: 8.33px; }
-              &.bar4 { height: 10.67px; }
-            }
-          }
-
-          .wifi-icon {
-            position: relative;
-            width: 15.27px;
-            height: 4.74px;
-
-            .wifi-arc {
-              position: absolute;
-              background: #000000;
-              border-radius: 50%;
-
-              &.arc1 {
-                width: 15.27px;
-                height: 4.74px;
-                left: 0;
-                top: 0;
-              }
-              &.arc2 {
-                width: 9.95px;
-                height: 3.63px;
-                left: 2.66px;
-                top: 1.11px;
-              }
-              &.arc3 {
-                width: 4.63px;
-                height: 3.37px;
-                left: 5.32px;
-                top: 1.37px;
-              }
-            }
-          }
-
-          .battery {
-            position: relative;
-            width: 24.33px;
-            height: 11.33px;
-
-            .battery-body {
-              position: absolute;
-              width: 22px;
-              height: 11.33px;
-              right: 2.33px;
-              top: 0;
-              border: 1px solid #000000;
-              border-radius: 2.67px;
-              opacity: 0.35;
-            }
-
-            .battery-tip {
-              position: absolute;
-              width: 1.33px;
-              height: 4px;
-              right: 0;
-              top: 3.67px;
-              background: #000000;
-              opacity: 0.4;
-            }
-
-            .battery-level {
-              position: absolute;
-              width: 18px;
-              height: 7.33px;
-              right: 4.33px;
-              top: 2px;
-              background: #000000;
-              border-radius: 1.33px;
-            }
-          }
-        }
-      }
-    }
-  }
+  font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 
   // 顶部导航栏背景渐变
   .header {
     position: fixed;
     width: 100%;
-    height: 130px;
+    height: 56px;
     left: 0;
     top: 0;
-    background: linear-gradient(180deg, rgba(254, 141, 0, 0.2) 0%, rgba(254, 141, 1, 0) 100%);
+    background: linear-gradient(180deg, rgba(254, 141, 0, 0.15) 0%, rgba(254, 141, 1, 0) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-top: 44px;
     z-index: 999;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
     .back-section {
       position: absolute;
-      left: 13px;
-      top: 51px;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
       display: flex;
       align-items: center;
       cursor: pointer;
+      padding: 10px;
+      border-radius: 50%;
+      transition: background-color 0.2s;
+
+      &:active {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
 
       .back-arrow {
-        width: 7px;
-        height: 13px;
-        border: 1.5px solid #4D4D4D;
+        width: 10px;
+        height: 10px;
+        border: 2px solid #4D4D4D;
         border-right: none;
         border-top: none;
         transform: rotate(45deg);
-        margin-right: 8px;
+        margin-right: 5px;
       }
 
       .back-text {
-        font-family: 'PingFang SC';
-        font-style: normal;
         font-weight: 400;
-        font-size: 18px;
-        line-height: 25px;
+        font-size: 16px;
         color: #4D4D4D;
       }
     }
 
     .page-title {
-      position: absolute;
-      width: 72px;
-      height: 25px;
-      left: calc(50% - 72px/2 - 3.5px);
-      top: 52px;
-      font-family: 'PingFang SC';
-      font-style: normal;
-      font-weight: 400;
+      font-weight: 500;
       font-size: 18px;
-      line-height: 25px;
       color: #000000;
       text-align: center;
     }
@@ -378,92 +201,113 @@ export default {
   .notification-bar {
     position: fixed;
     width: 100%;
-    height: 43px;
+    height: auto;
     left: 0;
-    top: 98px;
-    background: rgba(255, 206, 144, 0.3);
+    top: 56px;
+    background: rgba(255, 206, 144, 0.2);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 15px;
+    padding: 12px 15px;
     z-index: 998;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 
     .notification-left {
       display: flex;
       align-items: center;
+      flex: 1;
 
       .notification-close {
-        width: 10px;
-        height: 22px;
-        font-family: 'PingFang SC';
-        font-style: normal;
-        font-weight: 400;
-        font-size: 16px;
-        line-height: 22px;
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        line-height: 20px;
         color: #808080;
-        margin-right: 14px;
-        cursor: pointer;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .notification-text {
-        width: 225px;
-        height: 21px;
-        font-family: 'PingFang SC';
-        font-style: normal;
-        font-weight: 400;
-        font-size: 15px;
-        line-height: 21px;
-        color: #808080;
+        font-size: 14px;
+        line-height: 20px;
+        color: #666;
+        flex: 1;
       }
     }
 
     .notification-btn {
-      width: 74px;
-      height: 30px;
+      min-width: 74px;
+      height: 32px;
       background: #FE8D00;
-      border-radius: 8px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-
-      font-family: 'PingFang SC';
-      font-style: normal;
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 22px;
-      text-align: center;
+      font-size: 14px;
       color: #FFFFFF;
+      padding: 0 15px;
+      margin-left: 10px;
+      box-shadow: 0 2px 4px rgba(254, 141, 0, 0.2);
+      transition: background 0.2s;
+
+      &:active {
+        background: #E07D00;
+      }
     }
+  }
+
+  // 页面内容区域
+  .page-content {
+    padding-top: 56px;
+    padding-bottom: 50px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: padding-top 0.3s ease;
+  }
+
+  // 当通知栏显示时，增加页面内容的顶部内边距
+  .notification-bar + .page-content {
+    padding-top: 112px;
   }
 
   // 消息列表
   .message-list {
-    margin-top: 150px;
-    padding: 0 12px;
-    padding-bottom: 50px;
+    padding: 15px;
 
     .message-item {
       position: relative;
       width: 100%;
-      min-height: 44px;
-      margin-bottom: 20px;
+      min-height: 60px;
+      margin-bottom: 15px;
       display: flex;
       align-items: center;
-      padding: 10px 0;
+      padding: 10px 15px;
+      background: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:active {
+        transform: scale(0.98);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
 
       &.service-notice {
         .avatar-container {
           position: relative;
+          margin-right: 12px;
 
           .service-avatar {
-            width: 44px;
-            height: 44px;
-            background: #FF9B1F;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FF9B1F, #FE8D00);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 6px rgba(254, 141, 0, 0.25);
 
             .notification-icon {
               position: relative;
@@ -476,9 +320,9 @@ export default {
                 height: 16px;
                 left: 3px;
                 top: 2px;
-                background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
-                box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.25);
+                background: #FFFFFF;
                 border-radius: 12.5px 12.5px 0px 0px;
+                box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.15) inset;
               }
 
               .bell-handle {
@@ -506,54 +350,51 @@ export default {
 
           .badge {
             position: absolute;
-            width: 12px;
-            height: 12px;
-            right: -3px;
-            top: -3px;
+            width: 18px;
+            height: 18px;
+            right: -5px;
+            top: -5px;
             background: #FB5B17;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 1px 3px rgba(251, 91, 23, 0.3);
+            border: 1.5px solid #FFFFFF;
 
             text {
-              font-family: 'PingFang SC';
-              font-style: normal;
-              font-weight: 400;
-              font-size: 10px;
-              line-height: 14px;
+              font-size: 12px;
               color: #FFFFFF;
+              font-weight: 500;
             }
           }
         }
       }
 
       .avatar {
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
-        margin-right: 11px;
+        margin-right: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       }
 
       .message-content {
         flex: 1;
         overflow: hidden;
+        padding-right: 30px;
 
         .message-title {
-          font-family: 'PingFang SC';
-          font-style: normal;
-          font-weight: 400;
+          font-weight: 500;
           font-size: 16px;
           line-height: 22px;
           color: #1A1A1A;
-          margin-bottom: 5px;
+          margin-bottom: 6px;
         }
 
         .message-preview {
-          font-family: 'PingFang SC';
-          font-style: normal;
-          font-weight: 400;
-          font-size: 13px;
+          font-size: 14px;
           line-height: 18px;
           color: #808080;
           white-space: nowrap;
@@ -564,14 +405,10 @@ export default {
 
       .message-time {
         position: absolute;
-        right: 0;
-        top: 14px;
-        font-family: 'PingFang SC';
-        font-style: normal;
-        font-weight: 400;
+        right: 15px;
+        top: 12px;
         font-size: 12px;
-        line-height: 17px;
-        color: #808080;
+        color: #999;
       }
     }
   }
@@ -580,20 +417,19 @@ export default {
   .home-indicator {
     position: fixed;
     width: 100%;
-    height: 32px;
+    height: 34px;
     left: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.1);
-    opacity: 0.9;
+    background: rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     &::after {
       content: '';
-      position: absolute;
       width: 134px;
       height: 5px;
-      left: calc(50% - 67px);
-      top: calc(50% - 2.5px);
-      background: #000000;
+      background: rgba(0, 0, 0, 0.4);
       border-radius: 2.5px;
     }
   }

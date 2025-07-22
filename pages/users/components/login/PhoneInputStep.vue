@@ -8,8 +8,7 @@
 			<view class="circle-right-sm"></view>
 		</view>
 
-		<!-- 状态栏 -->
-		<view class="status-bar"></view>
+
 
 		<!-- Logo -->
 		<view class="logo-container">
@@ -308,15 +307,6 @@ export default {
 		border-radius: 50%;
 		filter: blur(8px);
 	}
-}
-
-/* 状态栏 */
-.status-bar {
-	position: absolute;
-	width: 100%;
-	height: 44px;
-	left: 0;
-	top: 0;
 }
 
 /* Logo */

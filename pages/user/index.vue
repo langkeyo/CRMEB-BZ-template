@@ -115,7 +115,7 @@ export default {
 		// 通知点击
 		onNotificationClick () {
 			uni.navigateTo({
-				url: '/pages/users/message_center/index'
+				url: '/pages/users/message_private/index'
 			})
 		},
 
@@ -137,8 +137,8 @@ export default {
 		onStatClick (type) {
 			const routes = {
 				coupon: '/pages/users/user_coupon/index',
-				follow: '/pages/users/user_goods_collection/index',
-				like: '/pages/users/user_goods_collection/index'
+				follow: '/pages/users/user_follow/index',
+				like: '/pages/users/liked_goods/index'
 			}
 
 			if (routes[type]) {

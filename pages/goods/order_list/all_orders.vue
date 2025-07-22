@@ -3,12 +3,12 @@
 		<!-- 顶部导航栏 -->
 		<view class="page-header">
 			<view class="header-left" @click="goBack">
-				<image class="back-icon" src="/static/images/order/back_arrow.svg"></image>
+				<image class="back-icon" src="/static/icons/back-arrow.svg"></image>
 				<text class="back-text">返回</text>
 			</view>
 			<view class="header-title">全部订单</view>
 		</view>
-		
+
 		<!-- 订单列表 -->
 		<view class="order-list">
 			<view class="order-item" v-for="(item, index) in orderList" :key="index">
@@ -17,40 +17,28 @@
 					<view class="order-time">下单时间：{{item.order_time || item._add_time}}</view>
 					<view class="order-status">订单完成</view>
 				</view>
-				
+
 				<!-- 商品信息 -->
 				<view class="product-info" @click="goOrderDetails(item.order_id)">
 					<image class="product-image" :src="item.cartInfo && item.cartInfo[0] && item.cartInfo[0].productInfo.image"></image>
 					<view class="product-detail">
 						<view class="product-name">{{item.cartInfo && item.cartInfo[0] && item.cartInfo[0].productInfo.store_name}}</view>
 						<view class="product-spec">{{item.cartInfo && item.cartInfo[0] && item.cartInfo[0].productInfo.attrInfo ? item.cartInfo[0].productInfo.attrInfo.suk : ''}}</view>
-						<view class="product-price">¥ {{item.cartInfo && item.cartInfo[0] && (item.cartInfo[0].productInfo.attrInfo ? item.cartInfo[0].productInfo.attrInfo.price : item.cartInfo[0].productInfo.price)}}</view>
+						<view class="product-price">¥{{item.cartInfo && item.cartInfo[0] && (item.cartInfo[0].productInfo.attrInfo ? item.cartInfo[0].productInfo.attrInfo.price : item.cartInfo[0].productInfo.price)}}</view>
 					</view>
 				</view>
-				
+
 				<!-- 订单总计 -->
 				<view class="order-total">
 					<view class="total-left">共{{item.total_num || 1}}件商品</view>
 					<view class="total-right">实际支付 ¥ {{item.pay_price}} (含配送费0)</view>
 				</view>
-				
+
 				<!-- 操作按钮 -->
 				<view class="order-actions">
 					<view class="action-btn service-btn" @click.stop="applyAfterSales(item)">申请售后</view>
 					<view class="action-btn comment-btn" @click.stop="goComment(item)">去评论</view>
 				</view>
-			</view>
-			
-			<!-- 加载更多 -->
-			<view class="loading-more" v-if="orderList.length > 0">
-				<text class="loading-text" v-if="loading">加载中...</text>
-				<text class="loading-text" v-else-if="loadend">我也是有底线的</text>
-				<text class="loading-text" v-else>加载更多</text>
-			</view>
-			
-			<!-- 空状态 -->
-			<view v-if="orderList.length === 0 && !loading" class="empty-state">
-				<emptyPage v-if="!loading" :title="$t(`暂无订单`)"></emptyPage>
 			</view>
 		</view>
 	</view>
@@ -241,7 +229,7 @@ export default {
 	height: 44px;
 	background-color: #fff;
 	position: relative;
-	
+
 	.header-left {
 		display: flex;
 		align-items: center;
@@ -249,13 +237,13 @@ export default {
 		left: 13px;
 		top: 50%;
 		transform: translateY(-50%);
-		
+
 		.back-icon {
 			width: 7px;
 			height: 13px;
 			margin-right: 9px;
 		}
-		
+
 		.back-text {
 			font-size: 18px;
 			font-weight: 400;
@@ -263,7 +251,7 @@ export default {
 			font-family: 'PingFang SC';
 		}
 	}
-	
+
 	.header-title {
 		font-size: 18px;
 		font-weight: 400;

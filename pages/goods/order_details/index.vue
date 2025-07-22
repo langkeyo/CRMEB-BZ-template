@@ -1,17 +1,10 @@
 <template>
 	<view class="order-details-container" :style="colorStyle">
-		<!-- 顶部导航栏 -->
-		<view class="header">
-			<view class="status-bar" :style="{height: statusBarHeight + 'px'}"></view>
-			<view class="nav-bar">
-				<view class="left" @click="goBack">
-					<text class="back-icon"></text>
-					<text>返回</text>
-				</view>
-				<view class="title" v-if="orderInfo.status === 'completed'">订单已完成</view>
-				<view class="title" v-else>商品详情</view>
-			</view>
-		</view>
+		<!-- 使用通用头部导航组件 -->
+		<CommonHeader
+			:title="orderInfo.status === 'completed' ? '订单已完成' : '商品详情'"
+			@back="goBack">
+		</CommonHeader>
 
 		<!-- 订单已完成视图 -->
 		<view v-if="orderInfo.status === 'completed'" class="order-completed-container">
@@ -205,6 +198,28 @@
 	</view>
 </template>
 
+<script>
+import CommonHeader from '@/components/CommonHeader/index.vue';
+
+export default {
+	components: {
+		CommonHeader
+	},
+	data() {
+		return {
+			orderInfo: {
+				status: 'completed' // 默认为已完成状态
+			}
+		}
+	},
+	methods: {
+		goBack() {
+			uni.navigateBack();
+		}
+	}
+}
+</script>
+
 <style lang="scss" scoped>
 .order-details-container {
 	background-color: #F0F0F0;
@@ -212,50 +227,7 @@
 	padding-bottom: 32px;
 }
 
-.header {
-	background-color: #FFFFFF;
-	
-	.status-bar {
-		width: 100%;
-	}
-	
-	.nav-bar {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 44px;
-		
-		.left {
-			position: absolute;
-			left: 15px;
-			display: flex;
-			align-items: center;
-			
-			.back-icon {
-				display: inline-block;
-				width: 7px;
-				height: 13px;
-				margin-right: 9px;
-				border: 1.5px solid #333333;
-				border-top: none;
-				border-right: none;
-				transform: rotate(45deg);
-			}
-			
-			text {
-				color: #333333;
-				font-size: 18px;
-			}
-		}
-		
-		.title {
-			font-size: 18px;
-			font-weight: 400;
-			color: #1A1A1A;
-		}
-	}
-}
+
 
 /* 订单已完成样式 */
 .order-completed-container {

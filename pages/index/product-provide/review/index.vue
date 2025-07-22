@@ -1,17 +1,7 @@
 <template>
     <view class="review-page">
-        <!-- 状态栏占位 -->
-        <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
-
-        <!-- 顶部导航 -->
-        <view class="header">
-            <view class="back-icon" @tap="goBack">
-                <image src="/static/common/icons/navigation/back_arrow.svg" class="icon-image"></image>
-            </view>
-            <text class="page-title">资料审核</text>
-        </view>
-
-        <view class="divider"></view>
+        <!-- 使用通用头部导航组件 -->
+        <CommonHeader title="资料审核" @back="goBack"></CommonHeader>
 
         <!-- 审核状态内容 -->
         <view class="review-content">
@@ -94,14 +84,11 @@
 export default {
     data () {
         return {
-            statusBarHeight: 20,
             currentStatus: 0,
             isAlreadyApplied: false
         }
     },
     onLoad (options) {
-        this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight
-        
         // 检查是否已申请过
         if (options && options.alreadyApplied === '1') {
             this.isAlreadyApplied = true

@@ -1,16 +1,7 @@
 <template>
   <view class="form-page">
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
-    
-    <!-- 顶部导航 -->
-    <view class="header">
-      <view class="back-icon" @tap="goBack">
-        <image src="/static/images/index/icons/back_icon_black.svg" class="icon-image"></image>
-      </view>
-      <text class="page-title">基本信息</text>
-      <view class="right-placeholder"></view>
-    </view>
+    <!-- 使用通用头部导航组件 -->
+    <CommonHeader title="基本信息" @back="goBack"></CommonHeader>
     
     <!-- 表单内容 -->
     <view class="form-content">

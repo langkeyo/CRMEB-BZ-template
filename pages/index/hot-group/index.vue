@@ -1,21 +1,14 @@
 <template>
     <view class="hot-group-more">
-        <!-- 状态栏 -->
-        <view class="status-bar"></view>
+        <!-- 使用通用头部导航组件 -->
+        <CommonHeader title="热门团购" @back="goBack"></CommonHeader>
 
-        <!-- 顶部导航栏 -->
-        <view class="nav-bar">
-            <view class="back-btn" @click="goBack">
-                <view class="back-icon"></view>
-                <text class="back-text">返回</text>
-            </view>
-            <view class="title">热门团购</view>
-
-            <!-- 搜索框 -->
+        <!-- 搜索框 -->
+        <view class="search-container">
             <view class="search-box">
                 <view class="search-input" @click="focusSearch">
                     <text class="search-icon"></text>
-                    <input v-if="isSearchFocused" v-model="keyword" class="search-input-field" 
+                    <input v-if="isSearchFocused" v-model="keyword" class="search-input-field"
                            placeholder="搜索想要商品关键词" @confirm="searchProducts" @blur="blurSearch" />
                     <text v-else class="search-placeholder">搜索想要商品关键词</text>
                 </view>
@@ -50,8 +43,12 @@
 
 <script>
 import { getCombinationList } from '@/api/group.js';
+import CommonHeader from '@/components/CommonHeader/index.vue';
 
 export default {
+    components: {
+        CommonHeader
+    },
     name: 'HotGroupMore',
     data () {
         return {
@@ -62,15 +59,10 @@ export default {
             limit: 10,
             loadingStatus: 0, // 0: 不显示, 1: 加载中, 2: 已全部加载
             isLoading: false,
-            hasMore: true,
-            statusBarHeight: 20 // 默认状态栏高度
+            hasMore: true
         }
     },
     onLoad () {
-        // 获取状态栏高度
-        const systemInfo = uni.getSystemInfoSync()
-        this.statusBarHeight = systemInfo.statusBarHeight || 20
-        
         // 加载商品数据
         this.loadProducts()
     },
@@ -194,13 +186,7 @@ export default {
     min-height: 100vh;
     background-color: #F8F8F8;
 
-    .status-bar {
-        height: var(--status-bar-height, 20px);
-        width: 100%;
-        background-color: #FFFFFF;
-    }
-
-    .nav-bar {
+    .search-container {
         position: sticky;
         top: 0;
         left: 0;

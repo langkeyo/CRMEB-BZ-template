@@ -1,16 +1,7 @@
 <template>
   <view class="join-page">
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
-
-    <!-- 顶部导航 -->
-    <view class="header">
-      <view class="back-icon" @tap="goBack">
-        <image src="/static/images/join/back_arrow.svg" class="icon-image"></image>
-      </view>
-      <text class="page-title">加入流程</text>
-      <view class="right-placeholder"></view>
-    </view>
+    <!-- 使用通用头部导航组件 -->
+    <CommonHeader title="加入流程" @back="goBack"></CommonHeader>
 
     <!-- 流程内容 -->
     <scroll-view scroll-y class="join-content">
@@ -49,15 +40,15 @@
 </template>
 
 <script>
+import CommonHeader from '@/components/CommonHeader/index.vue';
+
 export default {
+  components: {
+    CommonHeader
+  },
   data () {
     return {
-      statusBarHeight: 20 // 默认值，会在onLoad中获取真实值
     }
-  },
-  onLoad () {
-    // 获取状态栏高度
-    this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight
   },
   methods: {
     goBack () {
@@ -82,46 +73,7 @@ export default {
   flex-direction: column;
 }
 
-/* 状态栏 */
-.status-bar {
-  background-color: #FFFFFF;
-}
 
-/* 顶部导航 */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 44px;
-  padding: 0 16px;
-  position: sticky;
-  top: 0;
-  background-color: #FFFFFF;
-  z-index: 10;
-
-  .back-icon {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .icon-image {
-      width: 20px;
-      height: 20px;
-    }
-  }
-
-  .page-title {
-    font-size: 18px;
-    font-weight: 500;
-    color: #333333;
-  }
-
-  .right-placeholder {
-    width: 28px;
-  }
-}
 
 /* 流程内容 */
 .join-content {

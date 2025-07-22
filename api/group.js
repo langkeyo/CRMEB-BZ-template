@@ -46,103 +46,157 @@ export function applyIntermediary(data) {
  */
 export function applyLeader(data) {
   return request.post("group/leader_apply", data);
-} 
-
-/**
- * 获取拼团商品列表
- * @param object data 参数对象，包含页码、每页数量、搜索关键词等
- */
-export function getCombinationList(data) {
-  return request.get("group/combination/list", data, {
-    noAuth: true
-  });
 }
 
 /**
- * 获取拼团商品详情
- * @param int id 拼团商品ID
+ * 供应商申请
+ * @param object data
  */
-export function getCombinationDetail(id) {
-  return request.get(`group/combination/detail/${id}`, {}, {
-    noAuth: true
-  });
+export function supplierApply(data) {
+  return request.post("group/supplier_apply", data);
 }
 
 /**
- * 获取推荐拼团商品
+ * 订单相关接口 - 基于API文档
  */
-export function getCombinationRecommend() {
-  return request.get("group/combination/recommend", {}, {
-    noAuth: true
-  });
+
+/**
+ * 创建团购订单
+ * @param {Object} data 订单数据
+ * @param {string} data.goods 商品数据JSON字符串
+ * @param {string} data.coupon_id 优惠券ID
+ */
+export function createGroupOrder(data) {
+	return request.post("group/order/createOrder", data);
 }
 
 /**
- * 获取优惠券列表
- * @param object data 参数对象
+ * 计算团购订单
+ * @param {Object} data 订单数据
+ * @param {string} data.goods 商品数据JSON字符串
+ * @param {string} data.coupon_id 优惠券ID
+ */
+export function computeGroupOrder(data) {
+	return request.post("group/order/computedOrder", data);
+}
+
+/**
+ * 获取团购订单详情
+ * @param {string} orderId 订单ID
+ */
+export function getGroupOrderDetail(orderId) {
+	return request.get(`group/order/order_info/${orderId}`);
+}
+
+/**
+ * 获取团购订单列表
+ * @param {Object} data 查询参数
+ * @param {string} data.status 订单状态
+ */
+export function getGroupOrderList(data) {
+	return request.post("group/order/order_list", data);
+}
+
+/**
+ * 团购订单支付
+ * @param {string} orderId 订单ID
+ */
+export function payGroupOrder(orderId) {
+	return request.get(`group/order/payOrder/${orderId}`);
+}
+
+/**
+ * 购物车相关接口 - 基于API文档
+ */
+
+/**
+ * 获取团购购物车信息
+ */
+export function getGroupCart() {
+	return request.get("group/cart/get");
+}
+
+/**
+ * 删除团购购物车商品
+ * @param {Object} data 删除数据
+ * @param {string} data.goods_id 商品ID
+ */
+export function removeGroupCartItem(data) {
+	return request.post("group/cart/remove", data);
+}
+
+/**
+ * 添加/更新团购购物车商品
+ * @param {Object} data 商品数据
+ * @param {string} data.goods_id 商品ID
+ * @param {string} data.quantity 商品数量(正数增加,负数减少)
+ */
+export function updateGroupCart(data) {
+	return request.post("group/cart/update", data);
+}
+
+/**
+ * 优惠券相关接口 - 基于API文档
+ */
+
+/**
+ * 获取可用优惠券列表
+ * @param {Object} data 查询参数
+ * @param {string} data.name 优惠券名称搜索
+ * @param {number} data.type 优惠券类型(1-满减券，2-折扣券)
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
  */
 export function getAvailableCoupons(data) {
-  return request.get("group/coupons/available/list", data, {
-    noAuth: true
-  });
+	return request.get("group/coupons/available/list", data, {
+		noAuth: true
+	});
 }
 
 /**
  * 获取优惠券详情
- * @param int id 优惠券ID
+ * @param {number} id 优惠券ID
  */
 export function getCouponDetail(id) {
-  return request.get(`group/coupons/detail/${id}`, {}, {
-    noAuth: true
-  });
+	return request.get(`group/coupons/detail/${id}`, {}, {
+		noAuth: true
+	});
 }
 
 /**
  * 获取我的优惠券列表
- * @param object data 参数对象，包含状态筛选、页码等
+ * @param {Object} data 查询参数
+ * @param {number} data.status 状态筛选
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
  */
 export function getMyCoupons(data) {
-  return request.get("group/coupons/my/list", data);
+	return request.get("group/coupons/my/list", data);
 }
 
 /**
  * 获取订单可用优惠券
- * @param object data 参数对象，包含订单金额
+ * @param {Object} data 查询参数
+ * @param {number} data.order_amount 订单金额
  */
 export function getOrderAvailableCoupons(data) {
-  return request.get("group/coupons/order/available", data);
+	return request.get("group/coupons/order/available", data);
 }
 
 /**
  * 领取优惠券
- * @param object data 参数对象，包含优惠券ID
+ * @param {Object} data 领取数据
+ * @param {number} data.coupon_id 优惠券ID
  */
 export function receiveCoupon(data) {
-  return request.post("group/coupons/receive", data);
+	return request.post("group/coupons/receive", data);
 }
 
-/**
- * 获取购物车信息
- */
-export function getCartInfo() {
-  return request.get("group/cart/get");
-}
 
-/**
- * 添加/删除商品到购物车
- * @param object data 参数对象，包含商品ID和数量
- */
-export function updateCart(data) {
-  return request.post("group/cart/update", data);
-}
 
-/**
- * 删除购物车商品
- * @param object data 参数对象，包含商品ID
- */
-export function removeCartItem(data) {
-  return request.post("group/cart/remove", data);
-}
+
+
+
 
 /**
  * 获取收藏列表
@@ -212,44 +266,9 @@ export function getGroupGoodsCategory() {
  * 团购订单相关接口 - 基于API文档
  */
 
-/**
- * 计算团购订单
- * @param {Object} data 订单数据
- * @param {string} data.goods 商品数据 JSON字符串格式：[{"product_id":11,"quantity":2}]
- * @param {string} data.coupon_id 优惠券ID
- */
-export function computedGroupOrder(data) {
-	return request.post("group/order/computedOrder", data);
-}
 
-/**
- * 创建团购订单
- * @param {Object} data 订单数据
- * @param {string} data.goods 商品数据 JSON字符串格式：[{"product_id":11,"quantity":2}]
- * @param {string} data.coupon_id 优惠券ID
- */
-export function createGroupOrder(data) {
-	return request.post("group/order/createOrder", data);
-}
 
-/**
- * 获取团购订单列表
- * @param {Object} data 查询参数
- * @param {number} data.page 页码
- * @param {number} data.limit 每页数量
- * @param {string} data.status 订单状态
- */
-export function getGroupOrderList(data) {
-	return request.get("group/order/list", data);
-}
 
-/**
- * 获取团购订单详情
- * @param {number} id 订单ID
- */
-export function getGroupOrderDetail(id) {
-	return request.get(`group/order/detail/${id}`);
-}
 
 /**
  * 用户登录接口 - 基于API文档
@@ -407,6 +426,19 @@ export function getMyCommunityInfo() {
  */
 export function bindCommunity(data) {
 	return request.post("group/community/bind", data);
+}
+
+/**
+ * 获取附近社区
+ * @param {Object} data 查询参数
+ * @param {string} data.longitude 经度
+ * @param {string} data.latitude 纬度
+ * @param {number} data.limit 限制数量
+ */
+export function getNearbyCommunities(data) {
+	return request.get("group/community/nearby", data, {
+		noAuth: true
+	});
 }
 
 /**

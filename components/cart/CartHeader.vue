@@ -1,7 +1,5 @@
 <template>
   <view class="cart-header">
-    <!-- 状态栏高度 -->
-    <view class="status-bar"></view>
     <!-- 导航内容 -->
     <view class="nav-content">
       <view class="title">{{ $t(`购物车`) }}</view>
@@ -40,11 +38,7 @@ export default {
 <style scoped lang="scss">
 .cart-header {
   background-color: #fff;
-  
-  .status-bar {
-    height: 44px; /* 状态栏高度 */
-  }
-  
+
   .nav-content {
     display: flex;
     align-items: center;

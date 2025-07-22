@@ -1,16 +1,7 @@
 <template>
   <view class="status-page">
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
-    
-    <!-- 顶部导航 -->
-    <view class="header">
-      <view class="back-icon" @tap="goBack">
-        <image src="/static/images/index/icons/back_icon_black.svg" class="icon-image"></image>
-      </view>
-      <text class="page-title">资料审核</text>
-      <view class="right-placeholder"></view>
-    </view>
+    <!-- 使用通用头部导航组件 -->
+    <CommonHeader title="资料审核" @back="goBack"></CommonHeader>
     
     <!-- 提交成功/待审核状态 -->
     <view class="status-content" v-if="status === 'success'">
@@ -52,17 +43,19 @@
 </template>
 
 <script>
+import CommonHeader from '@/components/CommonHeader/index.vue';
+
 export default {
+  components: {
+    CommonHeader
+  },
   data() {
     return {
-      statusBarHeight: 20, // 默认值，会在onLoad中获取真实值
       status: 'success', // 默认为提交成功状态
       rejectReason: '', // 拒绝原因
     }
   },
   onLoad(options) {
-    // 获取状态栏高度
-    this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
     
     // 根据传入的type参数设置状态
     if (options.type) {
@@ -108,47 +101,7 @@ export default {
   flex-direction: column;
 }
 
-/* 状态栏 */
-.status-bar {
-  background-color: #FFFFFF;
-}
 
-/* 顶部导航 */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 44px;
-  padding: 0 16px;
-  position: sticky;
-  top: 0;
-  background-color: #FFFFFF;
-  z-index: 10;
-  border-bottom: 1px solid #F2F2F2;
-  
-  .back-icon {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    .icon-image {
-      width: 20px;
-      height: 20px;
-    }
-  }
-  
-  .page-title {
-    font-size: 18px;
-    font-weight: 500;
-    color: #333333;
-  }
-  
-  .right-placeholder {
-    width: 28px;
-  }
-}
 
 /* 状态内容 */
 .status-content {

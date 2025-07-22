@@ -1,13 +1,7 @@
 <template>
   <view class="service-page">
-    <!-- 顶部导航栏 -->
-    <view class="header">
-      <view class="back-icon" @click="goBack">
-        <view class="back-arrow"></view>
-      </view>
-      <view class="title">居间服务</view>
-      <view class="placeholder"></view>
-    </view>
+    <!-- 使用通用头部导航组件 -->
+    <CommonHeader title="居间服务" @back="goBack"></CommonHeader>
     
     <!-- 服务列表 -->
     <scroll-view scroll-y class="service-list">
@@ -62,7 +56,12 @@
 </template>
 
 <script>
+import CommonHeader from '@/components/CommonHeader/index.vue';
+
 export default {
+  components: {
+    CommonHeader
+  },
   data() {
     return {
       

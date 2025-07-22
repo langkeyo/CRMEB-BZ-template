@@ -1,24 +1,10 @@
 <template>
     <view class="join-page">
-        <!-- 状态栏占位 -->
-        <view class="status-bar" :style="'height:' + statusBarHeight + 'px'"></view>
-
-        <!-- 顶部导航 -->
-        <view class="header">
-            <view class="back-icon" @tap="goBack">
-                <image src="/static/common/icons/navigation/back_arrow.svg" class="icon-image"></image>
-            </view>
-            <text class="page-title">产品提供</text>
-            <view class="right-placeholder"></view>
-        </view>
-
-        <view class="divider"></view>
+        <!-- 使用通用头部导航组件 -->
+        <CommonHeader title="提供产品" @back="goBack"></CommonHeader>
 
         <!-- 流程内容 -->
         <scroll-view scroll-y class="join-content">
-            <!-- 头部图片 -->
-            <image src="/static/images/join-process/process_header.jpg" mode="widthFix" class="header-image"></image>
-
             <!-- 流程步骤 -->
             <view class="process-container">
                 <!-- 步骤1 -->
@@ -81,27 +67,19 @@
 
         <!-- 底部安全区占位 -->
         <view class="safe-area"></view>
-        
-        <!-- 客服图标 -->
-        <kefuIcon></kefuIcon>
     </view>
 </template>
 
 <script>
-import kefuIcon from '@/components/kefuIcon/index.vue';
+import CommonHeader from '@/components/CommonHeader/index.vue';
 
 export default {
     components: {
-        kefuIcon
+        CommonHeader
     },
     data () {
         return {
-            statusBarHeight: 20 // 默认值，会在onLoad中获取真实值
         }
-    },
-    onLoad () {
-        // 获取状态栏高度
-        this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight
     },
     methods: {
         goBack () {
@@ -126,101 +104,54 @@ export default {
     flex-direction: column;
 }
 
-/* 状态栏 */
-.status-bar {
-    background-color: #FFFFFF;
-}
 
-/* 顶部导航 */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 44px;
-    padding: 0 16px;
-    background-color: #FFFFFF;
-
-    .back-icon {
-        width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        .icon-image {
-            width: 18px;
-            height: 18px;
-        }
-    }
-
-    .page-title {
-        font-size: 18px;
-        font-weight: 400;
-        color: #1A1A1A;
-    }
-
-    .right-placeholder {
-        width: 28px;
-    }
-}
-
-.divider {
-    height: 0.5px;
-    background-color: #F2F2F2;
-    width: 100%;
-}
 
 /* 流程内容 */
 .join-content {
     flex: 1;
     padding-bottom: 80px;
 
-    .header-image {
-        width: 100%;
-        display: block;
-    }
-
     .process-container {
-        padding: 20px;
+        padding: 40rpx;
 
         .step-item {
-            margin-bottom: 30px;
-            width: 363px;
+            margin-bottom: 60rpx;
+            max-width: 726rpx;
             margin-left: auto;
             margin-right: auto;
 
             .step-content {
-                margin-bottom: 15px;
-                width: 363px;
+                margin-bottom: 30rpx;
+                padding: 0 20rpx;
 
                 .step-title {
                     font-family: 'PingFang SC';
                     font-style: normal;
                     font-weight: 400;
-                    font-size: 20px;
-                    line-height: 28px;
+                    font-size: 40rpx;
+                    line-height: 56rpx;
                     text-align: center;
                     color: #333333;
-                    margin-bottom: 8px;
+                    margin-bottom: 16rpx;
                 }
 
                 .step-desc {
                     font-family: 'PingFang SC';
                     font-style: normal;
                     font-weight: 400;
-                    font-size: 14px;
-                    line-height: 20px;
+                    font-size: 28rpx;
+                    line-height: 40rpx;
                     text-align: center;
                     color: #333333;
                 }
             }
 
             .step-image {
-                width: 351px;
-                height: 262px;
+                width: 702rpx;
+                height: 524rpx;
                 display: block;
                 margin: 0 auto;
-                border-radius: 5px;
+                border-radius: 10rpx;
             }
         }
     }
@@ -229,21 +160,21 @@ export default {
 /* 底部按钮 */
 .next-btn {
     position: fixed;
-    bottom: 34px;
+    bottom: 68rpx;
     left: 50%;
     transform: translateX(-50%);
-    width: 271px;
-    height: 48px;
-    line-height: 48px;
+    width: 542rpx;
+    height: 96rpx;
+    line-height: 96rpx;
     text-align: center;
     background-color: #FE8D00;
     color: #FFFFFF;
-    font-size: 16px;
+    font-size: 32rpx;
     font-weight: 400;
-    border-radius: 71px;
+    border-radius: 142rpx;
 }
 
 .safe-area {
-    height: 34px;
+    height: 68rpx;
 }
 </style>
