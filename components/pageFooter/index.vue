@@ -14,7 +14,7 @@
 				>
 					<view class="foot-item flex-1 flex-col flex-center h-96 relative" v-for="(item, index) in newData.menuList" :key="index" @click="goRouter(item)">
 						<template v-if="isActiveTab(item)">
-							<image v-if="newData.navStyleConfig.tabVal != 1" :src="item.imgList[0]"></image>
+							<image v-if="newData.navStyleConfig.tabVal != 1" :src="item.imgList[0]" class="active-icon"></image>
 							<view v-if="newData.navStyleConfig.tabVal != 2" class="txt active" :style="[txtActiveColor]">{{ item.name }}</view>
 						</template>
 						<template v-else>
@@ -56,6 +56,9 @@ export default {
 			let styleObject = {};
 			if (this.newData.toneConfig && this.newData.toneConfig.tabVal) {
 				styleObject['color'] = this.newData.activeTxtColor.color[0].item;
+			} else {
+				// 默认使用活力橙作为激活色
+				styleObject['color'] = '#FF840B';
 			}
 			return styleObject;
 		},
@@ -108,6 +111,10 @@ export default {
 		configData(newVal) {
 			if (!this.showTabBar && newVal) {
 				let configData = newVal;
+				// 强制设置激活颜色为活力橙
+				if (configData.activeTxtColor && configData.activeTxtColor.color && configData.activeTxtColor.color[0]) {
+					configData.activeTxtColor.color[0].item = '#FF840B';
+				}
 				this.newData = configData;
 				this.showTabBar = configData.effectConfig.tabVal;
 			}
@@ -119,6 +126,9 @@ export default {
 		this.activeRouter = '/' + curRoute;
 	},
 	mounted() {
+		// 清除tabbar相关缓存，确保新颜色配置生效
+		uni.removeStorageSync('footerNavigation');
+		uni.removeStorageSync('diyVersionNav');
 		this.navigationInfo();
 		// if (this.isLogin) {
 		// 	this.getCartNum()
@@ -157,6 +167,10 @@ export default {
 		},
 		getNavigationInfo() {
 			getNavigation().then((res) => {
+				// 强制设置激活颜色为活力橙
+				if (res.data.activeTxtColor && res.data.activeTxtColor.color && res.data.activeTxtColor.color[0]) {
+					res.data.activeTxtColor.color[0].item = '#FF840B';
+				}
 				uni.setStorageSync('diyVersionNav', res.data);
 				this.setNavigationInfo(res.data);
 			}).catch((err) => {
@@ -172,6 +186,10 @@ export default {
 				getDiyVersion(0).then((res) => {
 					let diyVersion = uni.getStorageSync('diyVersionNav');
 					if (res.data.version + '0' === diyVersion) {
+						// 强制设置激活颜色为活力橙
+						if (footerNavigation.activeTxtColor && footerNavigation.activeTxtColor.color && footerNavigation.activeTxtColor.color[0]) {
+							footerNavigation.activeTxtColor.color[0].item = '#FF840B';
+						}
 						this.setNavigationInfo(footerNavigation);
 					} else {
 						uni.setStorageSync('diyVersionNav', res.data.version + '0');
@@ -250,6 +268,14 @@ export default {
 		height: 48rpx;
 		width: 48rpx;
 		margin: 0 auto;
+
+		&.active-icon {
+			/* 直接用背景色覆盖，简单粗暴但有效 */
+			filter: brightness(0);
+			background-color: #FF840B;
+			border-radius: 4rpx;
+			padding: 2rpx;
+		}
 	}
 
 	.foot-item .txt {

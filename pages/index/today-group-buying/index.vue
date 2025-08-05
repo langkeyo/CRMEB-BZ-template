@@ -37,9 +37,10 @@
         <view class="search-section">
           <view class="search-input-wrap">
             <image src="/static/common/icons/action/search.svg" class="search-icon" mode="aspectFit" />
-            <input type="text" placeholder="搜索" class="search-input" placeholder-class="placeholder" />
+            <input type="text" placeholder="搜索" class="search-input" placeholder-class="placeholder"
+                   v-model="searchKeyword" @confirm="handleSearch" confirm-type="search" />
           </view>
-          <view class="search-btn">搜索</view>
+          <view class="search-btn" @click="handleSearch">搜索</view>
         </view>
 
         <!-- notification-icon 通知图标 -->
@@ -62,11 +63,11 @@
         <!-- 站点logo -->
         <image src="/static/images/today-group-buying/site-logo.png" class="site-logo" mode="aspectFit"></image>
         <!-- 站点名称 -->
-        <text class="site-name">北京尚德井小区菜鸟驿站</text>
+        <text class="site-name">{{ currentStation.name || '北京尚德井小区菜鸟驿站' }}</text>
       </view>
 
       <!-- look-another-site-section 查看其他站点区域 -->
-      <view class="look-another-site-section">
+      <view class="look-another-site-section" @click="goToStationSelector">
         <text class="other-sites-text">其他站点看看</text>
         <image src="/static/images/arrow_right_small.svg" class="site-arrow-icon" mode="aspectFit"></image>
       </view>
@@ -74,19 +75,24 @@
 
     <!-- store-category-section 商店分类区域 -->
     <view class="store-category-section">
-      <view class="category-item" v-for="(item, index) in categoryList" :key="index">
+      <view class="category-item" v-for="(item, index) in categoryList" :key="index" @click="selectCategory(item)">
         <view class="category-icon-container">
           <view class="category-circle">
             <image :src="item.icon" class="category-icon" mode="aspectFit"></image>
           </view>
           <view class="hot-tag" v-if="item.isHot">爆款推荐</view>
+          <view class="goods-count-tag" v-if="item.goodsCount > 0">{{item.goodsCount}}</view>
         </view>
         <text class="category-name">{{item.name}}</text>
       </view>
     </view>
 
-    <!-- flash-sale-section 限时秒杀区域 -->
-    <view class="flash-sale-section">
+    <!-- 分类提示 -->
+    <view class="category-tip">
+      <text class="tip-text">💡 点击分类图标查看更多商品</text>
+    </view>
+      <!-- flash-sale-section 限时秒杀区域 -->
+    <view class="flash-sale-section" v-if="flashSaleList.length > 0">
       <!-- 头部区域 -->
       <view class="flash-sale-header">
         <text class="flash-sale-title">限时秒杀</text>
@@ -94,7 +100,7 @@
           <view class="countdown-prefix">距结束</view>
           <view class="countdown-time">05：30：03</view>
         </view>
-        <view class="more-section">
+        <view class="more-section" @click="goToSeckillList">
           <text class="more-text">更多</text>
           <image src="/static/common/icons/navigation/arrow_right.svg" class="more-arrow" mode="aspectFit"></image>
         </view>
@@ -105,7 +111,7 @@
         <view class="flash-sale-item" v-for="(item, index) in flashSaleList" :key="index">
           <view class="flash-image-container">
             <view class="flash-discount-tag">{{item.discount}}折</view>
-            <image :src="item.image" mode="aspectFill" class="flash-product-image"></image>
+            <image :src="setDomain(item.image)" mode="aspectFill" class="flash-product-image"></image>
           </view>
           <view class="flash-product-info">
             <text class="flash-product-name">{{item.name}}</text>
@@ -182,9 +188,10 @@
           </view>
         </view>
       </view>
+
+      <!-- 底部安全区域 -->
+      <view class="safe-area-bottom"></view>
     </view>
-
-
 
     <!-- 非此取货站点用户无法下单弹窗 -->
     <view class="pickup-station-dialog" v-if="showPickupStationDialog">
@@ -203,8 +210,9 @@
 
 <script>
 import {
-  getGroupGoodsList,
-  getGroupGoodsCategory
+  getUserCombinationList,
+  getRecommendCombinations,
+  getMyCommunityInfo
 } from '@/api/group.js';
 import { HTTP_REQUEST_URL } from '@/config/app.js';
 
@@ -212,6 +220,28 @@ export default {
   data() {
     return {
       showPickupStationDialog: false, // 是否显示弹窗
+
+      // 当前站点信息
+      currentStation: {
+        id: null,
+        name: '',
+        distance: '100m'
+      },
+
+      // 当前选中的分类
+      selectedCategory: null,
+
+      // 分类映射（从API获取的准确分类名称）
+      categoryMapping: null,
+
+      // 加载状态
+      isLoading: true,
+
+      // 所有商品数据（用于分类筛选）
+      allGoodsData: {},
+
+      // 搜索关键词
+      searchKeyword: '',
 
       currentBanner: 0, // 当前轮播图索引
       bannerList: [
@@ -232,54 +262,11 @@ export default {
         {
           name: '推荐',
           icon: '/static/images/index/categories/recommend_icon.png',
-          isHot: true
-        },
-        {
-          name: '水果',
-          icon: '/static/images/index/categories/fruit_icon.png',
-          isHot: false
-        },
-        {
-          name: '蔬菜',
-          icon: '/static/images/index/categories/vegetable_icon.png',
-          isHot: false
-        },
-        {
-          name: '生鲜',
-          icon: '/static/images/index/categories/seafood_icon.png',
-          isHot: false
-        },
-        {
-          name: '熟食',
-          icon: '/static/images/index/categories/cooked_icon.png',
-          isHot: false
-        },
-        {
-          name: '美食',
-          icon: '/static/images/index/categories/delicious_icon.png',
-          isHot: false
+          isHot: true,
+          id: 0 // 推荐分类ID为0
         }
       ],
-      flashSaleList: [
-        {
-          id: 101,
-          name: '聚点烧烤吧',
-          desc: '五一劳动节特供',
-          currentPrice: '99.99',
-          originalPrice: '198',
-          discount: '5.5',
-          image: '/static/images/index/products/flash_food1.jpg' // 更新为正确的秒杀图点烧烤图片
-        },
-        {
-          id: 102,
-          name: '天天海鲜',
-          desc: '五一劳动节特供',
-          currentPrice: '35',
-          originalPrice: '68',
-          discount: '5.0',
-          image: '/static/images/index/products/flash_food2.jpg' // 更新为正确的秒杀海鲜图片
-        }
-      ],
+      flashSaleList: [], // 改为空数组，从API获取数据
 
       groupBuyingProducts: [
         {
@@ -305,11 +292,17 @@ export default {
       ]
     }
   },
-  onLoad() {
+  async onLoad() {
     // 创建必要的目录结构
     this.createRequiredDirectories();
-    // 加载团购商品数据
+    // 加载站点信息
+    this.loadCurrentStation();
+    // 先获取分类映射，再加载拼团数据
+    await this.loadCategoryMapping();
+    // 加载拼团商品数据
     this.loadGroupBuyingData();
+    // 加载推荐拼团商品（用于限时秒杀区域）
+    this.loadRecommendCombinations();
   },
   methods: {
     // 创建必要的目录结构
@@ -325,81 +318,459 @@ export default {
       console.log('确保目录存在:', directories);
     },
 
-    // 加载团购数据
-    loadGroupBuyingData() {
-      this.loadGroupCategories();
-      this.loadGroupProducts();
+    // 加载分类映射（拼团商品不需要单独的分类接口，从商品数据中提取）
+    async loadCategoryMapping() {
+      try {
+        console.log('拼团商品将从商品数据中提取分类信息...');
+        // 拼团商品API不需要单独的分类接口，分类信息从商品列表中提取
+        this.categoryMapping = null;
+        this.useDefaultCategories();
+      } catch (error) {
+        console.log('初始化分类映射失败，使用默认映射:', error);
+        this.categoryMapping = null;
+        this.useDefaultCategories();
+      }
     },
 
-    // 加载团购分类
-    loadGroupCategories() {
-      getGroupGoodsCategory().then(res => {
-        if (res.status === 200 && res.data && res.data.goods) {
-          // 将API返回的分类数据转换为页面需要的格式
-          const categories = [];
-          Object.keys(res.data.goods).forEach(key => {
-            const category = res.data.goods[key];
-            categories.push({
-              id: category.cate_id,
-              name: category.cate_name,
-              icon: '/static/images/index/categories/default_icon.png', // 使用默认图标
-              isHot: false
-            });
-          });
-
-          // 保留推荐分类，添加API分类
-          if (categories.length > 0) {
-            this.categoryList = [
-              {
-                name: '推荐',
-                icon: '/static/images/index/categories/recommend_icon.png',
-                isHot: true
-              },
-              ...categories.slice(0, 7) // 最多显示7个分类，加上推荐总共8个
-            ];
-          }
+    // 使用默认分类
+    useDefaultCategories() {
+      this.categoryList = [
+        {
+          id: 0,
+          name: '推荐',
+          icon: '/static/images/index/categories/recommend_icon.png',
+          isHot: true,
+          level: 0
+        },
+        {
+          id: 1,
+          name: '水果',
+          icon: '/static/images/index/categories/fruit_icon.png',
+          isHot: false,
+          level: 1
+        },
+        {
+          id: 2,
+          name: '蔬菜',
+          icon: '/static/images/index/categories/vegetable_icon.png',
+          isHot: false,
+          level: 1
         }
-      }).catch(err => {
-        console.log('获取团购分类失败:', err);
-      });
+      ];
     },
 
-    // 加载团购商品
-    loadGroupProducts() {
-      const params = {
-        page: 1,
-        limit: 10,
-        is_hot: '1', // 获取热门商品
-        is_recommend: '1' // 获取推荐商品
-      };
+    // 加载当前站点信息
+    async loadCurrentStation() {
+      try {
+        const response = await getMyCommunityInfo();
+        if (response.status === 200 && response.data && response.data.is_bind && response.data.community) {
+          this.currentStation = {
+            id: response.data.community.id,
+            name: response.data.community.name,
+            distance: '100m'
+          };
+          console.log('当前站点信息:', this.currentStation);
+        } else {
+          console.log('用户未绑定社区');
+        }
+      } catch (error) {
+        console.error('获取站点信息失败:', error);
+      }
+    },
 
-      getGroupGoodsList(params).then(res => {
-        if (res.status === 200 && res.data && res.data.goodsList) {
-          // 将API返回的商品数据转换为页面需要的格式
-          const products = res.data.goodsList.map(item => ({
+    // 加载拼团商品数据
+    async loadGroupBuyingData() {
+      try {
+        console.log('开始加载拼团商品数据...');
+
+        // 调用拼团商品列表API
+        const params = {
+          page: 1,
+          limit: 20, // 获取足够的商品
+          is_host: '1' // 获取推荐商品
+        };
+
+        const res = await getUserCombinationList(params);
+        if (res.status === 200 && res.data && res.data.list) {
+          console.log('拼团商品API返回数据:', res.data);
+
+          // 1. 处理拼团商品数据 - 根据拼团API返回格式
+          const products = res.data.list.map(item => ({
             id: item.id,
             name: item.title,
-            image: item.image || '/static/images/today-group-buying/default.png', // 图片URL会在模板中通过setDomain处理
-            currentPrice: item.min_price,
-            originalPrice: item.max_price,
-            discount: '5', // 默认折扣
-            groupTime: '每周一到周五可团',
-            hotInfo: `热卖${item.fake_sales || 0}+单，每单省10元`
+            image: this.setDomain(item.image),
+            currentPrice: item.group_price || '0.00',
+            originalPrice: item.original_price || '0.00',
+            discount: this.calculateDiscount(item.group_price, item.original_price),
+            groupTime: item.time_left ? item.time_left.text : '拼团中',
+            hotInfo: `已售${item.sales || 0}件`,
+            sales: item.sales || 0,
+            categoryId: item.id || 0,
+            saveAmount: item.save_amount || '0.00',
+            timeLeftText: item.time_left ? item.time_left.text : null,
+            timeLeftSeconds: item.time_left ? item.time_left.total_seconds : 0,
+            statusText: item.status_text,
+            description: item.description,
+            people: item.people || 2, // 成团人数
+            isHost: item.is_host || 0 // 是否推荐
+          }));
+
+          // 设置拼团商品数据
+          if (products.length > 0) {
+            this.groupBuyingProducts = products.slice(0, 2); // 显示前2个拼团商品
+            console.log('处理后的拼团商品:', this.groupBuyingProducts);
+
+            // 3. 设置限时秒杀商品（从剩余拼团商品中选择）
+            if (products.length > 2) {
+              this.flashSaleList = products.slice(2, 4).map(item => ({
+                id: item.id,
+                name: item.name,
+                desc: item.description || '拼团特价',
+                currentPrice: item.currentPrice,
+                originalPrice: item.originalPrice,
+                discount: item.discount,
+                image: item.image,
+                people: item.people // 成团人数
+              }));
+              console.log('处理后的限时秒杀商品:', this.flashSaleList);
+            } else {
+              this.flashSaleList = []; // 没有足够商品时清空
+            }
+          } else {
+            this.flashSaleList = []; // 没有商品时清空
+          }
+
+          // 2. 使用默认分类（拼团商品不需要复杂的分类逻辑）
+          this.useDefaultCategories();
+
+          console.log('拼团商品数据加载完成:', {
+            products: this.groupBuyingProducts.length,
+            flashSale: this.flashSaleList.length,
+            categories: this.categoryList.length
+          });
+
+        } else {
+          console.log('拼团商品API返回数据格式错误，使用默认数据');
+          this.useDefaultProducts();
+          this.useDefaultCategories();
+        }
+
+      } catch (err) {
+        console.error('获取拼团商品数据失败:', err);
+        this.useDefaultProducts();
+        this.useDefaultCategories();
+      } finally {
+        // 数据加载完成
+        this.isLoading = false;
+
+        // 确保页面重新渲染后触发滚动区域重新计算
+        this.$nextTick(() => {
+          console.log('拼团商品数据加载完成，页面已更新');
+        });
+      }
+    },
+
+
+
+    // 根据分类名称获取对应图标
+    getCategoryIcon(categoryName) {
+      const iconMap = {
+        '水果': '/static/images/index/categories/fruit_icon.png',
+        '蔬菜': '/static/images/index/categories/vegetable_icon.png',
+        '禽畜肉类': '/static/images/index/categories/meat_icon.png',
+        '休闲零食': '/static/images/index/categories/snack_icon.png',
+        '进口水果': '/static/images/index/categories/fruit_icon.png',
+        '有机水果': '/static/images/index/categories/fruit_icon.png',
+        '叶菜类': '/static/images/index/categories/vegetable_icon.png',
+        '根茎类': '/static/images/index/categories/vegetable_icon.png',
+        '瓜果类': '/static/images/index/categories/vegetable_icon.png',
+        '有机蔬菜': '/static/images/index/categories/vegetable_icon.png',
+        '中药材': '/static/images/index/categories/medicine_icon.png',
+        '油粮作物': '/static/images/index/categories/grain_icon.png',
+        '海鲜': '/static/images/index/categories/seafood_icon.png',
+        '粮食谷物': '/static/images/index/categories/grain_icon.png',
+        '经济作物': '/static/images/index/categories/economic_icon.png',
+        '干果坚果': '/static/images/index/categories/nuts_icon.png',
+        '茶叶': '/static/images/index/categories/tea_icon.png'
+      };
+
+      return iconMap[categoryName] || '/static/images/index/categories/default_icon.png';
+    },
+
+    // 根据分类ID获取分类名称（优先使用API映射）
+    getCategoryNameById(cateId) {
+      // 优先使用从API获取的分类映射
+      if (this.categoryMapping && this.categoryMapping[cateId]) {
+        return this.categoryMapping[cateId];
+      }
+
+      // 备用的静态映射
+      const categoryNames = {
+        1: '水果',
+        2: '蔬菜',
+        3: '热带水果',
+        4: '温带水果',
+        5: '进口水果',
+        6: '有机水果',
+        7: '叶菜类',
+        8: '根茎类',
+        9: '瓜果类',
+        10: '有机蔬菜',
+        11: '禽畜肉类',
+        12: '牛肉类',
+        13: '猪肉类',
+        14: '鸡肉类',
+        15: '海鲜类',
+        16: '休闲零食',
+        17: '薯片系列',
+        18: '糖果系列',
+        19: '辣条系列',
+        20: '饼干系列'
+      };
+
+      return categoryNames[cateId] || `分类${cateId}`;
+    },
+
+    // 根据分类名称获取分类页面的categoryType
+    getCategoryType(categoryName) {
+      const categoryMapping = {
+        // 水果类
+        '进口水果': 'fruit',
+        '有机水果': 'fruit',
+        '温带水果': 'fruit',
+        '热带水果': 'fruit',
+        '水果': 'fruit',
+
+        // 蔬菜类
+        '叶菜类': 'vegetable',
+        '根茎类': 'vegetable',
+        '瓜果类': 'vegetable',
+        '有机蔬菜': 'vegetable',
+        '蔬菜': 'vegetable',
+
+        // 肉类和海鲜
+        '禽畜肉类': 'meat',
+        '牛肉类': 'meat',
+        '猪肉类': 'meat',
+        '鸡肉类': 'meat',
+        '肉类': 'meat',
+        '海鲜类': 'seafood',
+        '海鲜': 'seafood',
+
+        // 零食类
+        '休闲零食': 'snacks',
+        '薯片系列': 'snacks',
+        '糖果系列': 'snacks',
+        '辣条系列': 'snacks',
+        '饼干系列': 'snacks',
+        '零食': 'snacks',
+
+        // 其他类
+        '中药材': 'medicine',
+        '油粮作物': 'oil',
+        '粮食谷物': 'grain',
+        '经济作物': 'economic',
+        '干果坚果': 'nuts',
+        '茶叶': 'tea',
+        '饮品': 'snacks',
+        '粮油': 'oil',
+        '其他': 'hot'
+      };
+
+      return categoryMapping[categoryName] || 'hot';
+    },
+
+    // 使用默认分类
+    useDefaultCategories() {
+      console.log('使用默认分类数据');
+      this.categoryList = [
+        {
+          id: 0,
+          name: '推荐',
+          icon: '/static/images/index/categories/recommend_icon.png',
+          isHot: true,
+          goodsCount: 0,
+          categoryType: 'hot'
+        },
+        {
+          id: 1,
+          name: '水果',
+          icon: '/static/images/index/categories/fruit_icon.png',
+          isHot: false,
+          goodsCount: 0,
+          categoryType: 'fruit'
+        },
+        {
+          id: 2,
+          name: '蔬菜',
+          icon: '/static/images/index/categories/vegetable_icon.png',
+          isHot: false,
+          goodsCount: 0,
+          categoryType: 'vegetable'
+        },
+        {
+          id: 3,
+          name: '禽畜肉类',
+          icon: '/static/images/index/categories/meat_icon.png',
+          isHot: false,
+          goodsCount: 0,
+          categoryType: 'meat'
+        },
+        {
+          id: 4,
+          name: '休闲零食',
+          icon: '/static/images/index/categories/snack_icon.png',
+          isHot: false,
+          goodsCount: 0,
+          categoryType: 'snacks'
+        }
+      ];
+    },
+
+
+
+    // 从拼团商品API加载
+    async loadGroupProductsList() {
+      try {
+        const params = {
+          page: 1,
+          limit: 10,
+          is_host: '1' // 获取推荐拼团商品
+        };
+
+        const res = await getUserCombinationList(params);
+        if (res.status === 200 && res.data && res.data.list) {
+          // 将拼团API返回的商品数据转换为页面需要的格式
+          const products = res.data.list.map(item => ({
+            id: item.id,
+            name: item.title,
+            image: this.setDomain(item.image) || '/static/images/today-group-buying/default.png',
+            currentPrice: item.group_price,
+            originalPrice: item.original_price,
+            discount: this.calculateDiscount(item.group_price, item.original_price),
+            groupTime: item.time_left ? item.time_left.text : '拼团中',
+            hotInfo: `热卖${item.sales || this.generateRandomSales()}+单，每单省${item.save_amount || '10'}元`,
+            saveAmount: item.save_amount,
+            timeLeftText: item.time_left ? item.time_left.text : null,
+            timeLeftSeconds: item.time_left ? item.time_left.total_seconds : 0,
+            statusText: item.status_text,
+            people: item.people || 2 // 成团人数
           }));
 
           if (products.length > 0) {
             this.groupBuyingProducts = products;
           }
         }
-      }).catch(err => {
-        console.log('获取团购商品失败:', err);
-      });
+      } catch (err) {
+        console.error('从拼团商品API获取数据失败:', err);
+      }
+    },
+
+    // 加载推荐拼团商品
+    async loadRecommendCombinations() {
+      try {
+        const res = await getRecommendCombinations({});
+        if (res.status === 200 && res.data && Array.isArray(res.data)) {
+          // 处理推荐拼团商品数据
+          const recommendProducts = res.data.map(item => ({
+            id: item.id,
+            name: item.title,
+            image: this.setDomain(item.image),
+            currentPrice: item.group_price,
+            originalPrice: item.original_price,
+            discount: this.calculateDiscount(item.group_price, item.original_price),
+            groupTime: item.time_left ? item.time_left.text : '拼团中',
+            hotInfo: `热卖${item.sales || 0}+单`,
+            people: item.people || 2,
+            timeLeftText: item.time_left ? item.time_left.text : null,
+            timeLeftSeconds: item.time_left ? item.time_left.total_seconds : 0
+          }));
+
+          // 可以将推荐商品设置为限时秒杀商品
+          if (recommendProducts.length > 0) {
+            this.flashSaleList = recommendProducts.slice(0, 2).map(item => ({
+              id: item.id,
+              name: item.name,
+              desc: '推荐拼团',
+              currentPrice: item.currentPrice,
+              originalPrice: item.originalPrice,
+              discount: item.discount,
+              image: item.image,
+              people: item.people
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('获取推荐拼团商品失败:', err);
+      }
+    },
+
+    // 使用默认商品数据
+    useDefaultProducts() {
+      console.log('使用默认商品数据');
+      // 保持原有的默认数据
+    },
+
+    // 生成随机价格
+    generateRandomPrice(min, max) {
+      return (Math.random() * (max - min) + min).toFixed(2);
+    },
+
+    // 生成随机销量
+    generateRandomSales() {
+      return Math.floor(Math.random() * 200) + 50; // 50-250之间的随机数
+    },
+
+    // 计算折扣
+    calculateDiscount(currentPrice, originalPrice) {
+      if (!currentPrice || !originalPrice || originalPrice <= currentPrice) {
+        return '5.0'; // 默认5折
+      }
+      const discount = (currentPrice / originalPrice * 10).toFixed(1);
+      return discount;
     },
 
 
 
     goBack() {
       uni.navigateBack();
+    },
+
+    // 跳转到站点选择页面
+    goToStationSelector() {
+      uni.navigateTo({
+        url: '/pages/community/station-selector/index'
+      });
+    },
+
+    // 处理搜索
+    handleSearch() {
+      if (!this.searchKeyword.trim()) {
+        uni.showToast({
+          title: '请输入搜索内容',
+          icon: 'none'
+        });
+        return;
+      }
+
+      // 跳转到搜索页面
+      uni.navigateTo({
+        url: `/pages/goods/goods_search/index?keyword=${encodeURIComponent(this.searchKeyword)}`
+      });
+    },
+
+    // 站点选择回调（从站点选择页面返回时调用）
+    onStationSelected(station) {
+      this.currentStation = station;
+      console.log('选择了新站点:', station);
+
+      // 可以在这里重新加载商品数据
+      this.loadGroupBuyingData();
+
+      uni.showToast({
+        title: `已切换到${station.name}`,
+        icon: 'success'
+      });
     },
 
     // 处理图片URL
@@ -454,15 +825,90 @@ export default {
       // });
     },
 
+    // 分类选择 - 显示对应分类的拼团商品
+    selectCategory(category) {
+      console.log('选择分类:', category);
+
+      // 显示提示信息
+      uni.showToast({
+        title: `正在查看${category.name}推荐`,
+        icon: 'none',
+        duration: 1500
+      });
+
+      // 根据分类筛选并显示拼团商品
+      if (category.categoryId) {
+        this.filterProductsByCategory(category.categoryId);
+      } else {
+        // 如果没有分类ID，显示默认的拼团商品
+        this.loadGroupBuyingData();
+      }
+    },
+
+    // 根据分类筛选商品
+    filterProductsByCategory(categoryId) {
+      if (!this.allGoodsData || Object.keys(this.allGoodsData).length === 0) {
+        console.log('没有商品数据可筛选');
+        return;
+      }
+
+      // 查找对应分类的商品
+      const categoryData = this.allGoodsData[categoryId];
+      if (categoryData && categoryData.goods && categoryData.goods.length > 0) {
+        const products = categoryData.goods.map(item => ({
+          id: item.id,
+          name: item.title,
+          image: item.image,
+          currentPrice: this.generateRandomPrice(15, 80),
+          originalPrice: this.generateRandomPrice(80, 150),
+          discount: this.calculateDiscount(15, 80),
+          groupTime: '每周一到周五可团',
+          hotInfo: `热卖${this.generateRandomSales()}+单，每单省10元`,
+          categoryName: categoryData.cate_name,
+          categoryId: categoryData.cate_id
+        }));
+
+        this.groupBuyingProducts = products;
+        console.log(`${categoryData.cate_name}分类商品:`, products);
+      } else {
+        // 如果该分类没有商品，显示提示
+        this.groupBuyingProducts = [];
+        uni.showToast({
+          title: '该分类暂无商品',
+          icon: 'none'
+        });
+      }
+    },
+
+    // 跳转到秒杀列表页面
+    goToSeckillList() {
+      uni.navigateTo({
+        url: '/pages/activity/goods_seckill/index',
+        fail: (err) => {
+          console.error('跳转秒杀列表失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
+    },
+
     // 团购相关方法
     joinGroupBuy(product) {
-      // uni.showToast({
-      //   title: `参加${product.name}团购`,
-      //   icon: 'success'
-      // });
+      console.log('点击团购商品:', product);
+
+      // 跳转到商品详情页面
       uni.navigateTo({
-        url: `/pages/goods_details/index?id=${product.id}&type=group&canBuy=true`
-      })
+        url: `/pages/goods_details/index?id=${product.id}&type=group&canBuy=true`,
+        fail: (err) => {
+          console.error('跳转商品详情失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
     }
   }
 }
@@ -561,12 +1007,12 @@ export default {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  filter: brightness(0) invert(1); /* 将图标变成白色 */
 }
 
 .back-arrow-icon {
   width: 30rpx; /* 15px * 2 */
   height: 30rpx; /* 15px * 2 */
+  filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 }
 
 /* search-section 搜索区域 - 225px × 34px */
@@ -648,6 +1094,7 @@ export default {
 .notification-bell-icon {
   width: 30rpx; /* 15px * 2 */
   height: 30rpx; /* 15px * 2 */
+  filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 }
 
 /* site-nav-section 站点导航区域 - 351px × 30px */
@@ -802,6 +1249,37 @@ export default {
   border-radius: 16rpx; /* 8px * 2 */
   white-space: nowrap;
   z-index: 1;
+}
+
+.goods-count-tag {
+  position: absolute;
+  top: -8rpx; /* -4px * 2 */
+  right: -12rpx; /* -6px * 2 */
+  background-color: #007AFF;
+  color: white;
+  font-size: 16rpx; /* 8px * 2 */
+  padding: 2rpx 8rpx; /* 1px * 2, 4px * 2 */
+  border-radius: 16rpx; /* 8px * 2 */
+  white-space: nowrap;
+  z-index: 1;
+  min-width: 32rpx;
+  text-align: center;
+}
+
+/* 分类提示样式 */
+.category-tip {
+  text-align: center;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+
+  .tip-text {
+    font-size: 24rpx;
+    color: #999;
+    background: #f8f8f8;
+    padding: 10rpx 20rpx;
+    border-radius: 20rpx;
+    display: inline-block;
+  }
 }
 
 .category-name {
@@ -1307,5 +1785,11 @@ export default {
       font-weight: 500;
     }
   }
+}
+
+/* 底部安全区域 */
+.safe-area-bottom {
+  height: 200rpx; /* 100px * 2 - 增加高度避免被tabbar挡住 */
+  width: 100%;
 }
 </style>

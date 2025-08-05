@@ -14,56 +14,57 @@
         <!-- 主容器 -->
         <view class="hot-group-container">
             <!-- 轮播背景图片 -->
-            <swiper
-                class="background-swiper"
-                :current="currentIndex"
-                :autoplay="true"
-                :interval="3000"
-                :duration="500"
-                @change="onSwiperChange"
-                :circular="true"
-                :vertical="false"
-                :touchable="true"
-                :disable-touch="false"
-            >
-                <swiper-item v-for="(item, index) in bannerList" :key="item.id">
-                    <image :src="item.backgroundImage" class="background-img" mode="aspectFill"></image>
-                </swiper-item>
-            </swiper>
-
-            <!-- 模糊遮罩层 -->
-            <view class="blur-overlay"></view>
-
-            <!-- 渐变遮罩层 -->
-            <view class="gradient-overlay"></view>
-
-            <!-- 橙色标签 -->
-            <view class="orange-tag">
-                <text class="tag-text">{{ currentTitle }}</text>
-            </view>
-
-            <!-- 商品列表容器 -->
-            <view class="products-container">
-                <view class="product-item" v-for="(item, index) in currentProducts" :key="`product-${index}`" @click="navigateToDetail(item)">
-                    <!-- 商品图片 -->
-                    <view class="product-img-wrapper">
-                        <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
-                    </view>
-                    <!-- 商品信息 -->
-                    <view class="product-info">
-                        <text class="product-name">{{item.name}}</text>
-                        <view class="price-container">
-                            <text class="price-text">团购价{{item.price}}元起</text>
-                            <image class="price-arrow" src="/static/images/index/icons/price_arrow_right.svg" mode="aspectFit"></image>
-                        </view>
-                    </view>
+            <view class="banner-section">
+                <swiper
+                    class="background-swiper"
+                    :current="currentIndex"
+                    :autoplay="true"
+                    :interval="3000"
+                    :duration="500"
+                    @change="onSwiperChange"
+                    :circular="true"
+                    :vertical="false"
+                    :touchable="true"
+                    :disable-touch="false"
+                >
+                    <swiper-item v-for="(item, index) in groupProducts" :key="item.id">
+                        <image :src="setDomain(item.image)" class="background-img" mode="aspectFill"></image>
+                    </swiper-item>
+                </swiper>
+                
+                <!-- 橙色标签 -->
+                <view class="orange-tag">
+                    <text class="tag-text">{{ currentTitle }}</text>
+                </view>
+                
+                <!-- 进度指示器 -->
+                <view class="progress-indicator">
+                    <view class="progress-bg"></view>
+                    <view class="progress-active" :style="{ left: progressLeft + 'rpx' }"></view>
                 </view>
             </view>
 
-            <!-- 进度指示器 -->
-            <view class="progress-indicator">
-                <view class="progress-bg"></view>
-                <view class="progress-active" :style="{ left: progressLeft + 'rpx' }"></view>
+            <!-- 商品列表容器 -->
+            <view class="products-section">
+                <view class="products-container">
+                    <view class="product-item" v-for="(item, index) in currentProducts" :key="`product-${index}`" @click="navigateToDetail(item)">
+                        <!-- 商品图片 -->
+                        <view class="product-img-wrapper">
+                            <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
+                        </view>
+                        <!-- 商品信息 -->
+                        <view class="product-info">
+                            <text class="product-name">{{item.title}}</text>
+                            <view class="price-container">
+                                <text class="price-text">¥{{item.group_price}}</text>
+                                <text class="original-price" v-if="item.original_price">原价¥{{item.original_price}}</text>
+                            </view>
+                            <view class="time-left" v-if="item.time_left_text">
+                                <text class="time-left-text">剩余{{item.time_left_text}}</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
             </view>
         </view>
     </view>
@@ -72,6 +73,7 @@
 <script>
 import SectionTitle from '@/components/SectionTitle/index.vue';
 import { HTTP_REQUEST_URL } from '@/config/app.js';
+import { getRecommendCombinations } from '@/api/group.js';
 
 export default {
     name: 'HotGroup',
@@ -81,7 +83,9 @@ export default {
     data() {
         return {
             currentIndex: 0,
-            // 基础数据模板
+            groupProducts: [],
+            loading: false,
+            // 基础数据模板（用作备用）
             baseData: {
                 title: '精品挑选食用油',
                 backgroundImage: '/static/images/index/products/oil_banner.jpg',
@@ -102,29 +106,34 @@ export default {
                         image: '/static/images/index/products/olive_oil.jpg'
                     }
                 ]
-            },
-            // 轮播数量
-            bannerCount: 3
+            }
         }
     },
     computed: {
-        // 生成轮播数据列表（循环使用基础数据）
-        bannerList() {
-            return Array.from({ length: this.bannerCount }, (_, index) => ({
-                ...this.baseData,
-                id: index
-            }));
+        // 轮播数量
+        bannerCount() {
+            return this.groupProducts.length > 0 ? this.groupProducts.length : 1;
         },
         currentProducts() {
+            // 如果有API数据，则使用API数据，否则使用备用数据
+            if (this.groupProducts.length > 0) {
+                // 取前3个推荐商品
+                return this.groupProducts.slice(0, 3);
+            }
             return this.baseData.products;
         },
         currentTitle() {
+            if (this.groupProducts.length > 0 && this.currentIndex < this.groupProducts.length) {
+                const currentProduct = this.groupProducts[this.currentIndex];
+                // 显示商品标题和状态，例如：榴莲 (进行中)
+                return `${currentProduct.title} (${currentProduct.status_text || '热卖中'})`;
+            }
             return this.baseData.title;
         },
         progressLeft() {
-            // 简单的一一对应：1个轮播页面 = 1段进度条宽度
-            const totalWidth = 390; // 进度条总宽度 390rpx
-            const indicatorWidth = 38; // 指示器宽度 38rpx
+            // 适应新的进度条样式
+            const totalWidth = 200; // 进度条总宽度 200rpx
+            const indicatorWidth = 40; // 指示器宽度 40rpx
 
             if (this.bannerCount <= 1) return 0;
 
@@ -135,7 +144,69 @@ export default {
             return this.currentIndex * stepWidth;
         }
     },
+    created() {
+        // 组件创建时加载数据
+        this.loadRecommendProducts();
+    },
     methods: {
+        // 加载推荐团购商品
+        async loadRecommendProducts() {
+            if (this.loading) return;
+            
+            this.loading = true;
+            try {
+                const res = await getRecommendCombinations();
+                if (res.status === 200 && res.data && res.data.length > 0) {
+                    this.groupProducts = res.data.map(item => ({
+                        ...item,
+                        id: item.id || 0,
+                        save_amount: item.save_price || '0.00' // 适配save_price字段
+                    }));
+                    console.log('获取推荐团购商品成功', this.groupProducts);
+                } else {
+                    console.log('获取推荐团购商品失败', res);
+                    // 使用备用数据
+                    this.useBackupData();
+                }
+            } catch (error) {
+                console.error('获取推荐团购商品失败', error);
+                // 使用备用数据
+                this.useBackupData();
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        // 使用备用数据
+        useBackupData() {
+            this.groupProducts = [
+                {
+                    id: 1,
+                    title: '精品挑选食用油',
+                    image: '/static/images/index/products/oil_banner.jpg',
+                    group_price: '15.00',
+                    original_price: '20.00',
+                    save_amount: '5.00'
+                },
+                {
+                    id: 2,
+                    title: '新鲜水果',
+                    image: '/static/images/index/products/salt_oil.jpg',
+                    group_price: '17.00',
+                    original_price: '25.00',
+                    save_amount: '8.00'
+                },
+                {
+                    id: 3,
+                    title: '有机蔬菜',
+                    image: '/static/images/index/products/olive_oil.jpg',
+                    group_price: '20.00',
+                    original_price: '30.00',
+                    save_amount: '10.00'
+                }
+            ];
+        },
+        
         onSwiperChange(e) {
             this.currentIndex = e.detail.current;
         },
@@ -155,7 +226,7 @@ export default {
 
         navigateToDetail(item) {
             uni.navigateTo({
-                url: `/pages/goods_details/index?id=${item.id || 1}`,
+                url: `/pages/goods_details/index?id=${item.id || 1}&type=combination`,
                 fail: () => {
                     uni.showToast({
                         title: '商品详情正在开发中',
@@ -191,7 +262,7 @@ export default {
 <style scoped lang="scss">
 .hot-group {
     margin: 40rpx 0;
-    padding: 0 30rpx;
+    padding: 0 20rpx;
 }
 
 .title-section {
@@ -208,7 +279,7 @@ export default {
     .title-text {
         font-family: 'PingFang SC', sans-serif;
         font-size: 32rpx; /* 16px * 2 */
-        font-weight: 400;
+        font-weight: 500;
         line-height: 44rpx; /* 22px * 2 */
         color: #000000;
         text-align: center;
@@ -236,16 +307,23 @@ export default {
 
 .hot-group-container {
     position: relative;
-    width: 712rpx; /* 356px * 2 */
-    height: 572rpx; /* 286px * 2 */
-    border-radius: 8rpx;
+    width: 710rpx; /* 355px * 2 */
+    height: 500rpx; /* 调整高度，适应手机屏幕 */
+    border-radius: 12rpx;
+    overflow: hidden;
+    box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.banner-section {
+    position: relative;
+    width: 100%;
+    height: 300rpx; /* 轮播图区域高度 */
     overflow: hidden;
 }
 
 .background-swiper {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     z-index: 1;
@@ -254,79 +332,98 @@ export default {
 .background-img {
     width: 100%;
     height: 100%;
-}
-
-.blur-overlay {
-    position: absolute;
-    top: 308rpx; /* 154px * 2 */
-    left: 8rpx; /* 4px * 2 */
-    width: 696rpx; /* 348px * 2 */
-    height: 256rpx; /* 128px * 2 */
-    background: radial-gradient(ellipse at 51.69% -87.88%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.4) 100%);
-    backdrop-filter: blur(132.6rpx); /* 66.3px * 2 */
-    border-radius: 8rpx;
-    z-index: 2;
-    pointer-events: none; /* 允许触摸事件穿透 */
-}
-
-.gradient-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    z-index: 3;
-    pointer-events: none; /* 允许触摸事件穿透 */
+    object-fit: cover;
 }
 
 .orange-tag {
     position: absolute;
     top: 0;
     left: 0;
-    width: 244rpx; /* 122px * 2 */
+    min-width: 200rpx;
+    max-width: 360rpx;
     height: 56rpx; /* 28px * 2 */
     background: linear-gradient(90deg, #EF803D 0%, #EB6431 100%);
-    border-radius: 8rpx 0 16rpx 0;
+    border-radius: 12rpx 0 16rpx 0;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 4;
+    padding: 0 20rpx;
 
     .tag-text {
         font-family: 'PingFang SC', sans-serif;
         font-size: 28rpx; /* 14px * 2 */
-        font-weight: 400;
+        font-weight: 500;
         color: #FFFFFF;
         text-align: center;
         line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 
-.products-container {
+.progress-indicator {
     position: absolute;
-    bottom: 32rpx; /* 16px * 2 */
-    left: 72rpx; /* 36px * 2 */
-    display: flex;
-    align-items: flex-end;
-    gap: 70rpx; /* 35px * 2 */
+    bottom: 20rpx; /* 调整位置 */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200rpx; /* 调整宽度 */
+    height: 6rpx; /* 调整高度 */
+    z-index: 4;
+    pointer-events: none; /* 允许触摸事件穿透 */
+
+    .progress-bg {
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 3rpx;
+    }
+
+    .progress-active {
+        position: absolute;
+        top: 0;
+        width: 40rpx; /* 调整宽度 */
+        height: 100%;
+        background-color: #FFFFFF;
+        border-radius: 3rpx;
+        transition: left 0.3s ease;
+    }
+}
+
+.products-section {
+    flex: 1;
+    width: 100%;
+    background-color: #FFFFFF;
+    position: relative;
     z-index: 5;
+}
+
+.products-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 20rpx 30rpx;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
 }
 
 .product-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    // width: 142rpx; /* 71px * 2 */
+    width: 30%; /* 平均分配空间 */
 
     .product-img-wrapper {
-        width: 66rpx; /* 33px * 2 */
-        height: 146rpx; /* 73px * 2 */
-        margin-bottom: 4rpx;
+        width: 80rpx; /* 调整大小 */
+        height: 120rpx; /* 调整大小 */
+        margin-bottom: 10rpx;
 
         .product-img {
             width: 100%;
             height: 100%;
+            object-fit: contain;
         }
     }
 
@@ -339,11 +436,15 @@ export default {
         .product-name {
             font-family: 'PingFang SC', sans-serif;
             font-size: 24rpx; /* 12px * 2 */
-            font-weight: 400;
+            font-weight: 500;
             color: #333333;
             text-align: center;
             line-height: 1.4;
-            margin-bottom: 8rpx;
+            margin-bottom: 6rpx;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .price-container {
@@ -351,49 +452,44 @@ export default {
             align-items: center;
             justify-content: center;
             width: 100%;
+            flex-wrap: wrap;
 
             .price-text {
                 font-family: 'PingFang SC', sans-serif;
-                font-size: 20rpx; /* 10px * 2 */
-                font-weight: 400;
-                color: #FFFFFF;
+                font-size: 24rpx; /* 增大字体 */
+                font-weight: 600;
+                color: #FF5722;
                 text-align: center;
                 line-height: 1.4;
             }
 
-            .price-arrow {
-                width: 8rpx; /* 4px * 2 */
-                height: 16rpx; /* 8px * 2 */
+            .original-price {
+                font-family: 'PingFang SC', sans-serif;
+                font-size: 20rpx; /* 增大字体 */
+                font-weight: 400;
+                color: #999999;
+                text-decoration: line-through;
                 margin-left: 10rpx; /* 5px * 2 */
             }
         }
-    }
-}
 
-.progress-indicator {
-    position: absolute;
-    top: 288rpx; /* 144px * 2 */
-    left: 162rpx; /* 81px * 2 */
-    width: 390rpx; /* 195px * 2 */
-    height: 8rpx; /* 4px * 2 */
-    z-index: 4;
-    pointer-events: none; /* 允许触摸事件穿透 */
-
-    .progress-bg {
-        width: 100%;
-        height: 100%;
-        background-color: rgba(242, 242, 242, 0.2);
-        border-radius: 2rpx; /* 1px * 2 */
-    }
-
-    .progress-active {
-        position: absolute;
-        top: 0;
-        width: 38rpx; /* 19px * 2 */
-        height: 100%;
-        background-color: #FFFFFF;
-        border-radius: 2rpx; /* 1px * 2 */
-        transition: left 0.3s ease;
+        .time-left {
+            margin-top: 6rpx;
+            width: 100%;
+            text-align: center;
+            
+            .time-left-text {
+                font-family: 'PingFang SC', sans-serif;
+                font-size: 20rpx; /* 增大字体 */
+                font-weight: 500;
+                color: #FF9800;
+                text-align: center;
+                line-height: 1.4;
+                padding: 2rpx 8rpx;
+                background-color: rgba(255, 152, 0, 0.1);
+                border-radius: 10rpx;
+            }
+        }
     }
 }
 </style>

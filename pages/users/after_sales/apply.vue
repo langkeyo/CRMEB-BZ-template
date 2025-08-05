@@ -1,95 +1,76 @@
 <template>
-	<view :style="colorStyle">
-		<view class="after-sales-apply">
-			<!-- 商品信息 -->
-			<view class="goods-box">
-				<view class="store-name">
-					<text>{{ orderInfo.store_name || '' }}</text>
-				</view>
-				<view class="goods-item" v-for="(item, index) in goodsList" :key="index">
-					<view class="goods-img">
-						<image
-							:src="item.productInfo.attrInfo ? item.productInfo.attrInfo.image : item.productInfo.image">
-						</image>
-					</view>
-					<view class="goods-info">
-						<view class="goods-name">{{ item.productInfo.store_name }}</view>
-						<view class="goods-attr" v-if="item.productInfo.attrInfo">{{ item.productInfo.attrInfo.suk }}
-						</view>
-						<view class="goods-price">
-							<text>{{ $t(`￥`) }}{{ item.productInfo.attrInfo ? item.productInfo.attrInfo.price :
-								item.productInfo.price }}</text>
-							<text class="goods-num">x{{ item.cart_num }}</text>
-						</view>
-					</view>
+	<view class="after-sales-apply-pixel">
+		<view class="header">
+			<view class="back" @click="goBack">
+				<text class="iconfont icon-fanhui"></text>
+				<text class="back-text">返回</text>
+			</view>
+			<view class="title">申请售后</view>
+		</view>
+		<view class="main-card">
+			<view class="section-title">商品详情</view>
+			<view class="row">
+				<view class="label">收货站点：</view>
+				<view class="value">{{ orderInfo.station || '北京尚德井小区菜鸟驿站' }}</view>
+				<text class="iconfont icon-more"></text>
+			</view>
+			<view class="goods-card-item">
+				<image class="goods-img" :src="formatImage(goodsList[0] && goodsList[0].image)" mode="aspectFill" />
+				<view class="goods-content">
+					<view class="goods-title">{{ goodsList[0] && goodsList[0].title || '' }}</view>
+					<view class="goods-desc" v-if="goodsList[0] && goodsList[0].spec">{{ goodsList[0].spec }}</view>
+					<view class="goods-count">x{{ goodsList[0] && goodsList[0].quantity || 1 }}</view>
 				</view>
 			</view>
-
-			<!-- 申请表单 -->
-			<view class="form-box">
-				<!-- 退款原因 -->
-				<view class="form-item">
-					<view class="form-label">{{ $t(`退款原因`) }} <text class="required">*</text></view>
-					<view class="form-input">
-						<picker @change="bindReasonChange" :value="reasonIndex" :range="reasonList"
-							range-key="reason_name">
-							<view class="picker-view">
-								<text v-if="reasonIndex === -1" class="placeholder">{{ $t(`请选择退款原因`) }}</text>
-								<text v-else>{{ reasonList[reasonIndex].reason_name }}</text>
-								<text class="arrow">></text>
-							</view>
-						</picker>
-					</view>
-				</view>
-
-				<!-- 退款说明 -->
-				<view class="form-item">
-					<view class="form-label">{{ $t(`退款说明`) }}</view>
-					<view class="form-input">
-						<textarea v-model="formData.refund_explain" :placeholder="$t(`请填写退款说明（选填）`)" maxlength="200"
-							class="textarea"></textarea>
-						<view class="word-count">{{ formData.refund_explain.length }}/200</view>
-					</view>
-				</view>
-
-				<!-- 上传凭证 -->
-				<view class="form-item">
-					<view class="form-label">{{ $t(`上传凭证`) }}</view>
-					<view class="upload-box">
-						<view class="upload-list">
-							<view class="upload-item" v-for="(item, index) in formData.refund_img" :key="index">
-								<image :src="item" class="upload-img" @click="previewImage(item)"></image>
-								<view class="delete-icon" @click="deleteImage(index)">×</view>
-							</view>
-							<view class="upload-btn" @click="uploadImage" v-if="formData.refund_img.length < 3">
-								<text class="icon">+</text>
-								<text class="text">{{ $t(`上传图片`) }}</text>
-							</view>
-						</view>
-						<view class="upload-tip">{{ $t(`最多上传3张图片`) }}</view>
-					</view>
-				</view>
+			<view class="row gray">
+				<view class="label-text">配送费</view>
+				<view class="price-text">免配送费</view>
 			</view>
-
-			<!-- 提交按钮 -->
-			<view class="submit-btn" @click="submitApply" :class="{ 'disabled': loading }">
-				<text v-if="!loading">{{ $t(`提交申请`) }}</text>
-				<text v-else>{{ $t(`提交中...`) }}</text>
+			<view class="row gray goods-total-row">
+				<view style="display: flex; align-items: center;">
+					<text class="label-text">商品总价</text>
+					<text style="margin-left: 8rpx; color: #bcbcbc;">共{{ goodsList.length }}件商品</text>
+				</view>
+				<view class="price">￥{{ orderInfo.total_price || 0 }}</view>
+			</view>
+			<view class="row total">
+				<view>合计</view>
+				<view class="price">￥{{ orderInfo.pay_price || 0 }}</view>
 			</view>
 		</view>
-
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
+		<view class="main-card">
+			<view class="section-title">补充描述</view>
+			<view class="desc-upload">
+				<view class="upload-box">
+					<view class="upload-btn" @click="uploadImage">
+						<text class="iconfont icon-add"></text>
+						<text class="upload-text">上传凭证</text>
+					</view>
+					<!-- 显示已上传图片 -->
+					<view class="image-preview" v-for="(img, index) in formData.images" :key="index">
+						<image class="preview-img" :src="img" mode="aspectFill" @click="previewImage(img)"></image>
+						<text class="delete-icon" @click="deleteImage(index)">×</text>
+					</view>
+				</view>
+				<textarea class="desc-textarea" placeholder="请在下方上传售后商品图片和相关说明，给商家更详细的参考信息，需要上传至少2张图片，最多可上传3张图片" maxlength="300" v-model="formData.problem_description"></textarea>
+				<view class="word-count">{{ formData.problem_description.length }}/300</view>
+			</view>
+		</view>
+		<view class="footer-bar">
+			<button class="cancel-btn" @click="goBack">取消</button>
+			<button class="submit-btn" @click="submitApply">提交</button>
+		</view>
 	</view>
 </template>
 
 <script>
 import home from '@/components/home'
-import { refundGoodsList, ordeRefundReason, returnGoodsSubmit } from '@/api/order.js'
+import { createAfterSales } from '@/api/group.js'
 import { toLogin } from '@/libs/login.js'
 import { mapGetters } from "vuex"
 import colors from '@/mixins/color.js'
+import { getGroupOrderDetail } from '@/api/group.js'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
 	components: {
@@ -101,12 +82,11 @@ export default {
 			order_id: '',
 			orderInfo: {},
 			goodsList: [],
-			reasonList: [],
-			reasonIndex: -1,
 			formData: {
-				refund_reason: '',
-				refund_explain: '',
-				refund_img: []
+				goods_id: '',
+				problem_description: '',
+				user_phone: '',
+				images: []
 			},
 			loading: false
 		}
@@ -116,8 +96,7 @@ export default {
 		if (options.order_id) {
 			this.order_id = options.order_id
 			if (this.isLogin) {
-				this.getOrderGoods()
-				this.getRefundReasons()
+				this.getOrderDetail()
 			} else {
 				toLogin()
 			}
@@ -131,16 +110,37 @@ export default {
 		}
 	},
 	methods: {
+		goBack() {
+			uni.navigateBack();
+		},
 		// 获取订单商品信息
-		getOrderGoods () {
+		getOrderDetail() {
 			// 显示加载提示
 			uni.showLoading({
 				title: this.$t(`加载中`)
 			})
 
-			refundGoodsList(this.order_id).then(res => {
-				this.goodsList = res.data.cart_info || []
-				this.orderInfo = res.data || {}
+			getGroupOrderDetail(this.order_id).then(res => {
+				if (res.status === 200 && res.data) {
+					this.orderInfo = res.data
+					this.goodsList = res.data.goods || []
+					
+					// 如果有商品，默认选择第一个商品
+					if (this.goodsList.length > 0) {
+						this.formData.goods_id = this.goodsList[0].goods_id
+					}
+					
+					// 获取用户手机号
+					if (this.orderInfo.user && this.orderInfo.user.phone) {
+						this.formData.user_phone = this.orderInfo.user.phone
+					} else {
+						// 从本地存储获取用户信息
+						const userInfo = uni.getStorageSync('userInfo')
+						if (userInfo && userInfo.phone) {
+							this.formData.user_phone = userInfo.phone
+						}
+					}
+				}
 
 				// 隐藏加载提示
 				uni.hideLoading()
@@ -159,26 +159,18 @@ export default {
 				}, 1500)
 			})
 		},
-		// 获取退款原因列表
-		getRefundReasons () {
-			ordeRefundReason().then(res => {
-				this.reasonList = res.data || []
-			}).catch(err => {
-				this.$util.Tips({
-					title: err || this.$t(`获取退款原因失败，请稍后重试`),
-					icon: 'none'
-				})
-			})
-		},
-		// 选择退款原因
-		bindReasonChange (e) {
-			this.reasonIndex = e.detail.value
-			this.formData.refund_reason = this.reasonList[this.reasonIndex].reason_name
-		},
 		// 上传图片
 		uploadImage () {
+			// 如果已经上传了3张图片，不允许再上传
+			if (this.formData.images.length >= 3) {
+				this.$util.Tips({
+					title: this.$t(`最多只能上传3张图片`)
+				})
+				return
+			}
+			
 			uni.chooseImage({
-				count: 3 - this.formData.refund_img.length,
+				count: 3 - this.formData.images.length,
 				sizeType: ['compressed'],
 				sourceType: ['album', 'camera'],
 				success: (res) => {
@@ -197,59 +189,65 @@ export default {
 			const totalCount = tempFilePaths.length
 
 			for (let i = 0; i < tempFilePaths.length; i++) {
-				uni.uploadFile({
-					url: this.$util.apiUrl('upload/image'),
-					filePath: tempFilePaths[i],
-					name: 'file',
-					header: {
-						Authorization: this.$store.state.app.token
-					},
-					success: (uploadRes) => {
-						const data = JSON.parse(uploadRes.data)
-						if (data.status === 200) {
-							this.formData.refund_img.push(data.data.url)
-						} else {
-							this.$util.Tips({
-								title: data.msg || this.$t(`图片上传失败`),
-								icon: 'none'
-							})
+				// 使用全局工具方法上传图片
+				this.$util.uploadImgs(
+					'upload/image', 
+					tempFilePaths[i], 
+					(data) => {
+						// 上传成功回调
+						this.formData.images.push(data.data.url)
+						uploadCount++
+						if (uploadCount === totalCount) {
+							// 所有图片上传完成后隐藏加载提示
+							uni.hideLoading()
 						}
-					},
-					fail: (err) => {
-						this.$util.Tips({
-							title: this.$t(`图片上传失败`),
-							icon: 'none'
-						})
-					},
-					complete: () => {
+					}, 
+					(error) => {
+						// 上传失败回调
 						uploadCount++
 						if (uploadCount === totalCount) {
 							// 所有图片上传完成后隐藏加载提示
 							uni.hideLoading()
 						}
 					}
-				})
+				)
 			}
 		},
 		// 删除图片
 		deleteImage (index) {
-			this.formData.refund_img.splice(index, 1)
+			this.formData.images.splice(index, 1)
 		},
 		// 预览图片
 		previewImage (current) {
 			uni.previewImage({
 				current: current,
-				urls: this.formData.refund_img
+				urls: this.formData.images
 			})
 		},
 		// 表单验证
 		validateForm () {
-			if (!this.formData.refund_reason) {
+			if (!this.formData.goods_id) {
 				this.$util.Tips({
-					title: this.$t(`请选择退款原因`)
+					title: this.$t(`请选择商品`)
 				})
 				return false
 			}
+			
+			if (!this.formData.problem_description) {
+				this.$util.Tips({
+					title: this.$t(`请填写问题描述`)
+				})
+				return false
+			}
+			
+			// 验证图片数量，确保至少上传2张图片
+			if (this.formData.images.length < 2) {
+				this.$util.Tips({
+					title: this.$t(`请至少上传2张图片`)
+				})
+				return false
+			}
+			
 			return true
 		},
 		// 提交申请
@@ -265,11 +263,14 @@ export default {
 			})
 
 			const data = {
-				...this.formData,
-				refund_img: this.formData.refund_img.join(',')
+				order_id: this.order_id,
+				goods_id: this.formData.goods_id,
+				problem_description: this.formData.problem_description,
+				user_phone: this.formData.user_phone,
+				images: this.formData.images.join(',')
 			}
 
-			returnGoodsSubmit(this.order_id, data).then(res => {
+			createAfterSales(data).then(res => {
 				// 隐藏加载提示
 				uni.hideLoading()
 
@@ -279,8 +280,9 @@ export default {
 					icon: 'success'
 				})
 				setTimeout(() => {
+					// 跳转到售后详情页
 					uni.redirectTo({
-						url: '/pages/users/after_sales/index'
+						url: `/pages/users/after_sales/detail?id=${res.data.id}`
 					})
 				}, 1500)
 			}).catch(err => {
@@ -293,218 +295,265 @@ export default {
 					icon: 'none'
 				})
 			})
+		},
+		formatImage(url) {
+			if (!url) return '/static/images/order/coffee.png';
+			if (url.startsWith('http')) return url;
+			return HTTP_REQUEST_URL + url;
 		}
 	}
 }
 </script>
 
 <style lang="scss" scoped>
-.after-sales-apply {
+.after-sales-apply-pixel {
+	background: #f7f7f7;
+	min-height: 100vh;
 	padding-bottom: 120rpx;
-}
-
-.goods-box {
-	background-color: #fff;
-	padding: 30rpx;
-	margin-bottom: 20rpx;
-
-	.store-name {
-		font-size: 30rpx;
-		color: #333;
-		margin-bottom: 20rpx;
-	}
-
-	.goods-item {
+	.header {
 		display: flex;
-		margin-bottom: 20rpx;
-
-		.goods-img {
-			width: 160rpx;
-			height: 160rpx;
-			margin-right: 20rpx;
-
-			image {
-				width: 100%;
-				height: 100%;
-				border-radius: 10rpx;
+		align-items: center;
+		justify-content: center;
+		height: 90rpx;
+		background: #fff;
+		position: relative;
+		.back {
+			position: absolute;
+			left: 30rpx;
+			top: 0;
+			height: 100%;
+			display: flex;
+			align-items: center;
+			.iconfont {
+				font-size: 36rpx;
+				color: #333;
+				margin-right: 4rpx;
+			}
+			.back-text {
+				font-size: 30rpx;
+				color: #333;
 			}
 		}
-
-		.goods-info {
-			flex: 1;
-
-			.goods-name {
-				font-size: 28rpx;
-				color: #333;
-				margin-bottom: 10rpx;
-			}
-
-			.goods-attr {
-				font-size: 24rpx;
-				color: #999;
-				margin-bottom: 10rpx;
-			}
-
-			.goods-price {
-				font-size: 28rpx;
-				color: #333;
-				display: flex;
+		.title {
+			font-size: 36rpx;
+			font-weight: bold;
+			color: #222;
+		}
+	}
+	.main-card {
+		background: #fff;
+		border-radius: 16rpx;
+		margin: 24rpx 16rpx 0 16rpx;
+		box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03);
+		padding: 24rpx;
+		.section-title {
+			font-size: 30rpx;
+			font-weight: bold;
+			color: #222;
+			margin-bottom: 18rpx;
+		}
+		.row {
+			display: flex;
+			align-items: center;
+			font-size: 28rpx;
+			color: #222;
+			margin-bottom: 12rpx;
+			&.gray {
 				justify-content: space-between;
-
-				.goods-num {
-					color: #999;
+			}
+			&.goods-total-row {
+				justify-content: space-between;
+			}
+			&.total {
+				font-weight: bold;
+				color: #222;
+				font-size: 30rpx;
+				border-top: 1px solid #f5f5f5;
+				padding-top: 12rpx;
+				margin-top: 4rpx;
+				justify-content: space-between;
+			}
+			.label {
+				color: #222;
+				font-weight: bold;
+				margin-right: 8rpx;
+			}
+			.label-text {
+				color: #999;  // 更深的灰色
+			}
+			.value {
+				color: #666;
+				flex: 1;
+			}
+			.flex-1 {
+				flex: 1;
+			}
+			.price {
+				color: #222;
+				font-weight: 500;
+				text-align: right;
+				min-width: 80rpx;
+			}
+			.product-count {
+				margin-right: 8rpx;
+			}
+			.iconfont {
+				font-size: 28rpx;
+				color: #bcbcbc;
+				margin-left: 8rpx;
+			}
+		}
+		.goods-card-item {
+			display: flex;
+			background: #f7f7f7;
+			border-radius: 12rpx;
+			padding: 16rpx;
+			margin: 20rpx 0;
+			position: relative;
+			.goods-img {
+				width: 120rpx;
+				height: 120rpx;
+				border-radius: 8rpx;
+				margin-right: 18rpx;
+			}
+			.goods-content {
+				flex: 1;
+				.goods-title {
+					font-size: 28rpx;
+					color: #222;
+					font-weight: 500;
+					margin-bottom: 8rpx;
+				}
+				.goods-desc {
+					font-size: 26rpx;
+					color: #bcbcbc;
 				}
 			}
-		}
-	}
-}
-
-.form-box {
-	background-color: #fff;
-	padding: 30rpx;
-	margin-bottom: 20rpx;
-
-	.form-item {
-		margin-bottom: 30rpx;
-
-		&:last-child {
-			margin-bottom: 0;
-		}
-
-		.form-label {
-			font-size: 28rpx;
-			color: #333;
-			margin-bottom: 20rpx;
-
-			.required {
-				color: var(--view-theme);
+			.goods-count {
+				position: absolute;
+				right: 16rpx;
+				top: 16rpx;
+				font-size: 28rpx;
+				color: #bcbcbc;
 			}
 		}
-
-		.form-input {
-			position: relative;
-
-			.picker-view {
-				height: 80rpx;
-				border: 1px solid #eee;
-				border-radius: 10rpx;
-				padding: 0 30rpx;
+		.desc-upload {
+			display: flex;
+			flex-direction: column;
+			.upload-box {
 				display: flex;
 				align-items: center;
-				justify-content: space-between;
-				font-size: 28rpx;
-				color: #333;
-
-				.placeholder {
-					color: #999;
+				flex-wrap: wrap;
+				margin-bottom: 18rpx;
+				.upload-btn {
+					width: 120rpx;
+					height: 120rpx;
+					border: 1rpx dashed #ddd;
+					border-radius: 10rpx;
+					display: flex;
+					flex-direction: column;
+					align-items: center;
+					justify-content: center;
+					background: #fafafa;
+					margin-right: 20rpx;
+					margin-bottom: 20rpx;
+					.iconfont {
+						font-size: 40rpx;
+						color: #bcbcbc;
+						margin-bottom: 8rpx;
+					}
+					.upload-text {
+						font-size: 24rpx;
+						color: #bcbcbc;
+					}
 				}
-
-				.arrow {
-					color: #999;
-					font-size: 24rpx;
+				.image-preview {
+					position: relative;
+					margin-right: 20rpx;
+					margin-bottom: 20rpx;
+					.preview-img {
+						width: 120rpx;
+						height: 120rpx;
+						border-radius: 8rpx;
+					}
+					.delete-icon {
+						position: absolute;
+						top: -10rpx;
+						right: -10rpx;
+						background: #ff4d4f;
+						color: #fff;
+						font-size: 24rpx;
+						width: 36rpx;
+						height: 36rpx;
+						line-height: 32rpx;
+						text-align: center;
+						border-radius: 50%;
+						border: 1rpx solid #fff;
+					}
 				}
 			}
-
-			.textarea {
+			.desc-textarea {
 				width: 100%;
-				height: 200rpx;
+				min-height: 120rpx;
 				border: 1px solid #eee;
 				border-radius: 10rpx;
 				padding: 20rpx;
 				font-size: 28rpx;
 				color: #333;
+				background: #fafafa;
+				margin-bottom: 8rpx;
 			}
-
 			.word-count {
-				position: absolute;
-				right: 20rpx;
-				bottom: 20rpx;
+				align-self: flex-end;
 				font-size: 24rpx;
-				color: #999;
+				color: #bcbcbc;
 			}
 		}
 	}
-}
-
-.upload-box {
-	.upload-list {
+	.footer-bar {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 100rpx;
+		background: #fff;
 		display: flex;
-		flex-wrap: wrap;
-
-		.upload-item {
-			width: 160rpx;
-			height: 160rpx;
-			margin-right: 20rpx;
-			margin-bottom: 20rpx;
-			position: relative;
-
-			.upload-img {
-				width: 100%;
-				height: 100%;
-				border-radius: 10rpx;
-			}
-
-			.delete-icon {
-				position: absolute;
-				top: -20rpx;
-				right: -20rpx;
-				width: 40rpx;
-				height: 40rpx;
-				background-color: rgba(0, 0, 0, 0.5);
-				color: #fff;
-				border-radius: 50%;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				font-size: 24rpx;
-			}
-		}
-
-		.upload-btn {
-			width: 160rpx;
-			height: 160rpx;
-			border: 1px dashed #ddd;
-			border-radius: 10rpx;
+		align-items: center;
+		justify-content: space-between;
+		box-shadow: 0 -2rpx 8rpx rgba(0,0,0,0.03);
+		padding: 0 32rpx;
+		.cancel-btn {
+			flex: 1;
+			margin-right: 24rpx;
+			height: 72rpx;
+			border-radius: 36rpx;
+			background: #fff3e6;
+			color: #ff9900;
+			font-size: 30rpx;
+			font-weight: bold;
+			border: none;
 			display: flex;
-			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-
-			.icon {
-				font-size: 40rpx;
-				color: #999;
-				margin-bottom: 10rpx;
-			}
-
-			.text {
-				font-size: 24rpx;
-				color: #999;
-			}
+			line-height: 1;
+		}
+		.submit-btn {
+			flex: 1;
+			height: 72rpx;
+			border-radius: 36rpx;
+			background: #ff9900;
+			color: #fff;
+			font-size: 30rpx;
+			font-weight: bold;
+			border: none;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			line-height: 1;
 		}
 	}
-
-	.upload-tip {
-		font-size: 24rpx;
-		color: #999;
-		margin-top: 10rpx;
-	}
 }
-
-.submit-btn {
-	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	height: 100rpx;
-	background-color: var(--view-theme);
-	color: #fff;
-	font-size: 30rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	&.disabled {
-		background-color: #ccc;
-	}
+.price-text {
+	color: #222;
 }
 </style>

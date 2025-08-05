@@ -6,6 +6,7 @@
       <view class="left-section">
         <view v-if="showBack" class="back-btn" @click="handleBack">
           <image src="/static/common/icons/navigation/back_arrow.svg" class="back-icon" mode="aspectFit"></image>
+          <text class="back-text">返回</text>
         </view>
         <view v-else class="back-placeholder"></view>
       </view>
@@ -93,31 +94,35 @@ export default {
   display: flex;
   align-items: center;
   height: 88rpx;
-  padding: 0 32rpx;
+  padding: 0 24rpx; /* 左右内边距统一为24rpx，确保对称 */
   position: relative;
 }
 
 /* 左侧区域 */
 .left-section {
-  width: 64rpx;
-  height: 64rpx;
+  width: 120rpx; /* 固定宽度，确保与右侧对称 */
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  
+
   .back-btn {
-    width: 64rpx;
-    height: 64rpx;
     display: flex;
     align-items: center;
-    justify-content: center;
-    
+    justify-content: flex-start;
+
     .back-icon {
       width: 32rpx;
       height: 32rpx;
+      margin-right: 8rpx; /* 图标和文字间距 */
+    }
+
+    .back-text {
+      font-size: 32rpx;
+      color: #333333;
+      font-weight: 400;
     }
   }
-  
+
   .back-placeholder {
     width: 64rpx;
     height: 64rpx;
@@ -141,7 +146,7 @@ export default {
 
 /* 右侧区域 */
 .right-section {
-  // width: 64rpx; 
+  width: 120rpx; /* 固定宽度，与左侧保持一致 */
   height: 64rpx;
   display: flex;
   align-items: center;

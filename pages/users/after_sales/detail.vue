@@ -1,119 +1,92 @@
 <template>
 	<view :style="colorStyle">
 		<view class="after-sales-detail">
-			<!-- 售后进度 -->
-			<view class="progress-box">
-				<view class="progress-item"
-					:class="{ 'active': orderInfo.refund_type >= 1, 'current': orderInfo.refund_type == 1 }">
-					<view class="dot"></view>
-					<view class="text">申请售后</view>
+			<!-- 顶部栏 -->
+			<view class="header">
+				<!-- 修改返回按钮点击事件 -->
+				<view class="back" @click="goBack">
+					<text class="iconfont icon-fanhui"></text>
+					<text class="back-text">返回</text>
 				</view>
-				<view class="progress-line" :class="{ 'active': orderInfo.refund_type >= 2 }"></view>
-				<view class="progress-item"
-					:class="{ 'active': orderInfo.refund_type >= 2, 'current': orderInfo.refund_type == 2 }">
-					<view class="dot"></view>
-					<view class="text">
-						<view>等待团长处理</view>
-						<view class="time" v-if="orderInfo.refund_type == 2">
-							还剩{{ orderInfo.remaining_time || '23小时56分28秒' }}
+				<view class="title-container">
+					<text class="title">售后详情</text>
+				</view>
+				<view class="header-right-space"></view>
+			</view>
+
+			<!-- 售后进度竖向步骤条（严格对齐图片） -->
+			<view class="step-card">
+				<view class="step-line-container">
+					<view class="step-line"></view>
+				</view>
+				<view class="step-list">
+					<!-- 步骤1：申请售后 -->
+					<view class="step-item">
+						<view class="step-dot">
+							<view class="dot hollow"></view>
+						</view>
+						<view class="step-content">
+							<view class="step-title orange">申请售后</view>
+						</view>
+					</view>
+					<!-- 步骤2：等待团长处理 -->
+					<view class="step-item">
+						<view class="step-dot">
+							<view class="dot orange"></view>
+						</view>
+						<view class="step-content">
+							<view class="step-title orange">等待团长处理</view>
+							<view class="countdown">还剩23时56分28秒</view>
+							<view class="desc orange">您已成功发起售后申请，请耐心等待团长处理</view>
+						</view>
+					</view>
+					<!-- 步骤3：售后已完成 -->
+					<view class="step-item">
+						<view class="step-dot">
+							<view class="dot gray"></view>
+						</view>
+						<view class="step-content">
+							<view class="step-title gray">售后已完成</view>
 						</view>
 					</view>
 				</view>
-				<view class="progress-line" :class="{ 'active': orderInfo.refund_type >= 6 }"></view>
-				<view class="progress-item"
-					:class="{ 'active': orderInfo.refund_type >= 6, 'current': orderInfo.refund_type == 6 }">
-					<view class="dot"></view>
-					<view class="text">售后已完成</view>
-				</view>
 			</view>
 
-			<!-- 售后商品信息 -->
-			<view class="goods-box">
-				<view class="store-name">
-					<text>{{ orderInfo.store_name }}</text>
+			<!-- 商品卡片优化版 -->
+			<view class="goods-box" v-if="detail">
+				<view class="goods-title-row">售后商品</view>
+				<!-- 收货站点行优化，定位icon放最右 -->
+				<view class="site-row">
+					<text class="site-label">收货站点：</text>
+					<text class="site-value">{{ detail.community_name || '-' }}</text>
+					<view class="site-row-spacer"></view>
+					<text class="iconfont icon-dingwei"></text>
 				</view>
-				<view class="goods-item" v-for="(item, index) in orderInfo.cart_info" :key="index">
-					<view class="goods-img">
-						<image
-							:src="item.productInfo.attrInfo ? item.productInfo.attrInfo.image : item.productInfo.image">
-						</image>
-					</view>
+				<view class="goods-item">
+					<image class="goods-img" :src="detail.problem_images && detail.problem_images.length > 0 ? detail.problem_images[0] : ''" mode="aspectFill"></image>
 					<view class="goods-info">
-						<view class="goods-name">{{ item.productInfo.store_name }}</view>
-						<view class="goods-attr" v-if="item.productInfo.attrInfo">{{ item.productInfo.attrInfo.suk }}
+						<view class="goods-info-top">
+							<text class="goods-name">{{ detail.product_title }}</text>
+							<text class="goods-qty">x1</text>
 						</view>
-						<view class="goods-price">
-							<text>{{ $t(`￥`) }}{{ item.productInfo.attrInfo ? item.productInfo.attrInfo.price :
-								item.productInfo.price }}</text>
-							<text class="goods-num">x{{ item.cart_num }}</text>
+						<view class="goods-desc">{{ detail.problem_description }}</view>
+						<view class="goods-info-bottom">
+							<text class="goods-price">￥{{ detail.price || 35 }}</text>
 						</view>
 					</view>
 				</view>
-				<view class="goods-total">
-					<text>{{ $t(`共`) }} {{ orderInfo.refund_num || 1 }} {{ $t(`件商品，退款`) }}：</text>
-					<text class="price">{{ $t(`￥`) }}{{ orderInfo.refund_price }}</text>
-				</view>
 			</view>
-
-			<!-- 售后信息 -->
-			<view class="info-box" v-if="orderInfo.refund_reason || orderInfo.refund_explain">
-				<view class="info-item" v-if="orderInfo.refund_reason">
-					<view class="info-label">{{ $t(`申请理由`) }}</view>
-					<view class="info-value">{{ orderInfo.refund_reason }}</view>
-				</view>
-				<view class="info-item" v-if="orderInfo.refund_explain">
-					<view class="info-label">{{ $t(`用户备注`) }}</view>
-					<view class="info-value">{{ orderInfo.refund_explain }}</view>
-				</view>
-				<view class="info-item" v-if="orderInfo.refund_img && orderInfo.refund_img.length">
-					<view class="info-label">{{ $t(`申请图片`) }}</view>
-					<view class="info-images">
-						<image v-for="(img, imgIndex) in orderInfo.refund_img" :key="imgIndex" :src="img"
-							@click="previewImage(img, orderInfo.refund_img)"></image>
-					</view>
-				</view>
-			</view>
-
-			<!-- 订单信息 -->
-			<view class="order-box">
-				<view class="order-title">{{ $t(`订单信息`) }}</view>
-				<view class="order-item">
-					<view class="order-label">{{ $t(`订单编号`) }}</view>
-					<view class="order-value">
-						<text>{{ orderInfo.order_id }}</text>
-						<text class="copy-btn" @click="copyOrderId">{{ $t(`复制`) }}</text>
-					</view>
-				</view>
-				<view class="order-item">
-					<view class="order-label">{{ $t(`申请时间`) }}</view>
-					<view class="order-value">{{ orderInfo.add_time }}</view>
-				</view>
-				<view class="order-item" v-if="orderInfo.refund_type >= 6">
-					<view class="order-label">{{ $t(`退款时间`) }}</view>
-					<view class="order-value">{{ orderInfo.refund_time }}</view>
-				</view>
-			</view>
-
-			<!-- 底部按钮 -->
-			<view class="bottom-btns" v-if="orderInfo.refund_type == 1 || orderInfo.refund_type == 2">
-				<view class="btn cancel-btn" @click="cancelRefund">{{ $t(`取消申请`) }}</view>
-			</view>
-
-			<!-- 评价按钮 -->
-			<view class="bottom-btns" v-if="orderInfo.refund_type == 6 && !orderInfo.is_evaluate">
-				<view class="btn evaluate-btn" @click="goEvaluate">{{ $t(`评价售后服务`) }}</view>
+			<!-- 灰色提示按钮 -->
+			<view class="submit-tip-btn" v-if="step === 1 && showTip">
+				已经提交申请
 			</view>
 		</view>
-
-		<!-- #ifndef MP -->
-		<home></home>
-		<!-- #endif -->
 	</view>
 </template>
 
 <script>
 import home from '@/components/home'
-import { refundOrderDetail, cancelRefundOrder } from '@/api/order.js'
+import { getAfterSalesDetail } from '@/api/group.js'
 import { toLogin } from '@/libs/login.js'
 import { mapGetters } from "vuex"
 import colors from '@/mixins/color.js'
@@ -125,122 +98,138 @@ export default {
 	mixins: [colors],
 	data () {
 		return {
-			order_id: '',
-			orderInfo: {
-				refund_type: 2, // 1: 申请中, 2: 等待团长处理, 6: 已完成
-				store_name: '暖心宠物店（雪云路店）',
-				refund_price: '58.78',
-				refund_num: 1,
-				cart_info: [],
-				refund_reason: '商品质量问题',
-				refund_explain: '狗粮有异味，狗狗不爱吃',
-				refund_img: [],
-				order_id: '165418216541',
-				add_time: '2023-05-20 15:30:45',
-				refund_time: '2023-05-21 10:15:30',
-				remaining_time: '23小时56分28秒',
-				is_evaluate: false
-			}
+			aftersales_id: '',
+			detail: null,
+			loading: false,
+			step: 1, // 默认高亮第一步
+			countdown: '23时56分28秒', // 示例倒计时
+			showTip: true, // 控制提示信息显示
+			remainingTime: null // 存储剩余时间
 		}
 	},
 	computed: mapGetters(['isLogin']),
 	onLoad (options) {
-		if (options.order_id) {
-			this.order_id = options.order_id
+		if (options.id) {
+			this.aftersales_id = options.id
 			if (this.isLogin) {
-				this.getOrderDetail()
+				this.getDetail()
 			} else {
 				toLogin()
 			}
 		}
 	},
 	methods: {
-		// 获取订单详情
-		getOrderDetail () {
-			// 显示加载提示
+		// 返回上一页
+		goBack() {
+			uni.navigateBack()
+		},
+
+		// 修改getDetail方法，使用实际接口返回的数据格式
+		getDetail () {
+			this.loading = true
 			uni.showLoading({
 				title: this.$t(`加载中`)
 			})
-
-			refundOrderDetail(this.order_id).then(res => {
-				this.orderInfo = res.data
-
-				// 隐藏加载提示
-				uni.hideLoading()
-			}).catch(err => {
-				// 隐藏加载提示
+			getAfterSalesDetail(this.aftersales_id).then(res => {
+				this.detail = res.data
+				this.loading = false
 				uni.hideLoading()
 
+				// 处理售后状态
+				if (this.detail) {
+					// 根据接口返回的状态设置step
+					// 接口返回的status: 1-待处理, 2-已处理, 3-已完成
+					switch(this.detail.status) {
+						case 1: // 待处理
+							this.step = 1
+							break
+						case 2: // 已处理
+						case 3: // 已完成
+							this.step = 2
+							break
+						default:
+							this.step = 1
+					}
+
+					// 计算倒计时（如果接口返回了创建时间）
+					if (this.detail.create_time_text) {
+						this.calculateCountdown(this.detail.create_time_text)
+					}
+
+					// 3秒后隐藏提示
+					setTimeout(() => {
+						this.showTip = false
+					}, 3000)
+				}
+			}).catch(() => {
+				this.loading = false
+				uni.hideLoading()
 				this.$util.Tips({
-					title: err || this.$t(`加载失败，请稍后重试`),
+					title: this.$t(`加载失败，请稍后重试`),
 					icon: 'none'
 				})
-
-				// 加载失败后返回上一页
 				setTimeout(() => {
 					uni.navigateBack()
 				}, 1500)
 			})
 		},
-		// 复制订单号
-		copyOrderId () {
-			uni.setClipboardData({
-				data: this.orderInfo.order_id,
-				success: () => {
-					this.$util.Tips({
-						title: this.$t(`复制成功`)
-					})
+
+		// 修改计算倒计时的方法，处理接口返回的时间格式
+		calculateCountdown(createTimeText) {
+			// 将日期字符串转为时间戳
+			const createTimestamp = new Date(createTimeText.replace(/-/g, '/')).getTime()
+			// 假设处理时限为48小时
+			const endTimestamp = createTimestamp + 48 * 60 * 60 * 1000
+			// 当前时间
+			const now = new Date().getTime()
+			// 剩余时间（毫秒）
+			const remaining = endTimestamp - now
+
+			if (remaining <= 0) {
+				this.countdown = '0时0分0秒'
+				return
+			}
+
+			// 计算剩余时、分、秒
+			const hours = Math.floor(remaining / (60 * 60 * 1000))
+			const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
+			const seconds = Math.floor((remaining % (60 * 1000)) / 1000)
+
+			this.countdown = `${hours}时${minutes}分${seconds}秒`
+			this.remainingTime = remaining
+
+			// 启动倒计时
+			this.startCountdown()
+		},
+
+		// 添加倒计时更新方法
+		startCountdown() {
+			if (this.countdownTimer) {
+				clearInterval(this.countdownTimer)
+			}
+
+			this.countdownTimer = setInterval(() => {
+				if (this.remainingTime <= 1000) {
+					clearInterval(this.countdownTimer)
+					this.countdown = '0时0分0秒'
+					return
 				}
-			})
-		},
-		// 预览图片
-		previewImage (current, urls) {
-			uni.previewImage({
-				current: current,
-				urls: urls
-			})
-		},
-		// 取消申请
-		cancelRefund () {
-			uni.showModal({
-				title: this.$t(`提示`),
-				content: this.$t(`确定要取消售后申请吗？`),
-				success: res => {
-					if (res.confirm) {
-						// 显示加载提示
-						uni.showLoading({
-							title: this.$t(`处理中`)
-						})
 
-						cancelRefundOrder(this.order_id).then(res => {
-							// 隐藏加载提示
-							uni.hideLoading()
+				this.remainingTime -= 1000
 
-							this.$util.Tips({
-								title: this.$t(`取消成功`),
-								icon: 'success'
-							})
-							setTimeout(() => {
-								uni.navigateBack()
-							}, 1500)
-						}).catch(err => {
-							// 隐藏加载提示
-							uni.hideLoading()
+				const hours = Math.floor(this.remainingTime / (60 * 60 * 1000))
+				const minutes = Math.floor((this.remainingTime % (60 * 60 * 1000)) / (60 * 1000))
+				const seconds = Math.floor((this.remainingTime % (60 * 1000)) / 1000)
 
-							this.$util.Tips({
-								title: err || this.$t(`操作失败，请稍后重试`),
-								icon: 'none'
-							})
-						})
-					}
-				}
-			})
+				this.countdown = `${hours}时${minutes}分${seconds}秒`
+			}, 1000)
 		},
-		// 去评价
-		goEvaluate () {
-			uni.navigateTo({
-				url: `/pages/users/after_sales/evaluate?order_id=${this.order_id}`
-			})
+
+		// 在组件销毁时清除定时器
+		onUnload() {
+			if (this.countdownTimer) {
+				clearInterval(this.countdownTimer)
+			}
 		}
 	}
 }
@@ -249,246 +238,269 @@ export default {
 <style lang="scss" scoped>
 .after-sales-detail {
 	padding-bottom: 120rpx;
+	padding-top: 120rpx; /* 添加顶部间距，避免与固定导航栏重叠 */
 }
 
-.progress-box {
+.header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
 	background-color: #fff;
-	padding: 40rpx 30rpx;
+	padding: 40rpx 30rpx 20rpx;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	position: relative;
+	z-index: 10;
+	box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
 
-	.progress-item {
+	.back {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		position: relative;
-		z-index: 2;
+		font-size: 28rpx;
+		color: #333;
+		width: 120rpx; /* 固定宽度 */
 
-		.dot {
-			width: 20rpx;
-			height: 20rpx;
-			border-radius: 50%;
-			background-color: #ddd;
-			margin-bottom: 20rpx;
+		.iconfont {
+			font-size: 36rpx;
+			margin-right: 10rpx;
 		}
 
-		.text {
-			font-size: 24rpx;
-			color: #999;
-			text-align: center;
-
-			.time {
-				font-size: 22rpx;
-				color: #999;
-				margin-top: 6rpx;
-			}
-		}
-
-		&.active {
-			.dot {
-				background-color: var(--view-theme);
-			}
-
-			.text {
-				color: var(--view-theme);
-			}
-		}
-
-		&.current {
-			.dot {
-				width: 30rpx;
-				height: 30rpx;
-				margin-top: -5rpx;
-				margin-bottom: 15rpx;
-			}
+		.back-text {
+			font-size: 30rpx;
+			color: #333;
 		}
 	}
 
-	.progress-line {
-		flex: 1;
-		height: 2rpx;
-		background-color: #ddd;
-		position: relative;
-		z-index: 1;
+	.title-container {
+		position: absolute;
+		left: 0;
+		right: 0;
+		display: flex;
+		justify-content: center;
+		pointer-events: none; /* 防止标题阻挡返回按钮点击 */
 
-		&.active {
-			background-color: var(--view-theme);
+		.title {
+			font-size: 36rpx;
+			font-weight: bold;
+			color: #222;
+			text-align: center;
 		}
+	}
+
+	.header-right-space {
+		width: 120rpx; /* 与左侧返回按钮宽度相同，保持平衡 */
 	}
 }
 
+// 修改步骤条样式
+.step-card {
+	background: #fff;
+	border-radius: 16rpx;
+	margin: 24rpx 16rpx 0 16rpx;
+	box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03);
+	padding: 40rpx 30rpx;
+	position: relative;
+}
+
+.step-line-container {
+	position: absolute;
+	left: 40rpx;
+	top: 56rpx; /* 调整顶部位置，使线条与第一个圆点相切 */
+	bottom: 56rpx; /* 调整底部位置，使线条与第三个圆点相切 */
+	width: 2rpx;
+	z-index: 1;
+}
+
+.step-line {
+	width: 2rpx;
+	height: 100%;
+	background: linear-gradient(to bottom, #ff9900 0%, #ff9900 50%, #cccccc 50%, #cccccc 100%);
+}
+
+.step-list {
+	position: relative;
+	z-index: 2;
+}
+
+.step-item {
+	display: flex;
+	align-items: flex-start;
+	margin-bottom: 32rpx;
+	position: relative;
+}
+
+.step-item:last-child {
+	margin-bottom: 0;
+}
+
+.step-dot {
+	width: 20rpx;
+	height: 20rpx;
+	margin-right: 20rpx;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.dot {
+	width: 16rpx;
+	height: 16rpx;
+	border-radius: 50%;
+	background: #cccccc;
+	z-index: 3;
+}
+
+.dot.hollow {
+	background: #fff;
+	border: 2rpx solid #ff9900;
+	box-sizing: border-box;
+}
+
+.dot.orange {
+	background: #ff9900;
+}
+
+.dot.gray {
+	background: #cccccc;
+}
+
+.step-content {
+	flex: 1;
+	padding-top: 0;
+}
+
+.step-title {
+	font-size: 28rpx;
+	color: #222;
+	font-weight: bold;
+	text-align: left;
+}
+
+.step-title.orange {
+	color: #ff9900;
+}
+
+.step-title.gray {
+	color: #bcbcbc;
+}
+
+.countdown {
+	color: #bcbcbc;
+	font-size: 24rpx;
+	margin-top: 8rpx;
+	text-align: left;
+}
+
+.desc {
+	color: #ff9900;
+	font-size: 24rpx;
+	margin-top: 8rpx;
+	max-width: 500rpx;
+	line-height: 1.4;
+	text-align: left;
+}
+
 .goods-box {
-	background-color: #fff;
-	margin-top: 20rpx;
-	padding: 30rpx;
-
-	.store-name {
+	background: #fff;
+	border-radius: 16rpx;
+	margin: 24rpx 16rpx 0 16rpx;
+	box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03);
+	padding: 24rpx 20rpx 20rpx 20rpx;
+	.goods-title-row {
 		font-size: 30rpx;
-		color: #333;
-		margin-bottom: 20rpx;
+		font-weight: bold;
+		color: #222;
+		margin-bottom: 18rpx;
+		text-align: left;
 	}
-
+	.site-row {
+		display: flex;
+		align-items: center;
+		margin-bottom: 18rpx;
+		.site-label {
+			color: #999;
+			font-size: 26rpx;
+			margin-right: 4rpx;
+		}
+		.site-value {
+			color: #666;
+			font-size: 26rpx;
+			margin-right: 8rpx;
+		}
+		.site-row-spacer {
+			flex: 1;
+		}
+		.iconfont {
+			font-size: 24rpx;
+			color: #bcbcbc;
+		}
+	}
 	.goods-item {
 		display: flex;
-		margin-bottom: 20rpx;
-
+		align-items: flex-start;
 		.goods-img {
-			width: 160rpx;
-			height: 160rpx;
-			margin-right: 20rpx;
-
-			image {
-				width: 100%;
-				height: 100%;
-				border-radius: 10rpx;
-			}
+			width: 100rpx;
+			height: 100rpx;
+			border-radius: 8rpx;
+			margin-right: 16rpx;
+			background: #f7f7f7;
 		}
-
 		.goods-info {
 			flex: 1;
-
-			.goods-name {
-				font-size: 28rpx;
-				color: #333;
-				margin-bottom: 10rpx;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			.goods-info-top {
+				display: flex;
+				align-items: flex-start;
+				justify-content: space-between;
+				.goods-name {
+					font-size: 28rpx;
+					color: #222;
+					font-weight: bold;
+					flex: 1;
+					margin-right: 8rpx;
+					line-height: 1.2;
+				}
+				.goods-qty {
+					font-size: 24rpx;
+					color: #bcbcbc;
+					font-weight: normal;
+				}
 			}
-
-			.goods-attr {
+			.goods-desc {
 				font-size: 24rpx;
 				color: #999;
-				margin-bottom: 10rpx;
+				margin: 8rpx 0 0 0;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				max-width: 320rpx;
 			}
-
-			.goods-price {
-				font-size: 28rpx;
-				color: #333;
+			.goods-info-bottom {
 				display: flex;
-				justify-content: space-between;
-
-				.goods-num {
-					color: #999;
+				justify-content: flex-end;
+				align-items: center;
+				.goods-price {
+					font-size: 28rpx;
+					color: #222;
+					font-weight: bold;
 				}
 			}
 		}
 	}
-
-	.goods-total {
-		text-align: right;
-		font-size: 28rpx;
-		color: #333;
-
-		.price {
-			font-weight: bold;
-			color: var(--view-theme);
-		}
-	}
 }
-
-.info-box {
-	background-color: #fff;
-	margin-top: 20rpx;
-	padding: 30rpx;
-
-	.info-item {
-		margin-bottom: 20rpx;
-
-		&:last-child {
-			margin-bottom: 0;
-		}
-
-		.info-label {
-			font-size: 28rpx;
-			color: #333;
-			margin-bottom: 10rpx;
-		}
-
-		.info-value {
-			font-size: 26rpx;
-			color: #666;
-			line-height: 1.5;
-		}
-
-		.info-images {
-			display: flex;
-			flex-wrap: wrap;
-
-			image {
-				width: 160rpx;
-				height: 160rpx;
-				margin-right: 20rpx;
-				margin-bottom: 20rpx;
-				border-radius: 10rpx;
-			}
-		}
-	}
-}
-
-.order-box {
-	background-color: #fff;
-	margin-top: 20rpx;
-	padding: 30rpx;
-
-	.order-title {
-		font-size: 30rpx;
-		color: #333;
-		margin-bottom: 20rpx;
-	}
-
-	.order-item {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 20rpx;
-
-		&:last-child {
-			margin-bottom: 0;
-		}
-
-		.order-label {
-			font-size: 26rpx;
-			color: #666;
-		}
-
-		.order-value {
-			font-size: 26rpx;
-			color: #333;
-			display: flex;
-			align-items: center;
-
-			.copy-btn {
-				margin-left: 20rpx;
-				color: var(--view-theme);
-			}
-		}
-	}
-}
-
-.bottom-btns {
-	position: fixed;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: #fff;
-	padding: 20rpx 30rpx;
-	display: flex;
-	justify-content: flex-end;
-	box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-
-	.btn {
-		padding: 20rpx 40rpx;
-		border-radius: 40rpx;
-		font-size: 28rpx;
-	}
-
-	.cancel-btn {
-		background-color: #f7f7f7;
-		color: #666;
-	}
-
-	.evaluate-btn {
-		background-color: var(--view-theme);
-		color: #fff;
-	}
+.submit-tip-btn {
+  margin: 24rpx auto;
+  background: #666666;
+  color: #fff;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  padding: 16rpx 48rpx;
+  text-align: center;
+  width: fit-content;
+  min-width: 240rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
 }
 </style>

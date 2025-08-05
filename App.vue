@@ -12,6 +12,7 @@ import colors from '@/mixins/color.js'
 import Cache from '@/utils/cache'
 import themeList from '@/utils/theme'
 import { debug } from 'util'
+import UserManager from '@/utils/userManager'
 
 export default {
 	globalData: {
@@ -54,6 +55,9 @@ export default {
 		}
 	},
 	onShow () {
+		// 触发应用显示事件，用于用户管理器检查用户信息
+		uni.$emit('appShow');
+
 		const queryData = uni.getEnterOptionsSync() // uni-app版本 3.5.1+ 支持
 		if (queryData.query.spread) {
 			this.$Cache.set('spread', queryData.query.spread)
@@ -113,16 +117,13 @@ export default {
 		// #ifdef H5
 		// 检查当前路径，如果是根路径，则重定向到首页
 		if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-			console.log('App.vue检测到根路径访问，准备重定向到首页')
 			// 强制清除loadStatus
 			this.$Cache.set('loadStatus', false)
 			
 			setTimeout(() => {
-				console.log('App.vue执行重定向到首页')
 				uni.reLaunch({
 					url: '/pages/index/index',
 					success: function() {
-						console.log('App.vue重定向成功')
 					},
 					fail: function(err) {
 						console.error('App.vue重定向失败:', err)
@@ -134,6 +135,9 @@ export default {
 		}
 		// #endif
 		
+		// 初始化用户管理器
+		UserManager.init();
+
 		basicConfig().then((res) => {
 			uni.setStorageSync('BASIC_CONFIG', res.data)
 		})
@@ -356,15 +360,36 @@ page {
 	display: flex;
 }
 
+/* 隐藏滚动条但保持滚动功能 */
 .uni-scroll-view::-webkit-scrollbar {
 	/* 隐藏滚动条，但依旧具备可以滚动的功能 */
 	display: none;
 }
 
+/* 全局隐藏滚动条但保持滚动功能 */
 ::-webkit-scrollbar {
 	width: 0;
 	height: 0;
-	color: transparent;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: transparent;
+}
+
+/* 确保页面可以滚动 */
+html, body {
+	overflow: auto !important;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* uni-app页面容器滚动设置 */
+uni-page-body {
+	overflow: auto !important;
+	-webkit-overflow-scrolling: touch;
 }
 
 .uni-system-open-location .map-content.fix-position {

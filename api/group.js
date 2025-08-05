@@ -94,7 +94,7 @@ export function getGroupOrderDetail(orderId) {
  * @param {string} data.status 订单状态
  */
 export function getGroupOrderList(data) {
-	return request.post("group/order/order_list", data);
+	return request.get("group/order/order_list", data);
 }
 
 /**
@@ -227,30 +227,50 @@ export function deleteCollect(data) {
  */
 
 /**
- * 获取团购商品列表
+ * 获取拼团商品列表
  * @param {Object} data 查询参数
- * @param {string} data.cate_id 商品分类id
- * @param {string} data.search 搜索关键词
- * @param {string} data.is_hot 是否热门（0：否，1：是）
- * @param {string} data.is_new 是否新品（0：否，1：是）
- * @param {string} data.is_recommend 是否推荐（0：否，1：是）
- * @param {string} data.sort 排序字段
- * @param {string} data.sort_order 排序方式（asc：升序，desc：降序）
  * @param {number} data.page 页码
  * @param {number} data.limit 每页数量
+ * @param {string} data.keyword 搜索关键词
+ * @param {string} data.is_host 是否推荐（0/1）
+ * @param {number} data.price_min 最低价格
+ * @param {number} data.price_max 最高价格
+ * @param {number} data.people 成团人数
+ * @param {string} data.order 排序方式（sales_desc/price_asc/price_desc/time_desc）
  */
 export function getGroupGoodsList(data) {
-	return request.get("group/goods/list", data, {
-		noAuth: true
-	});
+	return getCombinationList(data);
 }
 
 /**
- * 获取团购商品详情
- * @param {number} id 商品ID
+ * 获取拼团商品详情
+ * @param {number} id 拼团商品ID
  */
 export function getGroupGoodsDetail(id) {
-	return request.get(`group/goods/detail/${id}`);
+	return getCombinationDetail(id);
+}
+
+/**
+ * 获取推荐拼团商品
+ */
+export function getRecommendGroupGoods() {
+	return getRecommendCombinations({});
+}
+
+/**
+ * 预览其他社区拼团商品
+ * @param {Object} data 查询参数
+ * @param {number} data.community_id 社区ID，不传则显示本社区商品
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ * @param {string} data.keyword 搜索关键词
+ * @param {string} data.is_host 是否推荐商品
+ * @param {number} data.price_min 最低价格
+ * @param {number} data.price_max 最高价格
+ * @param {string} data.order 排序方式
+ */
+export function getGroupGoodsPreview(data) {
+	return previewCombination(data);
 }
 
 /**
@@ -369,9 +389,7 @@ export function updateAfterSales(id, data) {
  * @param {number} id 房屋ID
  */
 export function getHouseRentalDetail(id) {
-	return request.get(`group/house_rental/detail/${id}`, {}, {
-		noAuth: true
-	});
+	return getHouseRentalInfo(id);
 }
 
 /**
@@ -458,9 +476,7 @@ export function getNearbyCommunities(data) {
  * @param {string} data.order 排序方式
  */
 export function getUserCombinationList(data) {
-	return request.get("group/combination/list", data, {
-		noAuth: true
-	});
+	return getCombinationList(data);
 }
 
 /**
@@ -468,8 +484,27 @@ export function getUserCombinationList(data) {
  * @param {number} id 拼团商品ID
  */
 export function getUserCombinationDetail(id) {
-	return request.get(`group/combination/detail/${id}`, {}, {
+	return getCombinationDetail(id);
+}
+
+/**
+ * 获取普通商品详情
+ * @param {number} id 商品ID
+ */
+export function getGoodsDetail(id) {
+	return request.get(`group/goods/detail/${id}`, {}, {
 		noAuth: true
+	});
+}
+
+/**
+ * 商品点赞/取消点赞
+ * @param {number} id 商品ID
+ * @param {number} type 1=点赞, 0=取消点赞
+ */
+export function likeGoods(id, type = 1) {
+	return request.post(`group/goods/like/${id}`, { type }, {
+		noAuth: false
 	});
 }
 
@@ -492,4 +527,401 @@ export function joinCombination(data) {
  */
 export function getMyCombinationList(data) {
 	return request.get("group/combination/my_list", data);
+}
+
+/**
+ * 获取推荐拼团商品
+ * @param {Object} data 查询参数
+ */
+export function getRecommendCombinations(data) {
+	return request.get("group/combination/recommend", data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 预览其他社区拼团商品
+ * @param {Object} data 查询参数
+ * @param {number} data.community_id 社区ID，不传则显示本社区商品
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ * @param {string} data.keyword 搜索关键词
+ * @param {string} data.is_host 是否推荐商品
+ * @param {number} data.price_min 最低价格
+ * @param {number} data.price_max 最高价格
+ * @param {string} data.order 排序方式
+ */
+export function previewCombinations(data) {
+	return previewCombination(data);
+}
+
+/**
+ * 购物车结算
+ * @param {Object} data 结算数据
+ * @param {string} data.cart_ids 购物车ID，多个用逗号分隔
+ * @param {number} data.coupon_id 优惠券ID，0表示不使用
+ */
+export function checkoutCart(data) {
+	return request.post("group/cart/checkout", data);
+}
+
+/**
+ * 获取订单可用优惠券
+ * @param {Object} data 查询参数
+ * @param {number} data.order_id 订单ID
+ */
+export function getOrderCoupons(data) {
+	return request.post("group/order/getOrderCoupons", data);
+}
+
+/**
+ * 设置订单优惠券
+ * @param {Object} data 设置数据
+ * @param {number} data.order_id 订单ID
+ * @param {number} data.user_coupon_id 用户优惠券ID，0表示取消优惠券
+ */
+export function setOrderCoupon(data) {
+	return request.post("group/order/setOrderCoupon", data);
+}
+
+/**
+ * 处理订单支付
+ * @param {number} orderId 订单ID
+ * @param {Object} data 支付数据
+ * @param {number} data.pay_type 支付类型
+ */
+export function payOrder(orderId, data) {
+	return request.post(`group/order/payOrder/${orderId}`, data);
+}
+
+/**
+ * 确认收货
+ * @param {Object} data 确认数据
+ * @param {number} data.order_id 订单ID
+ */
+export function confirmReceipt(data) {
+	return request.post("group/order/confirmReceipt", data);
+}
+
+/**
+ * 取消订单
+ * @param {Object} data 取消数据
+ * @param {number} data.order_id 订单ID
+ */
+export function cancelOrder(data) {
+	return request.post("group/order/cancelOrder", data);
+}
+
+/**
+ * 申请退款
+ * @param {Object} data 退款申请数据
+ * @param {number} data.order_id 订单ID
+ * @param {string} data.reason 退款原因
+ * @param {number} data.amount 退款金额，0表示全额退款
+ */
+export function applyRefund(data) {
+	return request.post("group/order/applyRefund", data);
+}
+
+/**
+ * 取消售后申请
+ * @param {number} id 售后申请ID
+ */
+export function cancelAfterSales(id) {
+	return request.post(`group/aftersales/cancel/${id}`);
+}
+
+/**
+ * 检查收藏状态
+ * @param {Object} data 查询参数
+ * @param {string} data.fav_id 收藏对象ID
+ * @param {string} data.type 收藏类型
+ */
+export function checkCollectStatus(data) {
+	return request.get("group/collect/check", data);
+}
+
+/**
+ * 批量操作收藏
+ * @param {Object} data 批量操作数据
+ * @param {string} data.action 操作类型（add-添加，del-删除）
+ * @param {Array} data.items 收藏项目列表
+ */
+export function batchCollect(data) {
+	return request.post("group/collect/batch", data);
+}
+
+/**
+ * 商品评论相关接口 - 基于API文档
+ */
+
+/**
+ * 获取商品评论列表
+ * @param {number} goodsId 商品ID
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ */
+export function getGoodsCommentList(goodsId, data = {}) {
+	return request.get(`group/goods_comment/comment_list/${goodsId}`, data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 发表商品评论
+ * @param {Object} data 评论数据
+ * @param {number} data.goods_id 商品ID
+ * @param {string} data.content 评论内容
+ * @param {number} data.rating 评分
+ * @param {Array} data.images 评论图片
+ */
+export function createGoodsComment(data) {
+	return request.post("group/goods_comment/create", data);
+}
+
+/**
+ * 删除商品评论
+ * @param {number} commentId 评论ID
+ */
+export function deleteGoodsComment(commentId) {
+	return request.get(`group/goods_comment/delete/${commentId}`);
+}
+
+/**
+ * 商品问答相关接口 - 基于API文档
+ */
+
+/**
+ * 发布商品问答
+ * @param {Object} data 问答数据
+ * @param {number} data.goods_id 商品ID
+ * @param {number} data.qid 问题ID（回答时使用，提问时为0）
+ * @param {string} data.content 问答内容
+ */
+export function createGoodsQA(data) {
+	return request.post("group/goods_qa/create", data);
+}
+
+/**
+ * 获取商品问题列表
+ * @param {number} goodsId 商品ID
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ */
+export function getGoodsQuestionList(goodsId, data = {}) {
+	return request.get(`group/goods_qa/question_list/${goodsId}`, data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取问题回答列表
+ * @param {number} questionId 问题ID
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ */
+export function getGoodsAnswerList(questionId, data = {}) {
+	return request.get(`group/goods_qa/answer_list/${questionId}`, data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 删除商品问答
+ * @param {number} qaId 问答ID
+ */
+export function deleteGoodsQA(qaId) {
+	return request.get(`group/goods_qa/delete/${qaId}`);
+}
+
+/**
+ * 商业加盟相关接口 - 基于API文档
+ */
+
+/**
+ * 获取加盟项目列表
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ * @param {string} data.keyword 搜索关键词
+ */
+export function getFranchiseList(data = {}) {
+	return request.get("group/franchise/list", data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取加盟项目详情
+ * @param {number} franchiseId 加盟项目ID
+ */
+export function getFranchiseInfo(franchiseId) {
+	return request.get(`group/franchise/info/${franchiseId}`, {}, {
+		noAuth: true
+	});
+}
+
+/**
+ * 申请加盟
+ * @param {Object} data 申请数据
+ * @param {string} data.name 申请人姓名
+ * @param {string} data.phone 联系电话
+ * @param {number} data.franchise_id 加盟项目ID
+ */
+export function applyFranchise(data) {
+	return request.post("group/franchise/apply", data);
+}
+
+/**
+ * 招商合作相关接口 - 基于API文档
+ */
+
+/**
+ * 获取合作项目列表
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ * @param {string} data.keyword 搜索关键词
+ */
+export function getCooperationList(data = {}) {
+	return request.get("group/cooperation/list", data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取合作项目详情
+ * @param {number} cooperationId 合作项目ID
+ */
+export function getCooperationInfo(cooperationId) {
+	return request.get(`group/cooperation/info/${cooperationId}`, {}, {
+		noAuth: true
+	});
+}
+
+/**
+ * 申请合作
+ * @param {Object} data 申请数据
+ * @param {string} data.name 申请人姓名
+ * @param {string} data.phone 联系电话
+ * @param {number} data.cooperation_id 合作项目ID
+ */
+export function applyCooperation(data) {
+	return request.post("group/cooperation/apply", data);
+}
+
+/**
+ * 便民服务相关接口 - 基于API文档
+ */
+
+/**
+ * 获取便民服务列表
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ * @param {string} data.keyword 搜索关键词
+ * @param {string} data.category 服务分类
+ */
+export function getConvenientServiceList(data = {}) {
+	return request.get("group/convenient_service/list", data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取便民服务详情
+ * @param {number} serviceId 服务ID
+ */
+export function getConvenientServiceInfo(serviceId) {
+	return request.get(`group/convenient_service/info/${serviceId}`, {}, {
+		noAuth: true
+	});
+}
+
+/**
+ * 预约便民服务
+ * @param {number} serviceId 服务ID
+ * @param {Object} data 预约数据
+ * @param {string} data.name 预约人姓名
+ * @param {string} data.phone 联系电话
+ * @param {string} data.appointment_time 预约时间
+ * @param {string} data.remark 备注
+ */
+export function reserveConvenientService(serviceId, data) {
+	return request.get(`group/convenient_service/reservation/${serviceId}`, data);
+}
+
+/**
+ * 发表便民服务评论
+ * @param {Object} data 评论数据
+ * @param {number} data.service_id 服务ID
+ * @param {string} data.content 评论内容
+ * @param {number} data.rating 评分
+ * @param {Array} data.images 评论图片
+ */
+export function createConvenientServiceComment(data) {
+	return request.post("group/convenient_service/comment", data);
+}
+
+/**
+ * 获取便民服务评论列表
+ * @param {number} serviceId 服务ID
+ * @param {Object} data 查询参数
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ */
+export function getConvenientServiceCommentList(serviceId, data = {}) {
+	return request.get(`group/convenient_service/comment_list/${serviceId}`, data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取商品列表
+ * @param {Object} data 查询参数
+ * @param {string} data.cate_id 商品分类id
+ * @param {string} data.search 搜索关键词
+ * @param {string} data.is_hot 是否热门（0：否，1：是）
+ * @param {string} data.is_new 是否新品（0：否，1：是）
+ * @param {string} data.is_recommend 是否推荐（0：否，1：是）
+ * @param {string} data.sort 排序字段
+ * @param {string} data.sort_order 排序方式（asc：升序，desc：降序）
+ */
+export function getGoodsList(data) {
+	return request.get("group/goods/list", data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取拼团商品列表
+ * @param object data
+ */
+export function getCombinationList(data) {
+	return request.get('group/combination/list', data, {
+		noAuth: true
+	});
+}
+
+/**
+ * 获取拼团商品详情
+ * @param {Number} id 拼团商品ID
+ */
+export function getCombinationDetail(id) {
+	return request.get(`group/combination/detail/${id}`, {}, {
+		noAuth: true
+	});
+}
+
+/**
+ * 预览其他社区拼团商品
+ * @param {Object} data
+ */
+export function previewCombination(data) {
+	return request.get('group/combination/preview', data, {
+		noAuth: true
+	});
 }

@@ -10,7 +10,7 @@
             <!-- 搜索框 -->
             <view class="search-container">
                 <view class="search-box" @click="search">
-                    <image class="search-icon" src="/static/images/index/business-info/search_icon.svg" />
+                    <image class="search-icon" src="/static/icons/search.svg" />
                     <text class="search-text">{{ keyword }}</text>
                 </view>
                 <view class="search-btn" @click="search">搜索</view>
@@ -80,7 +80,7 @@
                             <view class="dropdown-item" @click="selectMoreOption('加盟')" :class="{ 'active-item': currentType === 'franchise' }">
                                 <text>加盟</text>
                             </view>
-                            <view class="dropdown-item" @click="selectMoreOption('招商合作')" :class="{ 'active-item': currentType === 'business' }">
+                            <view class="dropdown-item" @click="selectMoreOption('招商合作')" :class="{ 'active-item': currentType === 'cooperation' }">
                                 <text>招商合作</text>
                             </view>
                             <view class="dropdown-item" @click="selectMoreOption('便民服务')" :class="{ 'active-item': currentType === 'service' }">
@@ -115,7 +115,7 @@
 
                     <!-- 招商合作列表 -->
                     <transition name="slide-fade">
-                        <view v-if="currentType === 'business'" key="business" class="list-container">
+                        <view v-if="currentType === 'cooperation'" key="cooperation" class="list-container">
                             <view class="business-cooperation-card" v-for="item in businessCooperationList" :key="item.id" @click="viewBusinessDetail(item.id)">
                                 <!-- 项目标题 -->
                                 <view class="cooperation-title">{{ item.name }}</view>
@@ -207,12 +207,19 @@
 </template>
 
 <script>
+import {
+    getFranchiseList,
+    getCooperationList,
+    getConvenientServiceList
+} from '@/api/group.js'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
+
 export default {
     name: 'BusinessInfoPage',
     data () {
         return {
             keyword: 'Coffee',
-            activeFilter: 'area', // 默认选中区域过滤器
+            activeFilter: '', // 默认不选中任何过滤器
             moreOptions: ['加盟', '招商合作', '便民服务'], // 更多选项列表
             showMoreOptions: false, // 是否显示下拉菜单
             activeMoreOption: '更多', // 当前选中的更多选项
@@ -263,7 +270,7 @@ export default {
                 {
                     id: 3,
                     name: '蜜雪冰城',
-                    image: '/static/images/mixue_image.png',
+                    image: '/static/images/index/business-info/mixue_image.png',
                     fee: '8万~12万',
                     desc: '低价高销量，年轻人喜爱的品牌',
                     tag: '全国连锁'
@@ -430,13 +437,15 @@ export default {
             if (option === '加盟') {
                 newType = 'franchise'
             } else if (option === '招商合作') {
-                newType = 'business'
+                newType = 'cooperation' // 修正为cooperation
             } else if (option === '便民服务') {
                 newType = 'service'
             }
 
-            // 直接切换数据类型，无加载延迟
+            // 切换数据类型并加载对应数据
+            console.log('切换到类型:', newType);
             this.currentType = newType
+            this.loadDataByType(); // 调用API加载数据
 
             uni.showToast({
                 title: `已切换到${option}`,
@@ -455,7 +464,177 @@ export default {
             this.currentBannerIndex = index
             // 这里可以通过swiper的API来切换，但uni-app的swiper组件没有直接的API
             // 所以我们只更新指示器状态，实际切换由用户滑动完成
+        },
+
+        // 根据类型加载数据
+        loadDataByType() {
+            console.log('当前类型:', this.currentType);
+            switch (this.currentType) {
+                case 'franchise':
+                    console.log('加载加盟数据');
+                    this.loadFranchiseData();
+                    break;
+                case 'cooperation':
+                    console.log('加载招商合作数据');
+                    this.loadCooperationData();
+                    break;
+                case 'service':
+                    console.log('加载便民服务数据');
+                    this.loadServiceData();
+                    break;
+                default:
+                    console.log('默认加载加盟数据');
+                    this.loadFranchiseData(); // 默认加载加盟数据
+            }
+        },
+
+        // 加载加盟项目数据
+        async loadFranchiseData() {
+            try {
+                this.isLoading = true;
+                const response = await getFranchiseList({
+                    page: 1,
+                    limit: 10
+                });
+
+                if (response.status === 200 && response.data) {
+                    // 映射后端数据到页面需要的字段格式
+                    this.businessList = (response.data.list || []).map(item => ({
+                        id: item.id,
+                        name: item.title, // title -> name
+                        fee: item.franchise_fee, // franchise_fee -> fee
+                        desc: item.intro, // intro -> desc
+                        tag: item.multiple_type, // multiple_type -> tag
+                        image: item.image ? this.getImageUrl(item.image) : '/static/images/index/business-info/luckin_coffee.png' // 兼容处理图片URL
+                    }));
+                    console.log('加盟项目数据加载成功:', this.businessList);
+                }
+            } catch (error) {
+                console.error('加载加盟项目失败:', error);
+
+                // 检查是否是登录相关错误
+                if (error && error.isLoginError) {
+                    // 登录相关错误已经由request.js自动处理，这里不需要额外操作
+                    console.log('登录状态失效，已自动跳转到登录页面');
+                    return;
+                }
+
+                // 其他错误显示提示
+                uni.showToast({
+                    title: error.msg || '加载失败',
+                    icon: 'none'
+                });
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        // 加载招商合作数据
+        async loadCooperationData() {
+            try {
+                this.isLoading = true;
+                const response = await getCooperationList({
+                    page: 1,
+                    limit: 10
+                });
+
+                if (response.status === 200 && response.data) {
+                    // 映射后端数据到页面需要的字段格式
+                    this.businessCooperationList = (response.data.list || []).map(item => ({
+                        id: item.id,
+                        name: item.title || '招商合作项目',
+                        tags: item.tags ? item.tags.split('|') : ['优质项目', '合作共赢'], // 使用|分割
+                        contactFee: '面议', // API中没有此字段，使用默认值
+                        rentFee: '面议', // API中没有此字段，使用默认值
+                        category: item.categroy || '餐饮', // 招商类别
+                        area: item.floor_space || '面积待定', // 房屋面积
+                        region: item.district_name || '全国', // 招商区域
+                        image: item.image ? this.getImageUrl(item.image) : '' // 使用helper处理图片URL
+                    }));
+                    console.log('招商合作数据加载成功:', this.businessCooperationList);
+                }
+            } catch (error) {
+                console.error('加载招商合作失败:', error);
+
+                // 检查是否是登录相关错误
+                if (error && error.isLoginError) {
+                    // 登录相关错误已经由request.js自动处理，这里不需要额外操作
+                    console.log('登录状态失效，已自动跳转到登录页面');
+                    return;
+                }
+
+                // 其他错误显示提示
+                uni.showToast({
+                    title: error.msg || '加载失败',
+                    icon: 'none'
+                });
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        // 加载便民服务数据
+        async loadServiceData() {
+            try {
+                this.isLoading = true;
+                const response = await getConvenientServiceList({
+                    page: 1,
+                    limit: 10
+                });
+
+                if (response.status === 200 && response.data) {
+                    // 映射后端数据到页面需要的字段格式
+                    this.serviceList = (response.data.list || []).map(item => ({
+                        id: item.id,
+                        name: item.title || '便民服务',
+                        image: item.image ? this.getImageUrl(item.image) : '/static/images/index/business-info/service_default.png',
+                        area: item.district_name || '全市', // 使用district_name作为区域
+                        serviceType: item.tags ? item.tags.split('|')[0] : '服务', // 使用tags的第一个作为服务类型
+                        rating: item.star ? item.star.toString() : '5.0' // 使用star字段作为评分
+                    }));
+                    console.log('便民服务数据加载成功:', this.serviceList);
+                }
+            } catch (error) {
+                console.error('加载便民服务失败:', error);
+
+                // 检查是否是登录相关错误
+                if (error && error.isLoginError) {
+                    // 登录相关错误已经由request.js自动处理，这里不需要额外操作
+                    console.log('登录状态失效，已自动跳转到登录页面');
+                    return;
+                }
+
+                // 其他错误显示提示
+                uni.showToast({
+                    title: error.msg || '加载失败',
+                    icon: 'none'
+                });
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        // Helper to handle image URLs
+        getImageUrl(url) {
+            if (!url) return url; // 如果url为null或undefined，直接返回
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return url; // 已经是完整URL，直接返回
+            }
+            if (url.startsWith('/static/')) {
+                return url; // 本地静态资源，直接返回
+            }
+            if (url.startsWith('/')) {
+                return `${HTTP_REQUEST_URL}${url}`; // 以/开头的相对路径，拼接域名
+            }
+            // 其他情况，也拼接域名
+            return `${HTTP_REQUEST_URL}/${url}`;
         }
+    },
+
+    // 页面加载时调用API
+    onLoad() {
+        // 根据当前类型加载对应数据
+        this.loadDataByType();
     }
 }
 </script>
@@ -483,7 +662,7 @@ page {
 .header {
     position: relative;
     width: 750rpx; /* 375px * 2 */
-    height: 160rpx; /* 减少高度，原为202rpx */
+    height: 88rpx; /* 调整为标准头部导航高度 */
     background: #FFFFFF;
     display: flex;
     align-items: center;
@@ -497,7 +676,7 @@ page {
         width: 64rpx; /* 32px * 2 */
         height: 64rpx; /* 32px * 2 */
         left: 10rpx; /* 5px * 2 */
-        top: 48rpx; /* 向上移动，原为92rpx */
+        top: 12rpx; /* 在88rpx高度中居中：(88-64)/2 = 12rpx */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -514,9 +693,9 @@ page {
         /* search-section */
         position: absolute;
         width: 574rpx; /* 287px * 2 */
-        height: 72rpx; /* 36px * 2 */
+        height: 40rpx; /* 等比例缩小，适配新的头部高度 */
         left: 116rpx; /* calc(50% - 287px/2 + 14px) * 2 = 58px * 2 */
-        top: 44rpx; /* 向上移动，原为88rpx */
+        top: 24rpx; /* 在88rpx高度中居中：(88-40)/2 = 24rpx */
         display: flex;
         align-items: center;
     }
@@ -524,18 +703,18 @@ page {
     .search-box {
         /* Rectangle 44 */
         width: 574rpx; /* 287px * 2 */
-        height: 72rpx; /* 36px * 2 */
+        height: 60rpx; /* 等比例缩小，适配新的头部高度 */
         background: #F8F8F8;
-        border-radius: 33rpx; /* 16.5px * 2 */
+        border-radius: 30rpx; /* 等比例缩小圆角 */
         display: flex;
         align-items: center;
-        padding: 0 18rpx; /* 9px * 2 */
+        padding: 0 20rpx; /* 等比例缩小内边距 */
 
         .search-icon {
             /* search-icon */
-            width: 30rpx; /* 15px * 2 */
-            height: 30rpx; /* 15px * 2 */
-            margin-right: 24rpx; /* 12px * 2 */
+            width: 30rpx; /* 调整图标大小 */
+            height: 30rpx; /* 调整图标大小 */
+            margin-right: 16rpx; /* 保持间距 */
         }
 
         .search-text {
@@ -543,8 +722,8 @@ page {
             font-family: 'PingFang SC';
             font-style: normal;
             font-weight: 400;
-            font-size: 30rpx; /* 15px * 2 */
-            line-height: 42rpx; /* 21px * 2 */
+            font-size: 28rpx; /* 调整字体大小与图标匹配 */
+            line-height: 40rpx; /* 调整行高 */
             color: #BABABA;
         }
     }
@@ -939,9 +1118,9 @@ page {
     .cooperation-title {
         font-family: 'PingFang SC';
         font-style: normal;
-        font-weight: 400;
-        font-size: 36rpx; /* 18px * 2 */
-        line-height: 50rpx; /* 25px * 2 */
+        font-weight: 500; /* 保持字重 */
+        font-size: 34rpx; /* 适中的标题大小 */
+        line-height: 48rpx; /* 调整行高 */
         color: #000000;
         margin-bottom: 20rpx; /* 10px * 2 */
     }
@@ -961,8 +1140,8 @@ page {
             font-family: 'PingFang SC';
             font-style: normal;
             font-weight: 400;
-            font-size: 28rpx; /* 14px * 2 */
-            line-height: 40rpx; /* 20px * 2 */
+            font-size: 26rpx; /* 适中的标签大小 */
+            line-height: 36rpx; /* 调整行高 */
             color: #FF7E00;
 
             display: flex;
@@ -982,36 +1161,37 @@ page {
         .info-row {
             display: flex;
             justify-content: space-between;
+            margin-bottom: 12rpx; /* 增加行间距 */
 
             .info-item {
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 32rpx; /* 16px * 2 */
-                line-height: 44rpx; /* 22px * 2 */
-                color: #AAAAAA;
+                font-size: 30rpx; /* 适中的信息文字大小 */
+                line-height: 42rpx; /* 调整行高 */
+                color: #666666; /* 保持颜色，提高可读性 */
                 flex: 1;
 
                 &.contact-fee {
-                    max-width: 288rpx; /* 144px * 2 */
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
                 }
 
                 &.rent-fee {
-                    max-width: 318rpx; /* 159px * 2 */
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
                     text-align: right;
                 }
 
                 &.category {
-                    max-width: 224rpx; /* 112px * 2 */
+                    max-width: 280rpx; /* 增加宽度，让文字一行显示 */
                 }
 
                 &.area {
-                    max-width: 250rpx; /* 125px * 2 */
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
                     text-align: right;
                 }
 
                 &.region {
-                    max-width: 256rpx; /* 128px * 2 */
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
                 }
             }
         }
@@ -1034,9 +1214,9 @@ page {
         .preview-btn-text {
             font-family: 'PingFang SC';
             font-style: normal;
-            font-weight: 400;
-            font-size: 36rpx; /* 18px * 2 */
-            line-height: 50rpx; /* 25px * 2 */
+            font-weight: 500; /* 保持字重 */
+            font-size: 32rpx; /* 适中的按钮文字大小 */
+            line-height: 44rpx; /* 调整行高 */
             color: #FFFFFF;
         }
     }
@@ -1084,7 +1264,7 @@ page {
 .service-list {
     display: flex;
     flex-direction: column;
-    padding: 0 24rpx; /* 12px * 2 */
+    /* 移除padding以与其他区域对齐 */
 }
 
 /* card */

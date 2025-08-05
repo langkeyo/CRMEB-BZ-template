@@ -21,9 +21,9 @@
     
     <!-- 底部操作按钮 - 仅在操作时显示 -->
     <view class="action-buttons-fullwidth" v-if="showActions">
-      <view class="action-btn-fullwidth">拍照</view>
-      <view class="action-btn-fullwidth">从相册里选择</view>
-      <view class="action-btn-fullwidth cancel">取消</view>
+      <view class="action-btn-fullwidth" @click="takePhoto">拍照</view>
+      <view class="action-btn-fullwidth" @click="chooseFromAlbum">从相册里选择</view>
+      <view class="action-btn-fullwidth cancel" @click="hideActions">取消</view>
     </view>
     
     <!-- 更多选项菜单 -->
@@ -48,15 +48,28 @@ export default {
     }
   },
   onLoad() {
-    this.getUserInfo();
+    this.getUserProfile();
   },
   methods: {
-    // 获取用户信息
-    getUserInfo() {
+    // 获取用户完整个人信息
+    getUserProfile() {
+      uni.showLoading({
+        title: '加载中...'
+      });
+      
       getUserInfo().then(res => {
-        this.userInfo = res.data;
-        this.avatarUrl = this.userInfo.avatar || '/static/images/avatar.png';
+        // 根据实际返回结构调整
+        if (res.status === 200 || res.code === 200) {
+          this.userInfo = res.data;
+          this.avatarUrl = this.userInfo.avatar || '/static/images/avatar.png';
+        } else {
+          this.$util.Tips({
+            title: res.msg || '获取用户信息失败'
+          });
+        }
+        uni.hideLoading();
       }).catch(err => {
+        uni.hideLoading();
         this.$util.Tips({
           title: err || '获取用户信息失败'
         });
@@ -65,7 +78,6 @@ export default {
     
     // 显示底部操作按钮
     toggleActions() {
-      console.log('toggleActions called');
       this.showActions = !this.showActions;
     },
     
@@ -76,7 +88,6 @@ export default {
     
     // 显示更多选项菜单
     showActionSheet() {
-      console.log('showActionSheet called');
       this.showActionSheetOptions = true;
     },
     
@@ -119,6 +130,7 @@ export default {
       // #endif
       
       this.hideActions();
+      this.hideActionSheet();
     },
     
     // 从相册选择
@@ -132,6 +144,7 @@ export default {
       });
       
       this.hideActions();
+      this.hideActionSheet();
     },
     
     // 上传头像
@@ -142,32 +155,59 @@ export default {
       
       // 使用项目中已有的上传图片方法
       this.$util.uploadImgs('upload/image', filePath, (res) => {
-        // 更新头像
-        userEdit({
-          avatar: res.data.url
-        }).then(res => {
+        if (res.data && res.data.url) {
+          // 保存用户当前信息的副本
+          const userUpdateData = {
+            avatar: res.data.url,
+            // 确保其他信息不会因为空值导致被覆盖为默认值
+            nickname: this.userInfo.nickname || '',
+            // 如果性别存在则保留现有值，如果不存在则设为0(保密)
+            sex: typeof this.userInfo.sex !== 'undefined' ? this.userInfo.sex : 0,
+            // 如果生日存在则保留现有值
+            birthday: this.userInfo.birthday || 0
+          };
+          
+          // 更新头像 - 使用POST /api/user/profile/update 接口
+          userEdit(userUpdateData).then(res => {
+            uni.hideLoading();
+            if (res.code === 200 || res.status === 200) {
+              // 更新本地头像
+              this.avatarUrl = userUpdateData.avatar;
+              
+              // 静默更新用户信息，不显示提示
+              getUserInfo().then(res => {
+                if (res.code === 200 || res.status === 200) {
+                  this.userInfo = res.data;
+                }
+                // 不显示任何提示
+              }).catch(() => {
+                // 出错也不显示提示
+              });
+              
+              // 通知父页面刷新
+              uni.$emit('updateUserInfo');
+              
+              // 延迟返回
+              setTimeout(() => {
+                this.navigateBack();
+              }, 1000);
+            } else {
+              this.$util.Tips({
+                title: res.msg || '头像更新失败'
+              });
+            }
+          }).catch(err => {
+            uni.hideLoading();
+            this.$util.Tips({
+              title: err || '头像更新失败'
+            });
+          });
+        } else {
           uni.hideLoading();
           this.$util.Tips({
-            title: '头像更新成功',
-            icon: 'success'
+            title: '图片上传失败'
           });
-          
-          // 更新本地头像
-          this.avatarUrl = res.data.url;
-          
-          // 通知父页面刷新
-          uni.$emit('updateUserInfo');
-          
-          // 延迟返回
-          setTimeout(() => {
-            this.navigateBack();
-          }, 1500);
-        }).catch(err => {
-          uni.hideLoading();
-          this.$util.Tips({
-            title: err || '头像更新失败'
-          });
-        });
+        }
       }, (err) => {
         uni.hideLoading();
         this.$util.Tips({

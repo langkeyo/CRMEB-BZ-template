@@ -15,7 +15,7 @@
                 <text class="iconfont icon-sousuo"></text>
                 <input type="text" :placeholder="$t(`搜索评价订单`)" v-model="keyword" @confirm="searchOrder" />
                 <text v-if="keyword" class="clear-icon iconfont icon-guanbi" @click="clearSearch"></text>
-                <view class="search-btn" @click="searchOrder">{{ $t(`搜索`) }}</view>
+                <!-- <view class="search-btn" @click="searchOrder">{{ $t(`搜索`) }}</view> -->
             </view>
         </view>
 
@@ -52,9 +52,15 @@
                             
                             <!-- 评价输入框和按钮 -->
                             <view class="evaluate-input-box">
-                                <view class="input-placeholder" @click="goEvaluateEdit(item)">{{ $t(`展开说说吧`) }}</view>
-                                <view class="like-icon" :class="{'active': item.isLiked}" @click="toggleLike(item)">
-                                    <text class="iconfont icon-dianzan1"></text>
+                                <view class="input-placeholder-bg">
+                                    <view class="input-placeholder" @click="goEvaluateEdit(item)">{{ $t(`展开说说吧`) }}</view>
+                                </view>
+                                <view class="like-btn" :class="{'active': item.isLiked}" @click="toggleLike(item)">
+                                    <image
+                                        class="praise-finger"
+                                        :src="'/static/icons/praise-finger.svg'"
+                                        mode="widthFix"
+                                    />
                                 </view>
                                 <view class="evaluate-btn" @click="goEvaluateEdit(item)">{{ $t(`评价`) }}</view>
                             </view>
@@ -98,8 +104,8 @@
             <!-- 加载更多 -->
             <view class="loading-more" v-if="orderList.length > 0">
                 <text class="loading-text" v-if="loading">{{ $t(`加载中...`) }}</text>
-                <text class="loading-text" v-else-if="loadend">{{ $t(`我也是有底线的`) }}</text>
-                <text class="loading-text" v-else>{{ $t(`加载更多`) }}</text>
+                <text class="loading-text" v-else-if="loadend && page > 2">{{ $t(`我也是有底线的`) }}</text>
+                <text class="loading-text" v-else-if="!loadend">{{ $t(`加载更多`) }}</text>
             </view>
         </view>
 
@@ -116,10 +122,11 @@
 
 <script>
 import emptyPage from '@/components/emptyPage'
-import { getEvaluateList, getRecommendGoods } from '@/api/order.js'
+import { getGroupGoodsList } from '@/api/group.js' // 修改为使用商品列表接口
 import { toLogin } from '@/libs/login.js'
 import { mapGetters } from "vuex"
 import colors from '@/mixins/color.js'
+import { HTTP_REQUEST_URL, TOKENNAME } from '@/config/app.js' // 添加这行，引入HTTP配置
 
 export default {
     components: {
@@ -134,10 +141,11 @@ export default {
             loadend: false, // 是否加载完成
             page: 1, // 当前页码
             limit: 10, // 每页数量
-            orderList: [], // 评价订单列表
+            orderList: [], // 评价订单列表 - 实际项目中应该从后端获取
             recommendGoods: [], // 推荐商品列表
             emptyImage: '/static/images/user/no-orders.png', // 空状态图片，使用本地图片
             showSuccess: false, // 是否显示成功提示
+            likeLoading: false, // 点赞/取消点赞时的加载状态
         }
     },
     computed: mapGetters(['isLogin']),
@@ -226,8 +234,56 @@ export default {
 
         // 切换点赞状态
         toggleLike(item) {
-            item.isLiked = !item.isLiked;
-            // 这里可以添加点赞API调用
+            // 防止重复点击
+            if (this.likeLoading) return;
+            this.likeLoading = true;
+            
+            const isLiked = !item.isLiked;
+            
+            // 使用正确的收藏接口
+            const url = isLiked 
+                ? HTTP_REQUEST_URL + '/api/group/collect/add'
+                : HTTP_REQUEST_URL + '/api/group/collect/del';
+            
+            uni.request({
+                url: url,
+                method: 'POST',
+                header: {
+                    'content-type': 'application/json',
+                    [TOKENNAME]: 'Bearer ' + this.$store.state.app.token
+                },
+                data: {
+                    fav_id: item.order_id,
+                    type: '0' // 0表示商品
+                },
+                success: (res) => {
+                    if (res.data.status === 200) {
+                        // 成功后更新状态
+                        item.isLiked = isLiked;
+                        uni.showToast({
+                            title: isLiked ? this.$t('收藏成功') : this.$t('取消收藏成功'),
+                            icon: 'none',
+                            duration: 1500
+                        });
+                    } else {
+                        uni.showToast({
+                            title: res.data.msg || this.$t('操作失败'),
+                            icon: 'none',
+                            duration: 1500
+                        });
+                    }
+                },
+                fail: () => {
+                    uni.showToast({
+                        title: this.$t('网络错误，请重试'),
+                        icon: 'none',
+                        duration: 1500
+                    });
+                },
+                complete: () => {
+                    this.likeLoading = false;
+                }
+            });
         },
 
         // 跳转到评价编辑页
@@ -257,123 +313,138 @@ export default {
                 })
             }
 
-            // 使用真实API调用，替换模拟数据
+            // 使用订单列表API获取待评价订单
             return new Promise((resolve, reject) => {
-                getEvaluateList({
-                    page: this.page,
-                    limit: this.limit,
-                    keyword: this.keyword
-                }).then(res => {
-                    const list = res.data.list || []
-                    
-                    // 添加点赞状态字段
-                    list.forEach(item => {
-                        item.isLiked = false; // 默认未点赞
-                    });
-                    
-                    this.orderList = this.orderList.concat(list)
-                    this.loadend = list.length < this.limit
-                    this.loading = false
-                    this.initialLoading = false
-                    this.page++
-
-                    uni.hideLoading()
-                    resolve(list)
-                }).catch(err => {
-                    this.loading = false
-                    this.initialLoading = false
-                    uni.hideLoading()
-                    this.$util.Tips({
-                        title: err || this.$t(`加载失败`)
-                    })
-                    reject(err)
+                uni.request({
+                    url: HTTP_REQUEST_URL + '/api/group/order/order_list',
+                    method: 'GET',
+                    header: {
+                        'content-type': 'application/json',
+                        [TOKENNAME]: 'Bearer ' + this.$store.state.app.token
+                    },
+                    data: {
+                        page: this.page,
+                        limit: this.limit,
+                        status: 2, // 已完成状态的订单可以评价
+                        keyword: this.keyword
+                    },
+                    success: (res) => {
+                        if (res.data.status === 200) {
+                            const list = res.data.data.list || []
+                            
+                            // 处理订单数据，添加点赞状态字段
+                            const formattedList = list.map(item => {
+                                return {
+                                    ...item,
+                                    store_name: item.store_name || '社区团购',
+                                    image: item.goods && item.goods.length > 0 ? item.goods[0].image : '/static/images/goods/default.png',
+                                    goods_name: item.goods && item.goods.length > 0 ? item.goods[0].goods_name : '商品名称',
+                                    unique: item.order_number,
+                                    order_id: item.id,
+                                    isLiked: false // 默认未点赞
+                                }
+                            })
+                            
+                            this.orderList = this.page === 1 ? formattedList : this.orderList.concat(formattedList)
+                            this.loadend = formattedList.length < this.limit
+                            this.loading = false
+                            this.initialLoading = false
+                            this.page++
+                            
+                            uni.hideLoading()
+                            resolve(formattedList)
+                        } else {
+                            this.loading = false
+                            this.initialLoading = false
+                            uni.hideLoading()
+                            this.$util.Tips({
+                                title: res.data.msg || this.$t(`加载失败`)
+                            })
+                            reject(res.data.msg)
+                        }
+                    },
+                    fail: (err) => {
+                        this.loading = false
+                        this.initialLoading = false
+                        uni.hideLoading()
+                        this.$util.Tips({
+                            title: this.$t(`网络错误，请稍后重试`)
+                        })
+                        reject(err)
+                    }
                 })
             })
         },
 
-        // 获取推荐商品列表
+        // 获取推荐商品列表 - 使用商品列表接口
         getRecommendList () {
-            // 使用真实API调用，替换模拟数据
             return new Promise((resolve, reject) => {
-                getRecommendGoods().then(res => {
-                    this.recommendGoods = res.data || [];
-                    // 如果API没有返回数据，使用模拟数据
-                    if (!this.recommendGoods.length) {
-                        this.recommendGoods = [
-                            {
-                                id: 1,
-                                store_name: '乐事薯片',
-                                desc: '会员活动大礼包',
-                                price: '15.8',
-                                image: '/static/images/goods/snack6.png'
-                            },
-                            {
-                                id: 2,
-                                store_name: '百草味坚果',
-                                desc: '一盒15包随机口味',
-                                price: '35',
-                                image: '/static/images/goods/snack6.png'
-                            },
-                            {
-                                id: 3,
-                                store_name: '格力高饼干',
-                                desc: '一箱10袋口味随机',
-                                price: '65',
-                                image: '/static/images/goods/snack6.png'
-                            },
-                            {
-                                id: 4,
-                                store_name: '上等雪牛肉A5',
-                                desc: '日本进口和牛肉',
-                                price: '158',
-                                image: '/static/images/goods/snack6.png'
-                            },
-                            {
-                                id: 5,
-                                store_name: '战斧牛排',
-                                desc: '精选散养牛肉',
-                                price: '188',
-                                image: '/static/images/goods/snack6.png'
-                            },
-                            {
-                                id: 6,
-                                store_name: '云南大蓝莓',
-                                desc: '云南新鲜大个蓝莓',
-                                price: '66',
-                                image: '/static/images/goods/snack6.png'
-                            }
-                        ];
-                    }
-                    resolve(this.recommendGoods);
-                }).catch(err => {
-                    // 发生错误时也使用模拟数据
-                    this.recommendGoods = [
-                        {
-                            id: 1,
-                            store_name: '乐事薯片',
-                            desc: '会员活动大礼包',
-                            price: '15.8',
-                            image: '/static/images/goods/snack6.png'
-                        },
-                        {
-                            id: 2,
-                            store_name: '百草味坚果',
-                            desc: '一盒15包随机口味',
-                            price: '35',
-                            image: '/static/images/goods/snack6.png'
-                        },
-                        {
-                            id: 3,
-                            store_name: '格力高饼干',
-                            desc: '一箱10袋口味随机',
-                            price: '65',
-                            image: '/static/images/goods/snack6.png'
+                // 使用商品列表接口，传入is_recommend=1参数获取推荐商品
+                uni.request({
+                    url: HTTP_REQUEST_URL + '/api/group/goods/list',
+                    method: 'GET',
+                    header: {
+                        'content-type': 'application/json',
+                        [TOKENNAME]: 'Bearer ' + this.$store.state.app.token
+                    },
+                    data: {
+                        page: 1,
+                        limit: 6,
+                        is_recommend: 1 // 获取推荐商品
+                    },
+                    success: (res) => {
+                        if (res.data.status === 200 && res.data.data && res.data.data.goodsList) {
+                            // 处理商品数据，根据实际接口返回的数据结构调整
+                            this.recommendGoods = res.data.data.goodsList.map(item => {
+                                return {
+                                    id: item.id,
+                                    store_name: item.title,
+                                    desc: item.store_info || '精选好物',
+                                    price: item.min_price,
+                                    image: HTTP_REQUEST_URL + item.image
+                                };
+                            });
+                        } else {
+                            // 如果API没有返回数据，使用模拟数据
+                            this.setMockRecommendGoods();
                         }
-                    ];
-                    resolve(this.recommendGoods);
-                    reject(err);
+                        resolve(this.recommendGoods);
+                    },
+                    fail: (err) => {
+                        // 发生错误时使用模拟数据
+                        this.setMockRecommendGoods();
+                        console.error('获取推荐商品失败:', err);
+                        resolve(this.recommendGoods);
+                    }
                 });
             });
+        },
+
+        // 设置模拟推荐商品数据
+        setMockRecommendGoods() {
+            this.recommendGoods = [
+                {
+                    id: 1,
+                    store_name: '乐事薯片',
+                    desc: '会员活动大礼包',
+                    price: '15.8',
+                    image: '/static/images/goods/snack6.png'
+                },
+                {
+                    id: 2,
+                    store_name: '百草味坚果',
+                    desc: '一盒15包随机口味',
+                    price: '35',
+                    image: '/static/images/goods/snack6.png'
+                },
+                {
+                    id: 3,
+                    store_name: '格力高饼干',
+                    desc: '一箱10袋口味随机',
+                    price: '65',
+                    image: '/static/images/goods/snack6.png'
+                }
+            ];
         },
 
         // 显示成功提示
@@ -408,6 +479,7 @@ export default {
     align-items: center;
     position: relative;
     background-color: #fff;
+    margin-bottom: 20rpx;
 
     .header-left {
         display: flex;
@@ -486,6 +558,7 @@ export default {
 
 .evaluate-container {
     min-height: calc(100vh - 240rpx);
+    // background-color: #fff;
 }
 
 // 初始加载状态骨架屏
@@ -594,35 +667,49 @@ export default {
 
         .evaluate-input-box {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background-color: #F9F9F9;
             height: 60rpx;
-            border-radius: 8rpx;
-            padding: 0 20rpx;
-            margin-top: auto;
+            // 不要背景色
 
-            .input-placeholder {
-                font-size: 28rpx;
-                color: #999999;
+            .input-placeholder-bg {
+                background: #f9f9f9;
+                border-radius: 8rpx;
+                height: 60rpx;
+                display: flex;
+                align-items: center;
                 flex: 1;
-                font-family: 'PingFang SC';
-                font-weight: 400;
-            }
-            
-            .like-icon {
-                margin-right: 20rpx;
-                
-                .iconfont {
-                    font-size: 32rpx;
-                    color: #F0F0F0;
-                }
-                
-                &.active .iconfont {
-                    color: #FF8C1B;
+                margin-right: 16rpx;
+                .input-placeholder {
+                    font-size: 28rpx;
+                    color: #999999;
+                    padding: 0 20rpx;
+                    width: 100%;
+                    font-family: 'PingFang SC';
+                    font-weight: 400;
+                    line-height: 60rpx;
                 }
             }
-
+            .like-btn {
+                width: 60rpx;
+                height: 60rpx;
+                margin-left: 0;
+                margin-right: 16rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: none;
+                border: none;
+                .praise-finger {
+                    width: 48rpx;
+                    height: 48rpx;
+                    display: block;
+                    transition: all 0.2s;
+                }
+                &.active .praise-finger {
+                    // 使用SVG滤镜改变填充颜色为#FF8C1B
+                    filter: invert(58%) sepia(75%) saturate(1966%) hue-rotate(359deg) brightness(103%) contrast(106%);
+                }
+            }
             .evaluate-btn {
                 width: 120rpx;
                 height: 60rpx;
@@ -634,6 +721,7 @@ export default {
                 font-size: 28rpx;
                 font-family: 'PingFang SC';
                 font-weight: 400;
+                margin-left: 0;
             }
         }
         

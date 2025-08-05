@@ -222,6 +222,11 @@
             "mode" : "history",
             "base" : ""
         },
+        "template" : "index.html",
+        "title" : "CRMEB商城",
+        "meta" : {
+            "viewport" : "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        },
         "domain" : "",
         "sdkConfigs" : {
             "maps" : {

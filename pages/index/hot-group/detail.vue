@@ -4,7 +4,7 @@
         <view class="top-image-box">
             <swiper class="swiper-box" :indicator-dots="productInfo.images && productInfo.images.length > 1" :autoplay="false" circular>
                 <swiper-item v-for="(item, index) in productInfo.images || []" :key="index">
-                    <image class="main-image" :src="item" mode="aspectFill" />
+                    <image class="main-image" :src="setDomain(item)" mode="aspectFill" />
                 </swiper-item>
                 <swiper-item v-if="!productInfo.images || productInfo.images.length === 0">
                     <image class="main-image" src="/static/images/index/hot_group/detail/product_image.png" mode="aspectFill" />
@@ -69,7 +69,7 @@
             <scroll-view class="recommend-scroll" scroll-x>
                 <view class="recommend-items">
                     <view class="recommend-item" v-for="(item, index) in recommendList" :key="index" @click="navigateToDetail(item)">
-                        <image class="item-image" :src="item.image" mode="aspectFill" />
+                        <image class="item-image" :src="setDomain(item.image)" mode="aspectFill" />
                         <view class="item-info">
                             <text class="item-title">{{ item.title }}</text>
                             <view class="item-price">
@@ -98,7 +98,8 @@
 </template>
 
 <script>
-import { getCombinationDetail, getCombinationRecommend } from '@/api/group.js';
+import { getUserCombinationDetail, getUserCombinationList } from '@/api/group.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
     name: 'HotGroupDetail',
@@ -135,10 +136,10 @@ export default {
         loadProductDetail() {
             this.isLoading = true
             
-            getCombinationDetail(this.productId).then(res => {
-                if (res.code === 200) {
+            getUserCombinationDetail(this.productId).then(res => {
+                if ((res.code === 200 || res.status === 200) && res.data) {
                     this.productInfo = res.data || {}
-                    
+
                     // 获取推荐商品
                     this.loadRecommendProducts()
                 } else {
@@ -160,10 +161,15 @@ export default {
         
         // 加载推荐商品
         loadRecommendProducts() {
-            getCombinationRecommend().then(res => {
-                if (res.code === 200) {
-                    // 过滤掉当前商品
-                    this.recommendList = (res.data || []).filter(item => item.id !== this.productId).slice(0, 6)
+            getUserCombinationList({
+                page: 1,
+                limit: 8,
+                is_host: 1 // 获取推荐商品
+            }).then(res => {
+                if ((res.code === 200 || res.status === 200) && res.data) {
+                    const list = res.data.list || res.data || []
+                    // 过滤掉当前商品并限制数量
+                    this.recommendList = list.filter(item => item.id != this.productId).slice(0, 6)
                 }
             }).catch(err => {
                 console.error('获取推荐商品失败:', err)
@@ -220,6 +226,25 @@ export default {
                     url: `/pages/order/submit_group?productId=${this.productId}&people=${this.productInfo.people}`
                 })
             }, 1000)
+        },
+
+        // 处理图片URL
+        setDomain(url) {
+            if (!url) return '';
+            url = url.toString();
+
+            // 如果是相对路径，拼接域名
+            if (url.indexOf('/') === 0) {
+                return HTTP_REQUEST_URL + url;
+            }
+
+            // 如果已经是完整URL，直接返回
+            if (url.indexOf("http") === 0) {
+                return url;
+            }
+
+            // 其他情况拼接域名
+            return HTTP_REQUEST_URL + '/' + url;
         }
     }
 }
@@ -261,10 +286,9 @@ export default {
             .back-btn, .share-btn {
                 width: 32px;
                 height: 32px;
-                background: rgba(0, 0, 0, 0.4);
-                border-radius: 50%;
-                padding: 8px;
+                padding: 0;
                 box-sizing: border-box;
+                filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
             }
         }
     }

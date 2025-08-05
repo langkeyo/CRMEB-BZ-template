@@ -6,14 +6,20 @@
     <!-- 用户信息和导航栏组合 -->
     <view class="user-nav-container">
       <!-- 用户信息 -->
-      <view class="user-info-section">
-        <image class="avatar" :src="userInfo.avatar || '/static/images/user/avatar.png'" />
+      <view class="user-info-section" @click="handleUserInfoClick">
+        <image class="avatar" :src="computedAvatar" />
         <view class="user-details">
-          <text class="user-name">{{ userInfo.nickname || '加载中....' }}</text>
-          <view class="edit-profile" @click="onEditProfile">
-            <text class="edit-profile-text">编辑资料</text>
-            <image class="arrow-right" src="/static/common/icons/navigation/arrow_right.svg" />
+          <view class="login-register" v-if="!isLoggedIn">
+            <text class="login-text">{{ userInfo.nickname }}</text>
+            <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
           </view>
+          <template v-else>
+            <text class="user-name">{{ userInfo.nickname || '加载中....' }}</text>
+            <view class="edit-profile">
+              <text class="edit-profile-text">{{ isLoginText }}</text>
+              <image class="arrow-right" src="/static/common/icons/navigation/arrow_right.svg" />
+            </view>
+          </template>
         </view>
       </view>
 
@@ -69,15 +75,34 @@ export default {
       })
     }
   },
+  computed: {
+    computedAvatar() {
+      // Use default_avatar.png if not logged in
+      if (!this.userInfo.avatar || this.userInfo.nickname === '登录/注册') {
+        return '/static/images/user/default_avatar.png';
+      }
+      return this.userInfo.avatar;
+    },
+    isLoginText() {
+      return this.userInfo.nickname === '登录/注册' ? '点击登录' : '编辑资料';
+    },
+    isLoggedIn() {
+      return this.userInfo.nickname !== '登录/注册';
+    }
+  },
   methods: {
+    handleUserInfoClick() {
+      if (!this.isLoggedIn) {
+        this.$emit('login-click');
+      } else {
+        this.$emit('edit-profile');
+      }
+    },
     onNotificationClick() {
       this.$emit('notification-click');
     },
     onSettingsClick() {
       this.$emit('settings-click');
-    },
-    onEditProfile() {
-      this.$emit('edit-profile');
     },
     onStatClick(type) {
       this.$emit('stat-click', type);
@@ -117,7 +142,7 @@ export default {
 
 .icon-settings {
   width: 40rpx;
-  height: 40rpx;
+  height: 50rpx;
 }
 
 .icon-notification {
@@ -130,11 +155,13 @@ export default {
 .icon-bell {
   width: 36rpx;
   height: 42rpx;
+  filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 }
 
 .icon-gear {
   width: 40rpx;
   height: 40rpx;
+  filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 }
 
 .notification-badge {
@@ -173,6 +200,26 @@ export default {
   margin-left: 20rpx;
   display: flex;
   flex-direction: column;
+}
+
+.login-register {
+  display: flex;
+  align-items: center;
+  margin-top: 10rpx;
+}
+
+.login-text {
+  font-family: 'PingFang SC', sans-serif;
+  font-weight: 400;
+  font-size: 36rpx;
+  line-height: 50rpx;
+  color: #000000;
+}
+
+.arrow-icon {
+  width: 16rpx;
+  height: 28rpx;
+  margin-left: 8rpx;
 }
 
 .user-name {

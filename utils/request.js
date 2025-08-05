@@ -21,6 +21,9 @@ import {
 import store from '../store';
 import i18n from './lang.js';
 
+// 防止重复显示登录提示
+let isShowingLoginModal = false;
+
 /**
  * 发送请求
  */
@@ -62,9 +65,42 @@ function baseRequest(url, method, data, {
 					reslove(res.data, res);
 				else if (res.data.status == 200)
 					reslove(res.data, res);
+				// 特殊处理：如果没有status字段但有data字段，且data是数组，认为是成功响应
+				else if (res.data.status === undefined && res.data.data && Array.isArray(res.data.data))
+					reslove(res.data, res);
 				else if ([110002, 110003, 110004].indexOf(res.data.status) !== -1) {
-					toLogin();
-					reject(res.data);
+					// 登录状态失效，显示友好提示并跳转到登录页面
+					const loginMsg = res.data.status === 110002 ? i18n.t(`登录已过期，即将跳转到登录页面`) : res.data.msg;
+
+					// 防止重复弹窗
+					if (!isShowingLoginModal) {
+						isShowingLoginModal = true;
+						uni.showModal({
+							title: i18n.t(`提示`),
+							content: loginMsg,
+							showCancel: false,
+							confirmText: i18n.t(`确定`),
+							success: () => {
+								// 用户点击确定后跳转
+								isShowingLoginModal = false;
+								toLogin();
+							},
+							fail: () => {
+								// 如果弹窗失败，也要重置状态
+								isShowingLoginModal = false;
+								toLogin();
+							}
+						});
+					}
+
+					// 返回明确的登录提示，避免误导用户
+					// 添加特殊标识，让页面知道这是登录失效错误
+					reject({
+						...res.data,
+						msg: loginMsg,
+						isLoginError: true, // 标识这是登录相关错误
+						needLogin: true     // 标识需要登录
+					});
 				} else if (res.data.status == 100103) {
 					uni.showModal({
 						title: i18n.t(`提示`),
@@ -72,10 +108,18 @@ function baseRequest(url, method, data, {
 						showCancel: false,
 						confirmText: i18n.t(`我知道了`)
 					});
-				} else
-					reject(res.data.msg || i18n.t(`系统错误`));
+				} else {
+					// 对于其他错误状态码，保留完整的错误信息
+					reject({
+						...res.data,
+						status: res.data.status,
+						code: res.data.code || res.data.status,
+						msg: res.data.msg || i18n.t(`系统错误`),
+						message: res.data.msg || i18n.t(`系统错误`)
+					});
+				}
 			},
-			fail: (msg) => {
+			fail: () => {
 				let data = {
 					mag: i18n.t(`请求失败`),
 					status: 1 //1没网

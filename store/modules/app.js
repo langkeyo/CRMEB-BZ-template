@@ -92,6 +92,64 @@ const actions = {
 			}).catch(() => {
 
 			});
+	},
+
+	// 全局刷新用户信息
+	REFRESH_USERINFO({
+		state,
+		commit
+	}) {
+		return new Promise((resolve, reject) => {
+			if (!state.token) {
+				// 未登录状态，清空用户信息
+				commit("UPDATE_USERINFO", {});
+				resolve({});
+				return;
+			}
+
+			getUserInfo().then(res => {
+				commit("UPDATE_USERINFO", res.data);
+				Cache.set(USER_INFO, res.data);
+				// console.log('全局用户信息已刷新:', res.data);
+				resolve(res.data);
+			}).catch(error => {
+				console.error('刷新用户信息失败:', error);
+				// 如果是登录相关错误，清空用户信息
+				if (error && (error.status === 110002 || error.isLoginError)) {
+					commit("UPDATE_USERINFO", {});
+					commit("LOGOUT");
+				}
+				reject(error);
+			});
+		});
+	},
+
+	// 登录后自动获取用户信息
+	LOGIN_AND_GET_INFO({
+		state,
+		commit,
+		dispatch
+	}, loginData) {
+		return new Promise((resolve, reject) => {
+			// 先设置登录状态
+			commit('LOGIN', loginData);
+			commit('SETUID', loginData.uid || 0);
+
+			// 然后获取用户信息
+			dispatch('REFRESH_USERINFO').then(userInfo => {
+				resolve({
+					loginData,
+					userInfo
+				});
+			}).catch(error => {
+				console.error('登录后获取用户信息失败:', error);
+				// 即使获取用户信息失败，登录状态仍然有效
+				resolve({
+					loginData,
+					userInfo: {}
+				});
+			});
+		});
 	}
 };
 

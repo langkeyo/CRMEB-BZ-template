@@ -179,24 +179,31 @@ export function cartSelectStatus(id, selectValue) {
 }
 
 /**
- * 获取购物车信息
+ * 团购购物车接口 - 推荐使用 @/api/groupCart.js 中的新接口
+ */
+
+/**
+ * 获取团购购物车信息
  * @param {Object} data - 请求参数
+ * @deprecated 推荐使用 GroupCartManager.getCart()
  */
 export function getCartInfo() {
 	return request.get('group/cart/get');
 }
 
 /**
- * 添加/更新购物车商品
+ * 添加/更新团购购物车商品
  * @param {Object} data - 请求参数，包含商品ID和数量
+ * @deprecated 推荐使用 GroupCartManager.addToCart() 或 GroupCartManager.updateQuantity()
  */
 export function updateCart(data) {
 	return request.post('group/cart/update', data);
 }
 
 /**
- * 删除购物车商品
+ * 删除团购购物车商品
  * @param {Object} data - 请求参数，包含商品ID
+ * @deprecated 推荐使用 GroupCartManager.removeItem()
  */
 export function removeCartItem(data) {
 	return request.post('group/cart/remove', data);

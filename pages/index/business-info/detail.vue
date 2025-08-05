@@ -109,10 +109,16 @@
 </template>
 
 <script>
+import {
+    getFranchiseInfo,
+    applyFranchise
+} from '@/api/group.js'
+
 export default {
     name: 'BusinessDetailPage',
     data() {
         return {
+            franchiseId: null,
             bannerList: [
                 '/static/images/index/business-info/detail_banner1.jpg',
                 '/static/images/index/business-info/detail_banner1.jpg',
@@ -163,7 +169,32 @@ export default {
             ]
         }
     },
+    onLoad(options) {
+        if (options.id) {
+            this.franchiseId = options.id;
+            this.loadFranchiseInfo();
+        }
+    },
     methods: {
+        // 加载加盟项目详情
+        async loadFranchiseInfo() {
+            if (!this.franchiseId) return;
+
+            try {
+                const response = await getFranchiseInfo(this.franchiseId);
+                if (response.status === 200 && response.data) {
+                    // 更新业务信息
+                    this.businessInfo = {
+                        ...this.businessInfo,
+                        ...response.data
+                    };
+                    console.log('加盟项目详情加载成功:', this.businessInfo);
+                }
+            } catch (error) {
+                console.error('加载加盟项目详情失败:', error);
+            }
+        },
+
         goBack() {
             uni.navigateBack()
         },
@@ -198,11 +229,56 @@ export default {
             })
         },
         applyFranchise() {
-            uni.showToast({
-                title: '申请提交成功，稍后会有专员联系您',
-                icon: 'none',
-                duration: 2000
-            })
+            // 显示申请表单
+            uni.showModal({
+                title: '申请加盟',
+                editable: true,
+                placeholderText: '请输入您的姓名和联系电话',
+                success: async (res) => {
+                    if (res.confirm && res.content) {
+                        const content = res.content.trim();
+                        if (!content) {
+                            uni.showToast({
+                                title: '请输入有效信息',
+                                icon: 'none'
+                            });
+                            return;
+                        }
+
+                        try {
+                            // 简单解析输入内容（实际项目中应该有更完善的表单）
+                            const parts = content.split(/[,，\s]+/);
+                            const name = parts[0] || '用户';
+                            const phone = parts[1] || '';
+
+                            const response = await applyFranchise({
+                                name: name,
+                                phone: phone,
+                                franchise_id: this.franchiseId || this.businessInfo.id
+                            });
+
+                            if (response.status === 200) {
+                                uni.showToast({
+                                    title: '申请提交成功，稍后会有专员联系您',
+                                    icon: 'success',
+                                    duration: 2000
+                                });
+                            } else {
+                                uni.showToast({
+                                    title: response.msg || '申请提交失败',
+                                    icon: 'none'
+                                });
+                            }
+                        } catch (error) {
+                            console.error('申请加盟失败:', error);
+                            uni.showToast({
+                                title: '网络错误，请稍后重试',
+                                icon: 'none'
+                            });
+                        }
+                    }
+                }
+            });
         }
     }
 }

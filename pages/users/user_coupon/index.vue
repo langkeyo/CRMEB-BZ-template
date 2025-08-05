@@ -1,64 +1,46 @@
 <template>
 	<view class="coupon-container" :style="colorStyle">
-		<view class="navbar acea-row row-around">
-			<view class="item acea-row row-center-wrapper" :class="{ on: navOn === 0 }" @click="onNav(0)">{{$t(`未使用`)}}
-			</view>
-			<view class="item acea-row row-center-wrapper" :class="{ on: navOn === 1 }" @click="onNav(1)">
-				{{$t(`已使用`)}}
-			</view>
-			<view class="item acea-row row-center-wrapper" :class="{ on: navOn === 2 }" @click="onNav(2)">
-				{{$t(`已过期`)}}
-			</view>
+		<view class="custom-header">
+			<view class="back-btn" @click="goBack"></view>
+			<view class="header-title">我的优惠券</view>
+		</view>
+		<view class="navbar">
+			<view class="item" :class="{ on: navOn === 0 }" @click="onNav(0)">未使用({{statusCounts.unused_count}})</view>
+			<view class="item" :class="{ on: navOn === 1 }" @click="onNav(1)">已使用({{statusCounts.used_count}})</view>
+			<view class="item" :class="{ on: navOn === 2 }" @click="onNav(2)">已失效({{statusCounts.expired_count}})</view>
 		</view>
 		<view class='coupon-list' v-if="couponsList.length">
-			<view class='item' v-for='(item,index) in couponsList' :key="index"
-				:class="{svip: item.receive_type === 4, expired: item.status == 2}" @click="useCoupon(item)">
-				<image class="coupon-bg" :src="item.status == 2 ? '/static/common/backgrounds/cards/coupon_bg.png' : '/static/common/backgrounds/cards/coupon_bg.png'"></image>
-				<view class="coupon-content">
-					<view class="moneyCon">
-						<view class='money' :class='item.status == 2 ? "moneyGray" : ""'>
-							<view class="price-box" v-if="item.type === 1">{{$t(`￥`)}}<text class='num'>{{item.discount_amount}}</text></view>
-							<view class="price-box" v-else-if="item.type === 2"><text class='num'>{{item.discount_rate * 10}}</text>{{$t(`折`)}}</view>
-							<view class="pic-num" v-if="item.min_amount > 0">
-								{{$t(`满`)}}{{item.min_amount}}{{$t(`元可用`)}}
-							</view>
-							<view class="pic-num" v-else>{{$t(`无门槛券`)}}</view>
-						</view>
+			<view class='item' v-for='(item,index) in couponsList' :key="index">
+				<view class="left-area">
+					<view class="tag">{{item.usage_rules && item.usage_rules[0] ? item.usage_rules[0] : (item.type === 1 ? '满减券' : '折扣券')}}</view>
+					<view class="money-row">
+						<text class="money-symbol">￥</text><text class="money-num">{{item.discount_amount}}</text>
 					</view>
-					<view class='text'>
-						<view class='condition'>
-							<view class="name line2">
-								<view class="line-title" :class="item.status === 2 ? 'bg-color-huic' : 'bg-color-check'"
-									v-if="item.type === 1">{{$t(`满减券`)}}</view>
-								<view class="line-title" :class="item.status === 2 ? 'bg-color-huic' : 'bg-color-check'"
-									v-else>{{$t(`折扣券`)}}</view>
-								<text class="coupon-title">{{$t(item.name)}}</text>
-							</view>
+					<view class="condition">满{{item.min_amount}}可用</view>
+				</view>
+				<view class="right-area">
+					<view class="coupon-title">{{item.name}}</view>
+					<view class="date-btn-row">
+						<view class="coupon-date">有效期至{{item.expire_time}}</view>
+						<view class="use-btn" v-if="navOn === 0 && item.can_use" @click.stop="useCoupon(item)">去使用</view>
+						<view class="use-btn disabled" v-else-if="navOn === 1">已使用</view>
+						<view class="use-btn disabled" v-else-if="navOn === 2">已失效</view>
+					</view>
+					<view class="bottom-row">
+						<view class="desc" @click="toggleInfo(index)">
+							使用说明
+							<text class="arrow" :class="{ up: showInfoIndex === index }"></text>
 						</view>
-						<view class='data'>
-							<view class="date-info">{{item.start_time}} ~ {{item.end_time}}</view>
-							<view class='bnt gray' v-if="item.status == 2">{{$t('已过期')}}</view>
-							<view class='bnt gray' v-else-if="item.status == 1">{{$t('已使用')}}</view>
-							<view class='bnt bg-color' v-else>{{$t('立即使用')}}</view>
-						</view>
-						<view class="coupon-info" v-if="showInfoIndex === index">
-							<image class="info-bg" src="/static/common/backgrounds/cards/coupon_bg.png"></image>
-							<view class="info-content">
-								<view class="info-title">使用说明</view>
-								<view class="info-text">
-									<view v-if="item.type === 1">满{{item.min_amount}}元减{{item.discount_amount}}元</view>
-									<view v-else-if="item.type === 2">满{{item.min_amount}}元打{{item.discount_rate * 10}}折</view>
-									<view>有效期：{{item.start_time}} ~ {{item.end_time}}</view>
-								</view>
-							</view>
-							<view class="info-close" @click.stop="hideInfo">×</view>
-						</view>
-						<view class="show-info-btn" @click.stop="showInfo(index)">使用说明</view>
 					</view>
 				</view>
 			</view>
 		</view>
-		<view class='noCommodity' v-if="!couponsList.length && page > 1">
+		<view v-if="showInfoIndex >= 0 && couponsList[showInfoIndex]" class="usage-rules-card">
+			<view v-for="(rule, i) in (couponsList[showInfoIndex].usage_rules || (couponsList[showInfoIndex].description ? couponsList[showInfoIndex].description.split('\n') : []))" :key="i" class="desc-line">
+				{{ i + 1 }}.{{ rule }}
+			</view>
+		</view>
+		<view class='noCommodity' v-if="!couponsList.length && !loading">
 			<view class='pictrue'>
 				<image :src="imgHost + '/statics/images/noCoupon.png'"></image>
 			</view>
@@ -68,21 +50,21 @@
 		<!-- <authorize @onLoadFun="onLoadFun" :isAuto="isAuto" :isShowAuth="isShowAuth" @authColse="authColse"></authorize> -->
 		<!-- #endif -->
 		<!-- #ifndef MP -->
-		<home></home>
+		<!-- <home></home> -->
 		<!-- #endif -->
 		
 		<!-- 加载更多 -->
-		<view class="loading-more" v-if="loadingStatus === 1">
+		<view class="loading-more" v-if="loadingStatus === 1 && couponsList.length > 0">
 			<text>正在加载更多...</text>
 		</view>
-		<view class="loading-more" v-else-if="loadingStatus === 2">
+		<view class="loading-more" v-else-if="loadingStatus === 2 && couponsList.length >= limit">
 			<text>已经到底了~</text>
 		</view>
 	</view>
 </template>
 
 <script>
-	import { getMyCoupons } from '@/api/group.js';
+	import { getMyCoupons, getOrderAvailableCoupons, receiveCoupon } from '@/api/group.js';
 	import {
 		toLogin
 	} from '@/libs/login.js';
@@ -92,7 +74,7 @@
 	// #ifdef MP
 	import authorize from '@/components/Authorize';
 	// #endif
-	import home from '@/components/home';
+	// import home from '@/components/home';
 	import colors from '@/mixins/color.js';
 	import {
 		HTTP_REQUEST_URL
@@ -102,13 +84,27 @@
 			// #ifdef MP
 			authorize,
 			// #endif
-			home
+			// home
 		},
 		mixins: [colors],
 		data() {
 			return {
 				imgHost: HTTP_REQUEST_URL,
-				couponsList: [],
+				couponsList: [
+					{
+						type: 1, // 满减券
+						discount_amount: 10,
+						discount_rate: 1,
+						min_amount: 50,
+						name: '新人10元优惠券',
+						expire_time: '2025.05.01',
+						can_use: true,
+						status: 0,
+						usage_rules: ['全品类通用', '使用期限2025.04.01-2025.04.30', '仅限于下单支付时使用', '优惠券不可兑换现金'],
+						description: '全品类通用\n使用期限2025.04.01-2025.04.30\n仅限于下单支付时使用\n优惠券不可兑换现金',
+						receive_time: '2024.05.01',
+					}
+				],
 				loading: false,
 				isAuto: false, //没有授权的不会自动授权
 				isShowAuth: false, //是否隐藏授权
@@ -117,7 +113,12 @@
 				limit: 15,
 				finished: false,
 				showInfoIndex: -1, // 显示使用说明的优惠券索引，-1表示不显示
-				loadingStatus: 0 // 0: 不显示, 1: 加载中, 2: 已全部加载
+				loadingStatus: 0, // 0: 不显示, 1: 加载中, 2: 已全部加载
+				statusCounts: { // 各状态优惠券数量
+					unused_count: 0,
+					used_count: 0,
+					expired_count: 0
+				}
 			};
 		},
 		computed: mapGetters(['isLogin']),
@@ -187,20 +188,31 @@
 				uni.showLoading({
 					title: that.$t(`正在加载…`)
 				});
+				
+				// 使用API文档中的接口
 				getMyCoupons({
-					status: this.navOn,
+					status: this.navOn, // 0-未使用，1-已使用，2-已过期
 					page: this.page,
 					limit: this.limit
 				}).then(res => {
 					that.loading = false;
 					uni.hideLoading();
 					
-					if (res.code === 200) {
+					if (res.status === 200) {
 						const list = res.data.list || [];
 						that.couponsList = that.couponsList.concat(list);
 						that.finished = list.length < that.limit;
 						that.loadingStatus = that.finished ? 2 : 0;
 						that.page += 1;
+						
+						// 更新各状态优惠券数量
+						if (res.data.unused_count !== undefined) {
+							that.statusCounts = {
+								unused_count: res.data.unused_count || 0,
+								used_count: res.data.used_count || 0,
+								expired_count: res.data.expired_count || 0
+							};
+						}
 					} else {
 						uni.showToast({
 							title: res.msg || that.$t(`获取优惠券失败`),
@@ -226,6 +238,12 @@
 				if (!this.finished && !this.loading) {
 					this.getMyCouponList();
 				}
+			},
+			goBack() {
+				uni.navigateBack();
+			},
+			toggleInfo(index) {
+				this.showInfoIndex = this.showInfoIndex === index ? -1 : index;
 			}
 		}
 	};
@@ -234,231 +252,251 @@
 <style lang="scss" scoped>
 .coupon-container {
 	min-height: 100vh;
-	background-color: #f5f5f5;
-	padding-bottom: 20rpx;
-	
+	background: #f5f5f5;
+	.custom-header {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100rpx;
+		background: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+		border-bottom: 1rpx solid #ededed;
+		.back-btn {
+			position: absolute;
+			left: 30rpx;
+			width: 26rpx;
+			height: 26rpx;
+			border-left: 4rpx solid #222;
+			border-bottom: 4rpx solid #222;
+			transform: rotate(45deg);
+			top: 58%;
+			margin-top: -20rpx;
+			background: transparent;
+		}
+		.header-title {
+			font-size: 36rpx;
+			color: #222;
+			font-weight: bold;
+			text-align: center;
+		}
+	}
 	.navbar {
+		margin-top: 100rpx;
+		display: flex;
+		align-items: center;
 		height: 90rpx;
-		background-color: #fff;
-		border-bottom: 1rpx solid #f5f5f5;
-		
+		background: #fff;
+		border-bottom: 1rpx solid #ededed;
 		.item {
 			flex: 1;
-			font-size: 28rpx;
-			color: #282828;
+			text-align: center;
+			font-size: 32rpx;
+			color: #bdbdbd;
+			font-weight: 500;
 			position: relative;
-			
+			padding: 0 0 18rpx 0;
 			&.on {
-				color: var(--view-theme);
-				
-				&:before {
+				color: #222;
+				font-weight: bold;
+				&:after {
 					content: '';
 					position: absolute;
-					bottom: 0;
 					left: 50%;
+					bottom: 0;
 					transform: translateX(-50%);
-					width: 30rpx;
+					width: 48rpx;
 					height: 6rpx;
-					background-color: var(--view-theme);
+					background: #222;
 					border-radius: 3rpx;
 				}
 			}
 		}
 	}
-	
 	.coupon-list {
-		padding: 20rpx;
-		
+		padding: 32rpx 0 0 0;
 		.item {
-			position: relative;
-			margin-bottom: 20rpx;
-			height: 200rpx;
-			
-			&.expired {
-				opacity: 0.6;
-			}
-			
-			.coupon-bg {
-				position: absolute;
-				width: 100%;
-				height: 100%;
-				left: 0;
-				top: 0;
-				z-index: 1;
-				border-radius: 10rpx;
-			}
-			
-			.coupon-content {
-				position: relative;
-				z-index: 2;
+			display: flex;
+			background: #fff;
+			border-radius: 16rpx;
+			box-shadow: 0 4rpx 24rpx rgba(0,0,0,0.06);
+			margin: 0 24rpx 24rpx 24rpx;
+			min-height: 240rpx; /* 进一步增加最小高度 */
+			.left-area {
+				width: 180rpx;
 				display: flex;
-				height: 100%;
-				
-				.moneyCon {
-					width: 210rpx;
-					height: 100%;
+				flex-direction: column;
+				align-items: center;
+				justify-content: space-between; /* 改为空间分布 */
+				background: linear-gradient(180deg, #fff6f0 80%, #fff 100%);
+				border-radius: 16rpx 0 0 16rpx;
+				padding: 30rpx 0; /* 增加上下内边距 */
+				box-sizing: border-box;
+				height: 100%; /* 确保高度100% */
+				.tag {
+					width: 100%;
+					background: #fff0ee;
+					color: #ff3a30;
+					font-size: 26rpx; /* 调整字体大小 */
+					font-weight: bold;
+					border-radius: 16rpx 0 0 0;
+					padding: 16rpx 10rpx;
+					text-align: center;
+					box-sizing: border-box;
+					margin-bottom: 0; /* 移除底部边距 */
+					margin-top: 0;
+				}
+				.money-row {
+					display: flex;
+					align-items: flex-end;
+					justify-content: center;
+					width: 100%;
+					margin: 0; /* 移除边距 */
+					.money-symbol {
+						color: #ff3a30;
+						font-size: 40rpx;
+						font-weight: bold;
+						line-height: 1;
+						margin-right: 2rpx;
+					}
+					.money-num {
+						color: #ff3a30;
+						font-size: 60rpx;
+						font-weight: bold;
+						line-height: 1;
+					}
+				}
+				.condition {
+					color: #ff3a30;
+					font-size: 26rpx; /* 调整字体大小 */
+					margin-top: 0; /* 移除顶部边距 */
+					text-align: center;
+					font-weight: 500;
+					width: 100%;
+					padding: 0 10rpx; /* 添加左右内边距 */
+					box-sizing: border-box;
+					white-space: nowrap; /* 防止换行 */
+				}
+			}
+			.right-area {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-start;
+				padding: 30rpx 24rpx;
+				min-width: 0;
+				.coupon-title {
+					font-size: 28rpx;
+					color: #222;
+					font-weight: bold;
+					margin-bottom: 16rpx;
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.date-btn-row {
 					display: flex;
 					align-items: center;
-					justify-content: center;
-					
-					.money {
-						color: var(--view-theme);
-						
-						&.moneyGray {
-							color: #909399;
-						}
-						
-						.price-box {
-							font-size: 28rpx;
-							display: flex;
-							align-items: baseline;
-							justify-content: center;
-							
-							.num {
-								font-size: 44rpx;
-								font-weight: bold;
+					margin-bottom: 16rpx;
+					position: relative;
+					.use-btn {
+					transform: translateX(-15px);
+					}
+				}
+				.coupon-date {
+					font-size: 22rpx;
+					color: #999;
+					margin-bottom: 0;
+				}
+				.use-btn {
+					position: absolute;
+					right: 0;
+					background: #ff3a30;
+					color: #fff;
+					border-radius: 32rpx;
+					font-size: 24rpx;
+					font-weight: 500;
+					padding: 0 24rpx;
+					height: 52rpx;
+					line-height: 52rpx;
+					margin-left: 40rpx; /* 20px右偏移 */
+				}
+				.bottom-row {
+					display: flex;
+					align-items: center;
+					margin-top: auto;
+					.desc {
+						color: #bdbdbd;
+						font-size: 22rpx;
+						display: flex;
+						align-items: center;
+						cursor: pointer;
+						.arrow {
+							margin-left: 6rpx;
+							display: inline-block;
+							width: 16rpx;
+							height: 16rpx;
+							border: solid #bdbdbd;
+							border-width: 0 3rpx 3rpx 0;
+							transform: rotate(45deg);
+							transition: transform 0.2s;
+							&.up {
+								transform: rotate(-135deg);
 							}
-						}
-						
-						.pic-num {
-							font-size: 24rpx;
-							text-align: center;
-							margin-top: 10rpx;
 						}
 					}
 				}
-				
-				.text {
-					flex: 1;
-					padding: 20rpx 20rpx 20rpx 0;
-					position: relative;
-					
-					.condition {
-						.name {
-							font-size: 28rpx;
-							color: #282828;
-							margin-bottom: 10rpx;
-							display: flex;
-							align-items: center;
-							
-							.line-title {
-								padding: 0 10rpx;
-								font-size: 20rpx;
-								color: #fff;
-								border-radius: 4rpx;
-								margin-right: 10rpx;
-								
-								&.bg-color-check {
-									background-color: var(--view-theme);
-								}
-								
-								&.bg-color-huic {
-									background-color: #909399;
-								}
-							}
-							
-							.coupon-title {
-								flex: 1;
-								overflow: hidden;
-								text-overflow: ellipsis;
-								display: -webkit-box;
-								-webkit-line-clamp: 1;
-								-webkit-box-orient: vertical;
-							}
-						}
-					}
-					
-					.data {
-						display: flex;
-						align-items: center;
-						justify-content: space-between;
-						font-size: 24rpx;
-						color: #999;
-						margin-top: 10rpx;
-						
-						.date-info {
-							flex: 1;
-						}
-						
-						.bnt {
-							padding: 4rpx 12rpx;
-							border-radius: 24rpx;
-							font-size: 20rpx;
-							
-							&.bg-color {
-								background-color: var(--view-theme);
-								color: #fff;
-							}
-							
-							&.gray {
-								background-color: #909399;
-								color: #fff;
-							}
-						}
-					}
-					
-					.coupon-info {
-						position: absolute;
-						left: 0;
-						top: 0;
-						right: 0;
-						bottom: 0;
-						background: rgba(255, 255, 255, 0.95);
-						border-radius: 10rpx;
-						z-index: 10;
-						padding: 20rpx;
-						
-						.info-bg {
-							position: absolute;
-							width: 100%;
-							height: 100%;
-							left: 0;
-							top: 0;
-							z-index: 1;
-							border-radius: 10rpx;
-						}
-						
-						.info-content {
-							position: relative;
-							z-index: 2;
-							
-							.info-title {
-								font-size: 28rpx;
-								font-weight: bold;
-								margin-bottom: 10rpx;
-							}
-							
-							.info-text {
-								font-size: 24rpx;
-								color: #666;
-								line-height: 1.5;
-							}
-						}
-						
-						.info-close {
-							position: absolute;
-							right: 20rpx;
-							top: 20rpx;
-							font-size: 40rpx;
-							z-index: 3;
-							color: #999;
-						}
-					}
-					
-					.show-info-btn {
-						position: absolute;
-						right: 20rpx;
-						bottom: 20rpx;
-						font-size: 22rpx;
-						color: var(--view-theme);
-						z-index: 3;
-						text-decoration: underline;
-					}
+				.use-btn {
+					background: #ff3a30;
+					color: #fff;
+					border-radius: 32rpx;
+					font-size: 24rpx;
+					font-weight: 500;
+					padding: 0 24rpx;
+					height: 52rpx;
+					line-height: 52rpx;
+					margin-left: 0;
 				}
 			}
 		}
+		
+		.coupon-desc-detail {
+			background: #fff;
+			border-radius: 0 0 16rpx 16rpx;
+			margin: 0 24rpx 24rpx 24rpx;
+			box-shadow: 0 4rpx 24rpx rgba(0,0,0,0.06);
+			padding: 20rpx 24rpx;
+			font-size: 22rpx;
+			color: #999;
+			line-height: 1.8;
+			.desc-line {
+				margin-bottom: 8rpx;
+			}
+		}
+		
+		.usage-rules-card {
+			background: #fff;
+			border-radius: 16rpx;
+			margin: 0 24rpx 24rpx 24rpx;
+			box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.02);
+			padding: 24rpx;
+			font-size: 22rpx;
+			color: #cccccc;
+			line-height: 1.7;
+			text-align: left;
+			
+			/deep/ .desc-line,
+			::v-deep .desc-line,
+			>>> .desc-line {
+				margin-bottom: 0;
+				text-align: left;
+				word-break: break-all;
+			}
+		}
 	}
-	
 	.noCommodity {
 		padding-top: 100rpx;
 		text-align: center;
@@ -487,5 +525,31 @@
 		font-size: 28rpx;
 		color: #999;
 	}
+
+	/* 移除优惠券使用说明弹窗样式 */
+	
+	/* 添加已禁用按钮样式 */
+	.use-btn.disabled {
+		background: #ccc;
+		cursor: not-allowed;
+	}
+}
+
+/* 使用说明卡片样式 - 重写 */
+::v-deep .usage-rules-card {
+  background-color: #ffffff !important;
+  border-radius: 16rpx !important;
+  margin: 0 24rpx 24rpx 24rpx !important;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.02) !important;
+  padding: 24rpx !important;
+}
+
+::v-deep .usage-rules-card .desc-line {
+  font-size: 22rpx !important;
+  color: #cccccc !important;
+  line-height: 1.7 !important;
+  text-align: left !important;
+  margin-bottom: 0 !important;
+  word-break: break-all !important;
 }
 </style>

@@ -6,7 +6,7 @@
     <!-- 搜索区域 -->
     <view class="search-box">
       <view class="search-input">
-        <text class="search-icon"></text>
+        <text class="search-icon" @click="search"></text>
         <input type="text" v-model="keyword" placeholder="搜索想要商品关键词" confirm-type="search" @confirm="search" />
       </view>
     </view>
@@ -29,22 +29,22 @@
       <!-- 右侧内容区 -->
       <scroll-view class="content-area" scroll-y>
         <!-- 动态组件切换 -->
-        <CategoryContent :categoryType="currentCategory.id" />
+        <CategoryContent :categoryType="currentCategory.id" @switchToHot="switchToHot" />
       </scroll-view>
     </view>
 
     <!-- 底部导航栏 -->
-    <page-footer></page-footer>
+    <customTabbar></customTabbar>
   </view>
 </template>
 
 <script>
-import pageFooter from '@/components/pageFooter/index.vue';
+import customTabbar from '@/components/customTabbar/index.vue';
 import CategoryContent from './components/CategoryContent.vue';
 
 export default {
   components: {
-    pageFooter,
+    customTabbar,
     CategoryContent
   },
   data() {
@@ -73,16 +73,21 @@ export default {
       return this.categories[this.currentCategoryIndex];
     }
   },
-  onLoad() {
+  onLoad(options) {
     // 获取状态栏高度
     this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
+
+    // 处理从其他页面传递的分类参数
+    if (options.categoryType) {
+      this.handleCategoryFromParams(options.categoryType, options.categoryName);
+    }
   },
   methods: {
     // 搜索商品
     search() {
       if (!this.keyword.trim()) return;
       uni.navigateTo({
-        url: `/pages/goods/goods_list/index?keywords=${this.keyword}`
+        url: `/pages/goods/goods_list/index?searchValue=${encodeURIComponent(this.keyword)}`
       });
     },
 
@@ -90,6 +95,39 @@ export default {
     selectCategory(index) {
       this.currentCategoryIndex = index;
       // 现在使用组件切换，不需要跳转页面
+    },
+
+    // 切换到热门分类
+    switchToHot() {
+      this.currentCategoryIndex = 0; // 热门分类是第一个
+    },
+
+    // 处理从其他页面传递的分类参数
+    handleCategoryFromParams(categoryType, categoryName) {
+      console.log('接收到分类参数:', categoryType, categoryName);
+
+      // 根据categoryType找到对应的分类索引
+      const categoryIndex = this.categories.findIndex(cat => cat.id === categoryType);
+
+      if (categoryIndex !== -1) {
+        // 设置当前分类
+        this.currentCategoryIndex = categoryIndex;
+
+        // 显示提示信息
+        if (categoryName) {
+          uni.showToast({
+            title: `已切换到${decodeURIComponent(categoryName)}分类`,
+            icon: 'none',
+            duration: 2000
+          });
+        }
+
+        console.log(`已切换到分类: ${this.categories[categoryIndex].name}`);
+      } else {
+        // 如果没找到对应分类，默认显示热门分类
+        this.currentCategoryIndex = 0;
+        console.log('未找到对应分类，显示热门分类');
+      }
     }
   }
 }
@@ -99,7 +137,7 @@ export default {
 .category-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  max-height: 100vh;
   background-color: #F0F0F0;
 }
 

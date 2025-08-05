@@ -25,13 +25,13 @@
       <view class="card-header">
         <view class="header-left">
           <text class="card-title">我的站点</text>
-          <view class="card-link" @click="onStationClick">
+          <view class="card-link" @click="goToTodayGroupBuying">
             <text class="card-link-text">进入站点</text>
             <image class="arrow-right-small" src="/static/common/icons/navigation/arrow_right.svg" />
           </view>
         </view>
       </view>
-      <view class="card-content">
+      <view class="card-content" @click="goToMapLocation">
         <image class="station-item-image" src="/static/images/user/map_site_icon.png" />
         <view class="station-item-details">
           <text class="station-item-title">{{ stationItem.title }}</text>
@@ -69,6 +69,40 @@ export default {
     },
     onStationClick() {
       this.$emit('station-click');
+    },
+    goToTodayGroupBuying() {
+      uni.navigateTo({
+        url: '/pages/index/today-group-buying/index'
+      });
+    },
+    goToMapLocation() {
+      // 提取站点名称和距离
+      let siteName = this.stationItem.subtitle || '未知站点';
+      let siteAddress = this.stationItem.address || siteName;
+
+      // 清理字符串，移除换行符和其他特殊字符
+      siteName = siteName.replace(/[\r\n\t]/g, '').trim();
+      siteAddress = siteAddress.replace(/[\r\n\t]/g, '').trim();
+
+      const distanceText = this.stationItem.title.match(/\d+/);
+      const distance = distanceText ? distanceText[0] : 100;
+      // 这里可根据实际数据结构补充经纬度参数
+      const latitude = this.stationItem.latitude || 40.032866;
+      const longitude = this.stationItem.longitude || 116.385768;
+
+      uni.navigateTo({
+        url: '/pages/my_site/map_location',
+        success: function() {
+          console.log('跳转成功');
+        },
+        fail: function(err) {
+          console.error('跳转失败', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
     }
   }
 }

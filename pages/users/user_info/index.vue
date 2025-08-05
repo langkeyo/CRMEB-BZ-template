@@ -21,7 +21,7 @@
 			<view class="item" @click="navigateTo('/pages/users/user_nickname/index')">
 				<view>昵称</view>
 				<view class="right-content">
-					<text class="value-text">{{ userInfo.nickname || '加载中...' }}</text>
+					<text class="value-text">{{ userInfo.nickname || '' }}</text>
 					<image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
 				</view>
 			</view>
@@ -39,7 +39,7 @@
 			<view class="item" @click="showBirthdayPicker = true">
 				<view>生日</view>
 				<view class="right-content">
-					<text class="value-text">{{ userInfo.birthday || '未设置' }}</text>
+					<text class="value-text">{{ formatBirthday(userInfo.birthday) }}</text>
 					<image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" />
 				</view>
 			</view>
@@ -97,7 +97,8 @@
 		getLogout,
 		getLangList,
 		getLangJson,
-		mpBindingPhone
+		mpBindingPhone,
+		updateUserProfile
 	} from '@/api/user.js';
 	import {
 		switchH5Login,
@@ -122,7 +123,7 @@
 			appUpdate
 			// #endif
 			// #ifdef MP
-			authorize
+			,authorize
 			// #endif
 		},
 		mixins: [colors],
@@ -387,22 +388,30 @@
 			 */
 			getUserInfo: function() {
 				let that = this;
-				getUserInfo().then(res => {
-					that.$set(that, 'userInfo', res.data);
-					let switchUserInfo = res.data.switchUserInfo || [];
-					for (let i = 0; i < switchUserInfo.length; i++) {
-						if (switchUserInfo[i].uid == that.userInfo.uid) that.userIndex = i;
-						// 切割h5用户；user_type状态：h5、routine（小程序）、wechat（公众号）；注：只有h5未注册手机号时，h5才可和小程序或是公众号数据想通；
-						//#ifdef H5
-						if (
-							!that.$wechat.isWeixin() &&
-							switchUserInfo[i].user_type != "h5" &&
-							switchUserInfo[i].phone === ""
-						)
-							switchUserInfo.splice(i, 1);
-						//#endif
+				return getUserInfo().then(res => {
+					// 确保使用正确的返回结构
+					if (res.status === 200 || res.code === 200) {
+						that.$set(that, 'userInfo', res.data);
+						let switchUserInfo = res.data.switchUserInfo || [];
+						for (let i = 0; i < switchUserInfo.length; i++) {
+							if (switchUserInfo[i].uid == that.userInfo.uid) that.userIndex = i;
+							// 切割h5用户；user_type状态：h5、routine（小程序）、wechat（公众号）；注：只有h5未注册手机号时，h5才可和小程序或是公众号数据想通；
+							//#ifdef H5
+							if (
+								!that.$wechat.isWeixin() &&
+								switchUserInfo[i].user_type != "h5" &&
+								switchUserInfo[i].phone === ""
+							)
+								switchUserInfo.splice(i, 1);
+							//#endif
+						}
+						that.$set(that, "switchUserInfo", switchUserInfo);
+					} else {
+						that.$util.Tips({
+							title: res.msg || '获取用户信息失败'
+						});
 					}
-					that.$set(that, "switchUserInfo", switchUserInfo);
+					return res;
 				});
 			},
 			/**
@@ -442,22 +451,8 @@
 			 * 提交修改
 			 */
 			formSubmit: function(e) {
-				let that = this,
-					formData = e.detail.value;
-
-				userEdit({
-					nickname: formData.nickname
-				}).then(res => {
-					that.getUserInfo();
-					that.$util.Tips({
-						title: res.msg,
-						icon: 'success'
-					});
-				}).catch(err => {
-					that.$util.Tips({
-						title: err
-					});
-				})
+				let formData = e.detail.value;
+				this.updateUserInfo({ nickname: formData.nickname || '' }, '昵称修改成功');
 			},
 			// 页面导航
 			navigateTo(url) {
@@ -469,6 +464,59 @@
 			// 返回上一页
 			navigateBack() {
 				uni.navigateBack();
+			},
+
+			// 格式化生日显示
+			formatBirthday(birthday) {
+				if (!birthday || birthday === 0 || birthday === '0') {
+					return '未设置';
+				}
+				// 如果是时间戳，转换为日期格式
+				if (typeof birthday === 'number' && birthday > 1000000000) {
+					const date = new Date(birthday * 1000);
+					const month = String(date.getMonth() + 1).padStart(2, '0');
+					const day = String(date.getDate()).padStart(2, '0');
+					return `${month}-${day}`;
+				}
+				// 如果已经是字符串格式，直接返回
+				return birthday;
+			},
+
+			// 通用的用户信息更新方法
+			updateUserInfo(updateData, successMsg = '更新成功') {
+				// 显示加载提示
+				uni.showLoading({
+					title: '保存中...',
+					mask: true
+				});
+
+				// 根据实际API字段构建完整数据
+				const completeData = {
+					nickname: this.userInfo.nickname || '',
+					avatar: this.userInfo.avatar || '',
+					sex: this.userInfo.sex || 0,
+					birthday: this.userInfo.birthday || 0,
+					...updateData // 覆盖需要更新的字段
+				};
+
+				return userEdit(completeData).then(res => {
+					// 自动刷新页面获取最新用户数据
+					return this.getUserInfo().then(() => {
+						uni.hideLoading();
+						// 显示成功提示
+						this.$util.Tips({
+							title: successMsg,
+							icon: 'success'
+						});
+						return res;
+					});
+				}).catch(err => {
+					uni.hideLoading();
+					this.$util.Tips({
+						title: err || '更新失败'
+					});
+					throw err;
+				});
 			},
 			
 			// 显示性别选择器
@@ -483,43 +531,64 @@
 			
 			// 选择性别
 			selectGender(gender) {
-				this.userInfo.sex = gender;
 				this.hideGenderPicker();
-				
-				// 保存性别设置
-				userEdit({
-					sex: gender
-				}).then(res => {
-					this.$util.Tips({
-						title: '性别设置成功'
-					});
-				}).catch(err => {
-					this.$util.Tips({
-						title: err
-					});
-				});
+				// 使用正确的接口更新性别
+				this.updateUserProfileInfo({ sex: gender }, '性别设置成功');
 			},
 			hideBirthdayPicker() {
 				this.showBirthdayPicker = false;
 			},
 			daysInMonth(month) {
 				const days = [31,28,31,30,31,30,31,31,30,31,30,31];
-				return days[month-1];
+				return days[month-1] || 30;
 			},
+			
+			// 生日选择器值变化
 			onBirthdayChange(e) {
-				const [m, d] = e.detail.value;
-				this.birthdayMonth = m + 1;
-				this.birthdayDay = d + 1;
+				const values = e.detail.value;
+				this.birthdayMonth = values[0] + 1;
+				this.birthdayDay = values[1] + 1;
 			},
+			
+			// 确认选择生日
 			confirmBirthday() {
-				const birthday = `${this.birthdayMonth < 10 ? '0'+this.birthdayMonth : this.birthdayMonth}-${this.birthdayDay < 10 ? '0'+this.birthdayDay : this.birthdayDay}`;
-				// 保存到后端
-				this.$api.userEdit({ birthday }).then(() => {
-					this.userInfo.birthday = birthday;
-					this.hideBirthdayPicker();
-					this.$util.Tips({ title: '生日设置成功', icon: 'success' });
+				// 构建生日字符串 YYYY-MM-DD 格式
+				const currentYear = new Date().getFullYear();
+				const month = String(this.birthdayMonth).padStart(2, '0');
+				const day = String(this.birthdayDay).padStart(2, '0');
+				const birthdayStr = `${currentYear}-${month}-${day}`;
+				
+				// 更新生日信息，使用正确的接口
+				this.updateUserProfileInfo({ birthday: birthdayStr }, '生日设置成功');
+				this.hideBirthdayPicker();
+			},
+			
+			// 使用API文档中的接口更新用户性别和生日
+			updateUserProfileInfo(updateData, successMsg = '更新成功') {
+				// 显示加载提示
+				uni.showLoading({
+					title: '保存中...',
+					mask: true
+				});
+
+				// 调用正确的API接口
+				return updateUserProfile(updateData).then(res => {
+					// 自动刷新页面获取最新用户数据
+					return this.getUserInfo().then(() => {
+						uni.hideLoading();
+						// 显示成功提示
+						this.$util.Tips({
+							title: successMsg,
+							icon: 'success'
+						});
+						return res;
+					});
 				}).catch(err => {
-					this.$util.Tips({ title: err || '生日设置失败' });
+					uni.hideLoading();
+					this.$util.Tips({
+						title: err || '更新失败'
+					});
+					throw err;
 				});
 			},
 		}

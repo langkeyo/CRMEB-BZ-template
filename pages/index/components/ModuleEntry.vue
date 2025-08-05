@@ -33,7 +33,7 @@
                     </view>
                 </view>
             </view>
-            <view class="module-item" @click="navigateTo('/pages/users/online_chat/index')">
+            <view class="module-item" @click="startOnlineConsultation">
                 <image src="/static/images/index/modules/online_consult.png" class="module-img"></image>
                 <view class="module-overlay"></view>
                 <view class="module-label">
@@ -48,6 +48,8 @@
 </template>
 
 <script>
+import { startOnlineConsultationWithLogin } from '@/utils/loginCheck.js';
+
 export default {
     name: 'ModuleEntry',
     methods: {
@@ -73,6 +75,12 @@ export default {
                 })
                 console.log('导航异常:', e)
             }
+        },
+
+        // 开始在线咨询
+        startOnlineConsultation() {
+            // 使用工具函数检查登录状态并处理在线咨询
+            startOnlineConsultationWithLogin();
         }
     }
 }

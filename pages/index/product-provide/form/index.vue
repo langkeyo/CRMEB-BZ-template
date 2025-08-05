@@ -132,6 +132,8 @@
 import ArrowRight from '@/components/ArrowRight'
 import CommonHeader from '@/components/CommonHeader/index.vue';
 import { supplierApply } from '@/api/group.js';
+import { HTTP_REQUEST_URL, TOKENNAME } from '@/config/app.js';
+import store from '@/store';
 
 export default {
     components: {
@@ -173,27 +175,85 @@ export default {
                 sizeType: ['compressed'],
                 sourceType: ['album', 'camera'],
                 success: (res) => {
-                    // 根据类型设置不同的图片
-                    const tempFilePath = res.tempFilePaths[0]
-                    switch (type) {
-                        case 'business':
-                            this.formData.businessLicense = tempFilePath
-                            break
-                        case 'product':
-                            this.formData.productImage = tempFilePath
-                            break
-                        case 'license':
-                            this.formData.hygieneLicense = tempFilePath
-                            break
-                        case 'idFront':
-                            this.formData.idCardFront = tempFilePath
-                            break
-                        case 'idBack':
-                            this.formData.idCardBack = tempFilePath
-                            break
-                    }
+                    // 上传图片到服务器
+                    this.uploadImage(res.tempFilePaths[0], type);
                 }
             })
+        },
+
+        // 上传图片到服务器
+        uploadImage(filePath, type) {
+            uni.showLoading({
+                title: '上传中...'
+            });
+
+            uni.uploadFile({
+                url: HTTP_REQUEST_URL + '/api/upload/image',
+                filePath: filePath,
+                name: 'file',
+                formData: {
+                    'filename': 'file'
+                },
+                header: {
+                    [TOKENNAME]: 'Bearer ' + store.state.app.token
+                },
+                success: (res) => {
+                    uni.hideLoading();
+
+                    try {
+                        const data = JSON.parse(res.data);
+                        console.log('上传接口返回数据:', data);
+
+                        if (data.status === 200) {
+                            // 获取上传后的图片URL
+                            const imageUrl = data.data.src || data.data.url || data.data;
+
+                            // 根据类型设置不同的图片URL
+                            switch (type) {
+                                case 'business':
+                                    this.formData.businessLicense = imageUrl;
+                                    break;
+                                case 'product':
+                                    this.formData.productImage = imageUrl;
+                                    break;
+                                case 'license':
+                                    this.formData.hygieneLicense = imageUrl;
+                                    break;
+                                case 'idFront':
+                                    this.formData.idCardFront = imageUrl;
+                                    break;
+                                case 'idBack':
+                                    this.formData.idCardBack = imageUrl;
+                                    break;
+                            }
+
+                            uni.showToast({
+                                title: '上传成功',
+                                icon: 'success'
+                            });
+                        } else {
+                            uni.showToast({
+                                title: data.msg || '上传失败',
+                                icon: 'none'
+                            });
+                        }
+                    } catch (error) {
+                        console.error('解析上传结果失败:', error);
+                        uni.showToast({
+                            title: '上传失败',
+                            icon: 'none'
+                        });
+                    }
+                },
+                fail: (error) => {
+                    uni.hideLoading();
+                    console.error('上传失败:', error);
+                    uni.showToast({
+                        title: '上传失败，请重试',
+                        icon: 'none'
+                    });
+                }
+            });
         },
         // 提交表单
         submitForm() {
@@ -262,6 +322,8 @@ export default {
                 intro: this.formData.productDesc
             }
 
+            console.log('提交的数据:', submitData);
+
             supplierApply(submitData).then(res => {
                 uni.hideLoading()
                 uni.showToast({
@@ -295,10 +357,6 @@ export default {
     position: relative;
     display: flex;
     flex-direction: column;
-}
-
-.status-bar {
-    background-color: #FFFFFF;
 }
 
 .header {

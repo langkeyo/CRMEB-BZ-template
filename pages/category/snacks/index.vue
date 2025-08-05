@@ -74,15 +74,15 @@
     </view>
     
     <!-- 底部导航栏 -->
-    <page-footer></page-footer>
+    <customTabbar></customTabbar>
   </view>
 </template>
 
 <script>
-import pageFooter from '@/components/pageFooter/index.vue';
+import customTabbar from '@/components/customTabbar/index.vue';
 export default {
   components: {
-    pageFooter
+    customTabbar
   },
   data() {
     return {

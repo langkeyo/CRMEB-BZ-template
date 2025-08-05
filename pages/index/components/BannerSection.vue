@@ -43,7 +43,7 @@
                     </view>
                 </view>
 
-                <view class="notification">
+                <view class="notification" @tap="goToMessages">
                     <image class="notification-icon" src="/static/images/index/icons/notification_icon_white.svg" mode="aspectFit"></image>
                     <view class="notification-badge">
                         <text class="badge-text">2</text>
@@ -107,6 +107,13 @@ export default {
         goToSearch() {
             uni.navigateTo({
                 url: '/pages/goods/goods_search/index'
+            });
+        },
+
+        // 跳转到消息页面
+        goToMessages() {
+            uni.navigateTo({
+                url: '/pages/users/message_center/index'
             });
         },
 
@@ -253,7 +260,7 @@ export default {
         z-index: 10;
         display: flex;
         flex-direction: column;
-        padding: 72rpx 38rpx 0;
+        padding: 30rpx 38rpx 0;
         box-sizing: border-box;
 
         .location-row {
@@ -261,7 +268,7 @@ export default {
             display: flex;
             justify-content: flex-start;
             align-items: center;
-            margin-bottom: 20rpx;
+            margin-bottom: 10rpx;
         }
 
         .search-row {

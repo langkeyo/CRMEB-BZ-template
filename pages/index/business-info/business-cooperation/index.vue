@@ -1,7 +1,5 @@
 <template>
     <view class="cooperation-detail-page">
-        <!-- 状态栏 -->
-        <view class="status-bar"></view>
         <!-- header-section -->
         <view class="header-section">
             <!-- 背景图片 -->
@@ -109,6 +107,8 @@
 </template>
 
 <script>
+import { getCooperationInfo } from '@/api/group.js'
+
 export default {
     name: 'BusinessCooperationDetailPage',
     data() {
@@ -159,23 +159,46 @@ export default {
         },
 
         // 根据ID获取详情数据
-        getDetailById(id) {
-            // 这里应该是从服务器获取数据
-            // 目前使用模拟数据，后续可以替换为真实接口
-            console.log('获取ID为', id, '的招商合作详情');
+        async getDetailById(id) {
+            try {
+                console.log('获取ID为', id, '的招商合作详情');
 
-            // 根据不同ID显示不同数据
-            if (id === 101) {
-                // 万霖大厦项目，使用默认数据
-            } else if (id === 102) {
-                this.detail.name = '三里屯3.3大厦餐饮项目';
-                this.detail.region = '朝阳区';
-            } else if (id === 103) {
-                this.detail.name = '酒仙桥宏源大厦5楼餐饮项目';
-                this.detail.region = '朝阳区';
-            } else if (id === 104) {
-                this.detail.name = '商业中心A区餐饮项目';
-                this.detail.region = '西城区';
+                const response = await getCooperationInfo(id);
+
+                if (response.status === 200 && response.data) {
+                    const data = response.data;
+
+                    // 映射API数据到页面数据结构
+                    this.detail = {
+                        ...this.detail,
+                        name: data.title || this.detail.name,
+                        contactFee: data.connection_fee || this.detail.contactFee,
+                        category: data.categroy || this.detail.category,
+                        industry: data.industry_cate || this.detail.industry,
+                        contactName: data.contacts || this.detail.contactName,
+                        contactPhone: data.contacts_phone || '',
+                        contactPosition: data.contacts_position || this.detail.contactTag,
+                        region: data.district?.name || data.district_name || this.detail.region,
+                        images: data.images ? data.images.split(',') : this.detail.images,
+                        projectSituation: data.intro || this.detail.projectSituation,
+                        video: data.video || this.detail.video,
+                        vr: data.vr || this.detail.vr
+                    };
+
+                    console.log('招商合作详情加载成功:', this.detail);
+                } else {
+                    console.error('获取招商合作详情失败:', response.msg);
+                    uni.showToast({
+                        title: response.msg || '获取详情失败',
+                        icon: 'none'
+                    });
+                }
+            } catch (error) {
+                console.error('获取招商合作详情异常:', error);
+                uni.showToast({
+                    title: '网络错误，请稍后重试',
+                    icon: 'none'
+                });
             }
         },
 
@@ -264,23 +287,13 @@ export default {
     min-height: 100vh;
     background-color: #F5F5F5;
 
-    .status-bar {
-        height: 44rpx;
-        width: 100%;
-        background-color: transparent;
-        position: absolute;
-        top: 0;
-        z-index: 20;
-    }
-
     /* header-section */
     .header-section {
         width: 750rpx; /* 375px * 2 */
-        height: 544rpx; /* 250px * 2 + 44rpx状态栏高度 */
+        height: 500rpx; /* 去掉状态栏高度 */
         position: relative;
         background: #D9D9D9;
         overflow: hidden;
-        margin-top: -44rpx; /* 向上移动覆盖状态栏区域 */
     }
 
     .header-image-container {

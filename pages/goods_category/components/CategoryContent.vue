@@ -3,7 +3,7 @@
     <!-- 热门分类首页 -->
     <block v-if="categoryType === 'hot'">
       <!-- 为您推荐区域 -->
-      <view class="for-you-recommend">
+      <view class="for-you-recommend" v-if="recommendProducts.length > 0">
         <!-- 标题区域 -->
         <view class="title-section">
           <text class="recommend-title">为您推荐</text>
@@ -23,8 +23,17 @@
         </view>
       </view>
 
+      <!-- 热门分类空状态 -->
+      <view class="empty-state" v-if="recommendProducts.length === 0 && hotFruits.length === 0 && hotVegetables.length === 0">
+        <view class="empty-content">
+          <image src="/static/images/no-orders.png" class="empty-image" mode="aspectFit"></image>
+          <text class="empty-title">暂无推荐商品</text>
+          <text class="empty-desc">系统正在为您准备精选商品，请稍后再来看看</text>
+        </view>
+      </view>
+
       <!-- 热门水果区域 -->
-      <view class="hot-category-section">
+      <view class="hot-category-section" v-if="hotFruits.length > 0">
         <!-- 标题区域 -->
         <view class="title-section">
           <view class="section-header">
@@ -48,7 +57,7 @@
       </view>
 
       <!-- 热门蔬菜区域 -->
-      <view class="hot-category-section">
+      <view class="hot-category-section" v-if="hotVegetables.length > 0">
         <!-- 标题区域 -->
         <view class="title-section">
           <view class="section-header">
@@ -75,7 +84,7 @@
     <!-- 其他分类页面（类似snacks页面的布局） -->
     <block v-else>
       <!-- 百草味坚果卡片（仅零食分类显示） -->
-      <view v-if="categoryType === 'snacks'" class="baicao-nuts-card">
+      <!-- <view v-if="categoryType === 'snacks'" class="baicao-nuts-card">
         <view class="baicao-text-content">
           <text class="baicao-title">百草味坚果</text>
           <text class="baicao-subtitle">一盒15包随机...</text>
@@ -84,10 +93,10 @@
           </view>
         </view>
         <image src="/static/images/category/baicao_nuts.png" class="baicao-image" mode="aspectFit"></image>
-      </view>
+      </view> -->
 
       <!-- 子分类标签栏 -->
-      <view class="series-tabs">
+      <view class="series-tabs" v-if="subCategories.length > 0">
         <view
           v-for="(item, index) in subCategories"
           :key="index"
@@ -100,7 +109,7 @@
       </view>
 
       <!-- 商品列表 -->
-      <view class="product-list">
+      <view class="product-list" v-if="categoryProducts.length > 0">
         <view
           v-for="(item, index) in categoryProducts"
           :key="index"
@@ -116,11 +125,31 @@
           </view>
         </view>
       </view>
+
+      <!-- 空状态展示 -->
+      <view class="empty-state" v-else>
+        <view class="empty-content">
+          <image src="/static/images/no-orders.png" class="empty-image" mode="aspectFit"></image>
+          <text class="empty-title">暂无商品</text>
+          <text class="empty-desc">该分类下暂时没有商品，请选择其他分类查看</text>
+          <view class="empty-action">
+            <view class="back-btn" @tap="goBackToHot">
+              <text class="back-btn-text">返回热门</text>
+            </view>
+          </view>
+        </view>
+      </view>
     </block>
+
+    <!-- 底部安全区域 -->
+    <view class="safe-area-bottom"></view>
   </view>
 </template>
 
 <script>
+import { getGroupGoodsCategory } from '@/api/group.js'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
+
 export default {
   name: 'CategoryContent',
   props: {
@@ -149,18 +178,11 @@ export default {
         { id: 14, name: '白菜', image: '/static/images/category/hot-categories/cabbage.png' },
         { id: 15, name: '黄瓜', image: '/static/images/category/hot-categories/cucumber.png' }
       ],
-      hotFruits: [
-        { id: 10, name: '苹果', image: '/static/images/category/hot-categories/apple.png' },
-        { id: 11, name: '火龙果', image: '/static/images/category/hot-categories/pitaya.png' },
-        { id: 12, name: '山竹', image: '/static/images/category/hot-categories/mangosteen.png' }
-      ],
-      hotVegetables: [
-        { id: 13, name: '西兰花', image: '/static/images/category/hot-categories/broccoli.png' },
-        { id: 14, name: '白菜', image: '/static/images/category/hot-categories/cabbage.png' },
-        { id: 15, name: '黄瓜', image: '/static/images/category/hot-categories/cucumber.png' }
-      ],
+      hotFruits: [], // 改为空数组，从API获取
+      hotVegetables: [], // 改为空数组，从API获取
       subCategories: [],
-      categoryProducts: []
+      categoryProducts: [],
+      allCategoryProducts: [] // 保存所有商品数据，用于筛选
     }
   },
   watch: {
@@ -176,8 +198,175 @@ export default {
     this.updateActiveTabBackground(this.currentSubCategoryIndex);
   },
   methods: {
-    loadCategoryData(categoryType) {
-      // 根据分类类型加载不同的数据
+    // 加载分类数据（对接真实API）
+    async loadCategoryData(categoryType) {
+      try {
+        console.log('开始加载分类数据:', categoryType);
+
+        // 调用分类API获取真实数据
+        const response = await getGroupGoodsCategory();
+        if (response.status === 200 && response.data) {
+          console.log('分类API返回数据:', response.data);
+
+          // 处理API数据
+          await this.processCategoryData(response.data, categoryType);
+        } else {
+          console.log('分类API数据格式异常，使用默认数据');
+          this.loadDefaultCategoryData(categoryType);
+        }
+      } catch (error) {
+        console.error('加载分类数据失败:', error);
+        // API失败时使用默认数据
+        this.loadDefaultCategoryData(categoryType);
+      }
+    },
+
+    // 处理API返回的分类数据
+    async processCategoryData(apiData, categoryType) {
+      console.log('处理分类API数据:', apiData);
+
+      // 处理推荐商品数据（热门分类显示）
+      if (apiData.goods) {
+        const allProducts = [];
+        Object.keys(apiData.goods).forEach(key => {
+          const category = apiData.goods[key];
+          if (category.goods && category.goods.length > 0) {
+            category.goods.forEach(item => {
+              allProducts.push({
+                id: item.id,
+                name: item.title,
+                image: this.setDomain(item.image),
+                price: '15.00', // 使用默认价格
+                categoryName: category.cate_name,
+                categoryId: category.cate_id
+              });
+            });
+          }
+        });
+
+        // 更新推荐商品数据
+        if (allProducts.length > 0) {
+          this.recommendProducts = allProducts.slice(0, 15); // 取前15个作为推荐商品
+
+          // 提取水果类商品
+          this.hotFruits = allProducts.filter(item =>
+            item.categoryName && (item.categoryName.includes('水果') || item.categoryName.includes('果'))
+          ).slice(0, 6);
+
+          // 提取蔬菜类商品
+          this.hotVegetables = allProducts.filter(item =>
+            item.categoryName && (item.categoryName.includes('蔬菜') || item.categoryName.includes('菜'))
+          ).slice(0, 6);
+
+          console.log('推荐商品数据:', {
+            total: this.recommendProducts.length,
+            fruits: this.hotFruits.length,
+            vegetables: this.hotVegetables.length
+          });
+        }
+      }
+
+      // 根据分类类型加载对应的商品数据
+      this.loadCategorySpecificData(apiData, categoryType);
+    },
+
+    // 加载特定分类的商品数据
+    loadCategorySpecificData(apiData, categoryType) {
+      if (!apiData.goods || !apiData.cate) return;
+
+      console.log('加载特定分类数据:', categoryType);
+
+      // 根据分类类型筛选商品
+      const categoryMapping = {
+        'fruit': ['水果', '果'],
+        'vegetable': ['蔬菜', '菜'],
+        'meat': ['肉', '禽畜'],
+        'snacks': ['零食', '休闲'],
+        'seafood': ['海鲜'],
+        'oil': ['粮油'],
+        'grain': ['谷物']
+      };
+
+      const keywords = categoryMapping[categoryType] || [];
+      const categoryProducts = [];
+      const subCategories = [];
+
+      // 1. 从goods中筛选匹配的分类和商品
+      Object.keys(apiData.goods).forEach(key => {
+        const category = apiData.goods[key];
+        const categoryName = category.cate_name;
+
+        // 检查分类名称是否匹配
+        const isMatch = keywords.some(keyword => categoryName.includes(keyword));
+
+        if (isMatch && category.goods && category.goods.length > 0) {
+          // 添加子分类
+          subCategories.push({
+            name: categoryName,
+            id: category.cate_id,
+            count: category.goods.length
+          });
+
+          // 添加商品
+          category.goods.forEach(item => {
+            categoryProducts.push({
+              id: item.id,
+              name: item.title,
+              image: this.setDomain(item.image),
+              price: '15.00', // 使用默认价格
+              rating: '99.5%', // 默认好评率
+              categoryName: categoryName,
+              categoryId: category.cate_id
+            });
+          });
+        }
+      });
+
+      // 2. 如果没有找到匹配的商品，从cate层级结构中查找相关分类
+      if (categoryProducts.length === 0) {
+        const level1Categories = apiData.cate.filter(item => item.level === 1);
+        level1Categories.forEach(level1Cat => {
+          const isMatch = keywords.some(keyword => level1Cat.name.includes(keyword));
+          if (isMatch) {
+            // 找到匹配的一级分类，获取其子分类
+            const level2Categories = apiData.cate.filter(item =>
+              item.level === 2 && item.pid === level1Cat.id
+            );
+
+            level2Categories.forEach(level2Cat => {
+              subCategories.push({
+                name: level2Cat.name,
+                id: level2Cat.id,
+                count: 0 // 层级数据中没有商品数量
+              });
+            });
+          }
+        });
+      }
+
+      // 更新组件数据
+      // 只有当有商品时才显示子分类
+      if (categoryProducts.length > 0) {
+        this.subCategories = subCategories.slice(0, 6); // 最多6个子分类
+        this.allCategoryProducts = categoryProducts; // 保存所有商品数据
+        this.categoryProducts = categoryProducts.slice(0, 20); // 最多20个商品
+      } else {
+        this.subCategories = []; // 没有商品时清空子分类
+        this.allCategoryProducts = [];
+        this.categoryProducts = [];
+      }
+
+      console.log(`${categoryType}分类数据加载完成:`, {
+        subCategories: this.subCategories.length,
+        products: this.categoryProducts.length,
+        subCategoriesData: this.subCategories
+      });
+    },
+
+    // 使用默认数据（API失败时的备用方案）
+    loadDefaultCategoryData(categoryType) {
+      console.log('使用默认分类数据:', categoryType);
+
       switch(categoryType) {
         case 'snacks':
           this.loadSnacksData();
@@ -192,7 +381,7 @@ export default {
           this.loadMeatData();
           break;
         default:
-          // 热门分类或其他，使用默认数据
+          // 热门分类或其他，保持现有数据
           break;
       }
     },
@@ -297,7 +486,41 @@ export default {
       this.currentSubCategoryIndex = index;
       // 更新激活背景位置
       this.updateActiveTabBackground(index);
-      // 这里可以根据子分类加载对应的商品
+
+      // 根据选中的子分类筛选商品
+      this.filterProductsBySubCategory(index);
+    },
+
+    // 根据子分类筛选商品
+    filterProductsBySubCategory(index) {
+      if (index < 0 || index >= this.subCategories.length) {
+        return;
+      }
+
+      const selectedSubCategory = this.subCategories[index];
+      console.log('筛选子分类:', selectedSubCategory);
+
+      if (index === 0) {
+        // 第一个标签显示所有商品
+        this.categoryProducts = this.allCategoryProducts.slice(0, 20);
+      } else {
+        // 根据子分类名称筛选商品
+        const filteredProducts = this.allCategoryProducts.filter(product => {
+          // 精确匹配分类名称
+          if (product.categoryName === selectedSubCategory.name) {
+            return true;
+          }
+
+          // 模糊匹配（去掉"类"字进行匹配）
+          const subCategoryKeyword = selectedSubCategory.name.replace('类', '');
+          return product.categoryName.includes(subCategoryKeyword) ||
+                 product.name.includes(subCategoryKeyword);
+        });
+
+        this.categoryProducts = filteredProducts.slice(0, 20);
+      }
+
+      console.log('筛选后的商品数量:', this.categoryProducts.length);
     },
 
     updateActiveTabBackground(index) {
@@ -316,9 +539,30 @@ export default {
       });
     },
 
+    // 处理图片URL
+    setDomain(url) {
+      if (!url) return '';
+      url = url.toString();
+
+      // 如果是相对路径，拼接域名
+      if (url.indexOf('/') === 0) {
+        return HTTP_REQUEST_URL + url;
+      }
+
+      // 如果已经是完整URL，直接返回
+      if (url.indexOf("http") === 0) {
+        return url;
+      }
+
+      // 其他情况拼接域名
+      return HTTP_REQUEST_URL + '/' + url;
+    },
+
     viewProduct(item) {
+      console.log('查看商品:', item);
+      // 分类页面跳转到普通商品详情页，只显示"想不想买"，不能实际购买
       uni.navigateTo({
-        url: `/pages/goods_details/index?id=${item.id}`
+        url: `/pages/goods_details/index?id=${item.id}&type=category`
       });
     },
 
@@ -326,6 +570,12 @@ export default {
       uni.navigateTo({
         url: `/pages/goods/goods_list/index?cid=${category.id}`
       });
+    },
+
+    // 返回热门分类
+    goBackToHot() {
+      // 通知父组件切换到热门分类
+      this.$emit('switchToHot');
     }
   }
 }
@@ -554,14 +804,13 @@ export default {
 /* 商品列表 */
 .product-list {
   padding: 20rpx 0;
-  background-color: #F8F8F8;
 }
 
 .product-card {
   display: flex;
   padding: 24rpx;
   margin-bottom: 16rpx;
-  background-color: #FFFFFF;
+  background-color: #F8F8F8;
   border-radius: 8rpx;
 }
 
@@ -603,5 +852,77 @@ export default {
   font-size: 28rpx;
   font-weight: 500;
   color: #FF5B35;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400rpx;
+  padding: 60rpx 40rpx;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.empty-image {
+  width: 200rpx;
+  height: 200rpx;
+  margin-bottom: 30rpx;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-family: 'PingFang SC';
+  font-style: normal;
+  font-weight: 500;
+  font-size: 32rpx;
+  color: #666666;
+  margin-bottom: 16rpx;
+}
+
+.empty-desc {
+  font-family: 'PingFang SC';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 26rpx;
+  color: #999999;
+  line-height: 1.5;
+  margin-bottom: 40rpx;
+  max-width: 400rpx;
+}
+
+.empty-action {
+  display: flex;
+  justify-content: center;
+}
+
+.back-btn {
+  background: #FF840B;
+  border-radius: 24rpx;
+  padding: 16rpx 32rpx;
+  min-width: 160rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.back-btn-text {
+  font-family: 'PingFang SC';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 28rpx;
+  color: #FFFFFF;
+}
+
+/* 底部安全区域 */
+.safe-area-bottom {
+  height: 200rpx; /* 100px * 2 - 增加高度避免被tabbar挡住 */
+  width: 100%;
 }
 </style>

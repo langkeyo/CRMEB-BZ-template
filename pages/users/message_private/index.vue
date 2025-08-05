@@ -9,15 +9,6 @@
       <view class="page-title">信息私信</view>
     </view>
 
-    <!-- 推送通知提示栏 -->
-    <view class="notification-bar" v-if="showNotificationBar">
-      <view class="notification-left">
-        <text class="notification-close" @click="closeNotificationBar">×</text>
-        <text class="notification-text">开启推送通知，及时获取互动消息</text>
-      </view>
-      <view class="notification-btn" @click="enableNotification">去开启</view>
-    </view>
-
     <!-- 页面内容区域 -->
     <view class="page-content">
       <!-- 消息列表 -->
@@ -67,7 +58,7 @@
 export default {
   data() {
     return {
-      showNotificationBar: true,
+      showNotificationBar: false, // 默认不显示通知栏
       unreadCount: 3,
       messageList: [
         {

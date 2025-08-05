@@ -144,7 +144,7 @@
 </template>
 
 <script>
-import { orderCancel, orderPay } from '@/api/order.js'
+import { orderCancel, orderPay, groupOrderPay } from '@/api/order.js'
 import colors from '@/mixins/color.js'
 import { navigateToCashier, navigateToPayStatus } from '@/utils/orderNavigation.js'
 
@@ -324,18 +324,45 @@ export default {
     closePaymentModal() {
       this.showPaymentModal = false
     },
+    // 确认支付
     confirmPayment() {
-      uni.setStorageSync('selectedPaymentMethod', this.selectedPayment)
+      // 默认使用微信支付
+      const payType = 1;
+      
       uni.showLoading({ title: '正在支付...' })
-      setTimeout(() => {
-        uni.hideLoading()
-        uni.showToast({ title: '支付成功', icon: 'success' })
-        setTimeout(() => {
-          uni.redirectTo({
-            url: '/pages/goods/order_pay_status/index?status=success'
+      
+      // 使用封装好的接口函数
+      groupOrderPay(this.orderId, payType)
+        .then(res => {
+          uni.hideLoading()
+          if (res.status === 200) {
+            uni.showToast({ 
+              title: '支付成功', 
+              icon: 'success' 
+            })
+            
+            // 跳转到支付成功页面
+            setTimeout(() => {
+              uni.redirectTo({
+                url: `/pages/goods/payment_success/index?order_id=${this.orderId}`
+              })
+            }, 1500)
+          } else {
+            uni.showToast({ 
+              title: res.msg || '支付失败', 
+              icon: 'none' 
+            })
+          }
+        })
+        .catch(err => {
+          uni.hideLoading()
+          uni.showToast({ 
+            title: '支付失败，请重试', 
+            icon: 'none' 
           })
-        }, 1500)
-      }, 2000)
+          console.error('支付请求失败:', err)
+        })
+      
       this.showPaymentModal = false
     },
     toggleMorePayment() {

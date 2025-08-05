@@ -12,33 +12,39 @@
     </view>
 
     <!-- 订单卡片 -->
-    <view class="order-card">
+    <view class="order-card" v-for="(order, index) in orderList" :key="index">
       <view class="order-info">
-        <view class="order-no">订单号: 6546846541821654</view>
-        <view class="order-status">待收货</view>
+        <view class="order-no">订单号: {{ order.order_number }}</view>
+        <view class="order-status">{{ order.status_text }}</view>
       </view>
-      <view class="product-info">
+      <view class="product-info" v-if="order.goods && order.goods.length > 0">
         <view class="product-image">
-          <image :src="order.image" mode="aspectFill"></image>
+          <image :src="formatImage(order.goods[0].image)" mode="aspectFill"></image>
         </view>
         <view class="product-details">
-          <view class="product-name">{{ order.name }}</view>
+          <view class="product-name">{{ order.goods[0].title }}</view>
           <view class="product-spec">
-            <view class="spec-tag">{{ order.spec }}</view>
-            <view class="product-quantity">×{{ order.quantity }}</view>
+            <view class="spec-tag">{{ order.goods[0].spec || '默认规格' }}</view>
+            <view class="product-quantity">×{{ order.goods[0].quantity }}</view>
           </view>
-          <view class="product-price">￥{{ order.price }}</view>
+          <view class="product-price">￥{{ order.goods[0].price }}</view>
         </view>
       </view>
       <view class="divider"></view>
       <view class="logistics-status">
         <image src="/static/images/pending_delivery/road-haul-cargo.svg" mode="aspectFit"></image>
-        <text>司机正在路上~ 预计{{ estimatedTime }}送达</text>
+        <text>司机正在路上~ 预计{{ formatDeliveryTime(order.create_time) }}送达</text>
       </view>
       <view class="button-group">
         <view class="not-found-btn" @click="showNotFoundNotice">未找到商品</view>
-        <view class="confirm-btn" @click="confirmDelivery">确认收货</view>
+        <view class="confirm-btn" @click="confirmDelivery(order)">确认收货</view>
       </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view v-if="orderList.length === 0" class="empty-state">
+      <image class="empty-image" src="/static/images/empty_order.png"></image>
+      <text class="empty-text">暂无待收货订单</text>
     </view>
 
     <!-- 弹窗 -->
@@ -54,7 +60,7 @@
     <view class="guess-like">
       <view class="title">你可能还会喜欢</view>
       <view class="like-list">
-        <view class="like-item" v-for="(item, idx) in likeList" :key="idx">
+        <view class="like-item" v-for="(item, idx) in likeList" :key="idx" @click="goToProductDetail(item)">
           <image :src="item.image" mode="aspectFill"></image>
           <view class="like-card">
             <view class="like-name">{{ item.name }}</view>
@@ -68,6 +74,10 @@
           </view>
         </view>
       </view>
+      <!-- 无推荐商品时显示 -->
+      <view v-if="likeList.length === 0" class="no-recommend">
+        <text>暂无推荐商品</text>
+      </view>
     </view>
 
 
@@ -77,6 +87,8 @@
 <script>
 import colors from '@/mixins/color.js'
 import { navigateToOrderComplete } from '@/utils/orderNavigation.js'
+import { getGroupOrderList, confirmReceipt, getGoodsList } from '@/api/group.js'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
   mixins: [colors],
@@ -85,57 +97,99 @@ export default {
       status: 'onway', // 订单状态：在路上
       showPopup: false,
       popupText: '',
-      order: {
-        id: '123456', // 添加订单ID
-        image: '/static/common/shared/chicken_feet.png',
-        name: '柠檬无骨鸡爪',
-        spec: '一斤装/500g',
-        quantity: 1,
-        price: '25.50',
-      },
-      estimatedTime: '今日11:30',
-      likeList: [
-        {
-          image: '/static/common/shared/coffee.png',
-          name: '瑞幸咖啡5选1',
-          price: '12.5',
-          sales: '99+单'
-        },
-        {
-          image: '/static/common/shared/bbq.png',
-          name: '滩羊烤串21串套餐',
-          price: '49',
-          sales: '754件'
-        },
-        {
-          image: '/static/common/shared/wings.png',
-          name: '精美黄金烤鸡翅',
-          price: '22',
-          sales: '99+份'
-        },
-        {
-          image: '/static/common/shared/octopus.png',
-          name: '超值章鱼丸子1份',
-          price: '7.5',
-          sales: '1122件'
-        }
-      ]
+      orderList: [],
+      page: 1,
+      limit: 10,
+      loading: false,
+      likeList: []
     }
+  },
+  onLoad() {
+    this.getOrderList()
+    this.getRecommendProducts()
   },
   methods: {
     goBack () {
       uni.navigateBack()
     },
-    confirmDelivery () {
-      // 确认收货前先显示商品在路上提示弹窗
-      this.showProductOnWayPopup()
+    formatImage(url) {
+      if (!url) return '/static/images/empty_product.png';
+      if (url.startsWith('http')) return url;
+      return HTTP_REQUEST_URL + url;
     },
-    showProductOnWayPopup () {
-      this.popupText = '商品还在路上请您耐心等候哦~'
-      this.showPopup = true
-      setTimeout(() => {
-        this.showPopup = false
-      }, 2000)
+    formatDeliveryTime(createTime) {
+      if (!createTime) return '今日';
+      
+      const orderDate = new Date(createTime * 1000);
+      const now = new Date();
+      
+      // 如果是今天的订单
+      if (orderDate.toDateString() === now.toDateString()) {
+        // 预计2小时内送达
+        const deliveryTime = new Date(orderDate.getTime() + 2 * 60 * 60 * 1000);
+        const hours = deliveryTime.getHours();
+        const minutes = deliveryTime.getMinutes();
+        return `今日${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+      } else {
+        // 如果不是今天的订单，显示日期
+        return `${orderDate.getMonth() + 1}月${orderDate.getDate()}日`;
+      }
+    },
+    getOrderList() {
+      this.loading = true;
+      getGroupOrderList({
+        page: this.page,
+        limit: this.limit,
+        status: 1 // 1=待收货
+      }).then(res => {
+        this.loading = false;
+        if (res.status === 200 && res.data) {
+          this.orderList = res.data.list || [];
+          console.log('待收货订单列表:', this.orderList);
+        } else {
+          this.orderList = [];
+        }
+      }).catch((err) => {
+        console.error('获取订单列表失败:', err);
+        this.loading = false;
+        this.orderList = [];
+      });
+    },
+    confirmDelivery (order) {
+      // 显示确认弹窗
+      uni.showModal({
+        title: '确认收货',
+        content: '确定已收到商品了吗？',
+        success: (res) => {
+          if (res.confirm) {
+            confirmReceipt({ 
+              order_id: order.id || order.order_id || order.order_number 
+            }).then(resp => {
+              if (resp.status === 200) {
+                this.popupText = '收货成功！'
+                this.showPopup = true
+                setTimeout(() => {
+                  this.showPopup = false
+                  this.getOrderList() // 刷新列表
+                }, 2000)
+              } else {
+                this.popupText = resp.msg || '确认收货失败'
+                this.showPopup = true
+                setTimeout(() => {
+                  this.showPopup = false
+                }, 2000)
+              }
+            }).catch(err => {
+              console.error('确认收货失败:', err)
+              this.popupText = '确认收货失败，请稍后再试'
+              this.showPopup = true
+              setTimeout(() => {
+                this.showPopup = false
+              }, 2000)
+            })
+          }
+        }
+      })
     },
     showNotFoundNotice () {
       this.popupText = '未找到商品？已反馈平台管理员'
@@ -145,10 +199,41 @@ export default {
       }, 2000)
     },
     gotoOrderComplete () {
-      navigateToOrderComplete(this.order.id)
+      uni.navigateTo({
+        url: '/pages/goods/order_list/all_orders'
+      })
     },
     handlePopupConfirm () {
       this.showPopup = false
+    },
+    getRecommendProducts() {
+      getGoodsList({
+        is_recommend: '1',
+        limit: 4
+      }).then(res => {
+        if (res.status === 200 && res.data) {
+          // 处理推荐商品数据
+          this.likeList = (res.data.goodsList || []).map(item => {
+            return {
+              id: item.id,
+              image: this.formatImage(item.image),
+              name: item.title,
+              price: item.min_price,
+              sales: item.fake_sales + '件'
+            };
+          }).slice(0, 4); // 只显示前4个商品
+        }
+      }).catch(err => {
+        console.error('获取推荐商品失败:', err);
+      });
+    },
+    // 跳转到商品详情页
+    goToProductDetail(item) {
+      if (item && item.id) {
+        uni.navigateTo({
+          url: `/pages/goods_details/index?id=${item.id}`
+        });
+      }
     }
   }
 }
@@ -473,6 +558,13 @@ export default {
       }
     }
   }
+  
+  .no-recommend {
+    text-align: center;
+    padding: 40rpx 0;
+    color: #999;
+    font-size: 28rpx;
+  }
 
   // 弹窗
   .popup-text {
@@ -496,6 +588,22 @@ export default {
     box-sizing: border-box;
   }
 
-
+  // 空状态样式
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100rpx 0;
+    .empty-image {
+      width: 200rpx;
+      height: 200rpx;
+      margin-bottom: 20rpx;
+    }
+    .empty-text {
+      font-size: 28rpx;
+      color: #999;
+    }
+  }
 }
 </style>

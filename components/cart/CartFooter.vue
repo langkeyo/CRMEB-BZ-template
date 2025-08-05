@@ -1,73 +1,26 @@
 <template>
-  <view
-    class="footer acea-row row-between-wrapper"
-    :class="isDiySet ? 'on' : ''"
-  >
-    <view class="select-all">
-      <checkbox-group @change="onCheckboxAllChange">
-        <!-- #ifndef MP -->
-        <view class="custom-checkbox-container">
-          <checkbox
-            value="all"
-            :checked="isAllSelect"
-            class="round-checkbox"
-          ></checkbox>
-          <image 
-            v-if="isAllSelect" 
-            class="custom-checkbox-image" 
-            src="/static/common/placeholders/products/vegetable_image.png"
-          />
-          <image 
-            v-else 
-            class="custom-checkbox-image" 
-            src="/static/common/placeholders/products/chicken_image.png"
-          />
-        </view>
-        <!-- #endif -->
-        <!-- #ifdef MP -->
-        <view class="custom-checkbox-container">
-          <checkbox
-            value="all"
-            :checked="isAllSelect"
-            class="round-checkbox"
-          ></checkbox>
-          <image 
-            v-if="isAllSelect" 
-            class="custom-checkbox-image" 
-            src="/static/common/placeholders/products/vegetable_image.png"
-          />
-          <image 
-            v-else 
-            class="custom-checkbox-image" 
-            src="/static/common/placeholders/products/chicken_image.png"
-          />
-        </view>
-        <!-- #endif -->
-        <view class="checkAll"
-          >{{ $t(`全选`) }} ({{ selectedCount }})
-        </view>
-      </checkbox-group>
-    </view>
-    <view class="money acea-row row-middle" v-if="isEditing">
-      <view class="total-price">
-        <view class="label">{{ $t(`合计`) }}：</view>
-        <view class="price">{{ $t(`￥`) }}{{ totalPrice }}</view>
+  <view class="cart-footer" :class="isDiySet ? 'on' : ''">
+    <!-- 全选区域 -->
+    <view class="select-all-section" @click="toggleSelectAll">
+      <view class="checkbox-wrapper">
+        <view class="checkbox-circle" :class="{ 'selected': isAllSelect }"></view>
       </view>
-      <form @submit="onSubmitOrder">
-        <button class="placeOrder bg-color" formType="submit">
-          {{ $t(`结算`) }}
-        </button>
-      </form>
+      <text class="select-all-text">全选</text>
     </view>
-    <view class="button acea-row row-middle" v-else>
-      <form @submit="onSubmitCollect">
-        <button class="bnt cart-color" formType="submit">
-          {{ $t(`收藏`) }}
-        </button>
-      </form>
-      <form @submit="onSubmitDelete">
-        <button class="bnt" formType="submit">{{ $t(`删除`) }}</button>
-      </form>
+    
+    <!-- 合计区域 -->
+    <view class="total-section" v-if="isEditing">
+      <text class="total-text">合计（不含运费）￥{{ totalPrice }}</text>
+    </view>
+    
+    <!-- 结算按钮 -->
+    <view class="checkout-section" v-if="isEditing">
+      <button class="checkout-btn" @click="onSubmitOrder">结算</button>
+    </view>
+    
+    <!-- 编辑模式按钮 -->
+    <view class="edit-buttons" v-else>
+      <button class="edit-btn delete-btn" @click="onSubmitDelete">删除</button>
     </view>
   </view>
 </template>
@@ -97,20 +50,18 @@ export default {
       default: false
     }
   },
-  data() {
-    return {
-      // 额外状态数据
-    }
-  },
   methods: {
-    onCheckboxAllChange(e) {
-      this.$emit('checkbox-all-change', e);
+    toggleSelectAll() {
+      // 模拟checkbox-group的change事件格式
+      const event = {
+        detail: {
+          value: this.isAllSelect ? [] : ['all']
+        }
+      };
+      this.$emit('checkbox-all-change', event);
     },
     onSubmitOrder() {
       this.$emit('submit-order');
-    },
-    onSubmitCollect() {
-      this.$emit('submit-collect');
     },
     onSubmitDelete() {
       this.$emit('submit-delete');
@@ -120,116 +71,120 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.footer {
+/* 结算区域 - 根据设计稿 */
+.cart-footer {
   position: fixed;
-  bottom: 0;
+  bottom: 100rpx; /* 在tabbar上方，tabbar高度约100rpx */
   left: 0;
   right: 0;
-  z-index: 99;
-  height: 100rpx;
-  background-color: #fff;
-  padding: 0 30rpx;
-  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  width: 100%;
+  height: 152rpx; /* 76px = 152rpx */
+  background: #FFFFFF;
+  border-top: 1rpx solid #CCCCCC; /* 0.5px = 1rpx */
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 24rpx; /* 12px = 24rpx */
+  z-index: 99;
   
   &.on {
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
   }
+}
+
+/* 全选区域 */
+.select-all-section {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-wrapper {
+  margin-right: 16rpx; /* 8px = 16rpx */
+}
+
+.checkbox-circle {
+  width: 42rpx; /* 21px = 42rpx */
+  height: 42rpx;
+  border: 2rpx solid #B3B3B3; /* 1px = 2rpx */
+  border-radius: 50%;
+  background: #FFFFFF;
+  position: relative;
   
-  .select-all {
-    display: flex;
-    align-items: center;
-    
-    .custom-checkbox-container {
-      position: relative;
-      margin-right: 12rpx;
-      width: 40rpx;
-      height: 40rpx;
-      
-      .round-checkbox {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        z-index: 2;
-      }
-      
-      .custom-checkbox-image {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 40rpx;
-        height: 40rpx;
-        z-index: 1;
-      }
-    }
-    
-    .checkAll {
-      font-size: 28rpx;
-      color: #333333;
-    }
+  &.selected {
+    background: #FE8B1B;
+    border-color: #FE8B1B;
   }
-  
-  .money {
+}
+
+.select-all-text {
+  font-family: 'PingFang SC';
+  font-size: 28rpx; /* 14px = 28rpx */
+  line-height: 40rpx; /* 20px = 40rpx */
+  color: #000000;
+}
+
+/* 合计区域 */
+.total-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.total-text {
+  font-family: 'PingFang SC';
+  font-size: 24rpx; /* 12px = 24rpx */
+  line-height: 34rpx; /* 17px = 34rpx */
+  color: #333333;
+  text-align: center;
+}
+
+/* 结算按钮 */
+.checkout-section {
+  display: flex;
+  align-items: center;
+}
+
+.checkout-btn {
+  width: 198rpx; /* 99px = 198rpx */
+  height: 88rpx; /* 44px = 88rpx */
+  background: linear-gradient(90deg, #FF7E00 0%, #FDA44D 100%);
+  border-radius: 44rpx; /* 22px = 44rpx */
+  border: none;
+
+  font-family: 'PingFang SC';
+  font-size: 36rpx; /* 18px = 36rpx */
+  line-height: 50rpx; /* 25px = 50rpx */
+  color: #FFFFFF;
+  text-align: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 编辑模式按钮 */
+.edit-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-btn {
+  width: 198rpx; /* 与结算按钮同宽 */
+  height: 88rpx; /* 与结算按钮同高 */
+  border-radius: 44rpx; /* 与结算按钮同圆角 */
+  font-size: 36rpx; /* 与结算按钮同字号 */
+  border: none;
+
+  &.delete-btn {
+    background: #FF4444;
+    color: #FFFFFF;
     display: flex;
     align-items: center;
-    
-    .total-price {
-      display: flex;
-      align-items: center;
-      margin-right: 20rpx;
-      
-      .label {
-        font-size: 26rpx;
-        color: #282828;
-      }
-      
-      .price {
-        font-size: 30rpx;
-        color: #FF840B;
-        font-weight: bold;
-      }
-    }
-    
-    .placeOrder {
-      width: 180rpx;
-      height: 70rpx;
-      background: linear-gradient(90deg, #FF7E00 0%, #FDA44D 100%);
-      color: #fff;
-      font-size: 28rpx;
-      border-radius: 35rpx;
-      text-align: center;
-      line-height: 70rpx;
-      box-shadow: 0 4rpx 8rpx rgba(255, 132, 11, 0.2);
-    }
-  }
-  
-  .button {
-    display: flex;
-    align-items: center;
-    
-    .bnt {
-      width: 160rpx;
-      height: 60rpx;
-      border-radius: 30rpx;
-      text-align: center;
-      line-height: 60rpx;
-      font-size: 26rpx;
-      margin-left: 20rpx;
-      
-      &.cart-color {
-        background-color: #ff3b0d;
-        color: #fff;
-      }
-      
-      &:not(.cart-color) {
-        background-color: #f5f5f5;
-        color: #999;
-      }
-    }
+    justify-content: center;
   }
 }
 </style>

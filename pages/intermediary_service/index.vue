@@ -136,8 +136,9 @@ export default {
 
 .service-item {
   position: relative;
-  width: 100%;
   height: 200px;
+  margin: 15px;
+  border-radius: 2px;
   
   .service-image {
     width: 100%;

@@ -63,7 +63,7 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 40rpx 6rpx;
+    padding: 20rpx 0rpx;
     margin: 0;
     margin-top: 0;  /* 确保没有上边距 */
     background-color: #FFFFFF;

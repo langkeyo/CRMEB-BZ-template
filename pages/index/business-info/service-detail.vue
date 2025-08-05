@@ -183,6 +183,9 @@
 </template>
 
 <script>
+import { startOnlineConsultationWithLogin } from '@/utils/loginCheck.js';
+import { getConvenientServiceInfo } from '@/api/group.js'
+
 export default {
   data() {
     return {
@@ -226,8 +229,8 @@ export default {
   onLoad(options) {
     if (options.id) {
       this.serviceId = options.id;
-      // 这里应该根据ID从后端获取服务详情
-      // this.getServiceDetail(this.serviceId);
+      // 根据ID从后端获取服务详情
+      this.getServiceDetail(this.serviceId);
     }
 
     // 设置状态栏为透明
@@ -254,15 +257,46 @@ export default {
         icon: 'none'
       });
     },
-    getServiceDetail(id) {
-      // 模拟从后端获取数据
-      // uni.request({
-      //   url: 'api/service/detail',
-      //   data: { id },
-      //   success: (res) => {
-      //     this.serviceInfo = res.data;
-      //   }
-      // });
+    async getServiceDetail(id) {
+      try {
+        console.log('获取ID为', id, '的便民服务详情');
+
+        const response = await getConvenientServiceInfo(id);
+
+        if (response.status === 200 && response.data) {
+          const data = response.data;
+
+          // 映射API数据到页面数据结构
+          this.serviceInfo = {
+            ...this.serviceInfo,
+            id: data.id,
+            name: data.title || this.serviceInfo.name,
+            image: data.image || this.serviceInfo.image,
+            images: data.images ? data.images.split(',') : this.serviceInfo.images,
+            rating: data.star ? data.star.toString() : this.serviceInfo.rating,
+            serviceTime: data.service_time || this.serviceInfo.serviceTime,
+            tags: data.tags ? data.tags.split('|') : this.serviceInfo.tags,
+            description: data.intro || this.serviceInfo.description,
+            inquiriesCount: data.inquiries_count || this.serviceInfo.inquiriesCount,
+            area: data.district?.name || data.district_name || this.serviceInfo.area,
+            video: data.video || this.serviceInfo.video
+          };
+
+          console.log('便民服务详情加载成功:', this.serviceInfo);
+        } else {
+          console.error('获取便民服务详情失败:', response.msg);
+          uni.showToast({
+            title: response.msg || '获取详情失败',
+            icon: 'none'
+          });
+        }
+      } catch (error) {
+        console.error('获取便民服务详情异常:', error);
+        uni.showToast({
+          title: '网络错误，请稍后重试',
+          icon: 'none'
+        });
+      }
     },
 
     shareService() {
@@ -303,9 +337,8 @@ export default {
       });
     },
     startConsultation() {
-      uni.navigateTo({
-        url: '/pages/users/online_chat/index'
-      });
+      // 使用工具函数检查登录状态并处理在线咨询
+      startOnlineConsultationWithLogin();
     }
   }
 }

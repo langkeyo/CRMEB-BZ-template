@@ -22,7 +22,8 @@
         <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>
       </view>
       <view class="divider"></view>
-      <!-- 我的站点 -->
+      <view class="divider"></view>
+      <!-- 收货地址 -->
       <view class="settings-item" @click="navigateTo('/pages/my_site/index')">
         <view class="item-text">我的站点</view>
         <image class="arrow-icon" src="/static/common/icons/navigation/arrow_right.svg" mode="aspectFit"></image>

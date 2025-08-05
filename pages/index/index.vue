@@ -4,9 +4,15 @@
 		<FunctionEntry />
 		<ModuleEntry />
 		<HotGroup />
-		<RecommendSection />
-		<Topping />	
-		<pageFooter @newDataStatus="newDataStatus"></pageFooter>
+		<RecommendSection ref="recommendSection" />
+		<Topping />
+		<customTabbar></customTabbar>
+
+		<!-- 社区选择弹窗 -->
+		<CommunitySelector
+			:visible="showCommunitySelector"
+			@close="showCommunitySelector = false"
+			@bind-success="onCommunityBindSuccess" />
 	</view>
 </template>
 
@@ -17,7 +23,11 @@ import ModuleEntry from './components/ModuleEntry.vue'
 import HotGroup from './components/HotGroup.vue'
 import RecommendSection from './components/RecommendSection.vue'
 import Topping from './components/Topping.vue'
-import pageFooter from '@/components/pageFooter/index.vue'
+import customTabbar from '@/components/customTabbar/index.vue'
+import CommunitySelector from '@/components/CommunitySelector/index.vue'
+import {
+	getMyCommunityInfo
+} from '@/api/group.js'
 
 export default {
 	name: 'IndexStatic',
@@ -28,9 +38,63 @@ export default {
 		HotGroup,
 		RecommendSection,
 		Topping,
-		pageFooter,
+		customTabbar,
+		CommunitySelector,
+	},
+	data() {
+		return {
+			showCommunitySelector: false,
+			communityInfo: null
+		}
+	},
+	onLoad() {
+		this.checkCommunityBinding();
 	},
 	methods: {
+		// 检查社区绑定状态
+		async checkCommunityBinding() {
+			try {
+				const response = await getMyCommunityInfo();
+				
+				if (response.status === 200) {
+					// 检查是否已绑定社区
+					if (response.data && response.data.is_bind === true && response.data.community) {
+						this.communityInfo = response.data.community;
+					} else {
+						// 用户未绑定社区，显示选择弹窗
+						this.showCommunityBindingTip();
+					}
+				} else {
+					this.showCommunityBindingTip();
+				}
+			} catch (error) {
+				this.showCommunityBindingTip();
+			}
+		},
+
+		// 显示社区绑定提示
+		showCommunityBindingTip() {
+			uni.showModal({
+				title: '提示',
+				content: '您还未绑定社区，需要先绑定社区才能查看团购商品。是否选择社区？',
+				confirmText: '选择社区',
+				cancelText: '稍后',
+				success: (res) => {
+					if (res.confirm) {
+						this.showCommunitySelector = true;
+					}
+				}
+			});
+		},
+
+		// 社区绑定成功回调
+		onCommunityBindSuccess(community) {
+			this.communityInfo = community;
+
+			// 可以在这里刷新页面数据，重新加载推荐商品等
+			this.$refs.recommendSection?.initRecommendGoods?.();
+		},
+
 		newDataStatus(val, pdHeight) {
 			// 处理底部导航状态变化
 		}

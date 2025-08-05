@@ -1,277 +1,311 @@
 <template>
-  <view class="apply-page">
-    <!-- 顶部导航栏 -->
+  <view class="base-info-page">
     <view class="header">
-      <view class="back-icon" @click="goBack">
-        <text class="iconfont icon-left"></text>
-      </view>
-      <view class="title">申请居间服务</view>
-      <view class="placeholder"></view>
+      <text class="cancel-btn" @click="goBack">取消</text>
+      <text class="title">基本信息</text>
+      <text class="placeholder"></text>
     </view>
-    
-    <!-- 表单区域 -->
-    <view class="form-container">
-      <view class="form-item">
-        <view class="form-label">姓名</view>
-        <input type="text" v-model="formData.name" placeholder="请输入您的姓名" class="form-input" />
+    <view class="info-list">
+      <view class="info-item">
+        <text class="label">姓名：</text>
+        <input
+          class="input"
+          v-model="form.name"
+          type="text"
+          placeholder="请输入姓名"
+          maxlength="20"
+        />
+        <text class="clear-btn" v-if="form.name" @click="form.name = ''">×</text>
       </view>
-      
-      <view class="form-item">
-        <view class="form-label">手机号码</view>
-        <input type="number" v-model="formData.phone" placeholder="请输入您的手机号码" class="form-input" maxlength="11" />
+      <view class="info-item">
+        <text class="label">手机号码：</text>
+        <input
+          class="input"
+          v-model="form.phone"
+          type="tel"
+          placeholder="请输入手机号"
+          maxlength="11"
+        />
+        <text class="clear-btn" v-if="form.phone" @click="form.phone = ''">×</text>
       </view>
-      
-      <view class="form-item">
-        <view class="form-label">融资金额</view>
-        <view class="amount-input">
-          <input type="digit" v-model="formData.sum" placeholder="请输入融资金额" class="form-input" />
-          <text class="unit">万元</text>
-        </view>
+      <view class="info-item">
+        <text class="label">申请金额：</text>
+        <input
+          class="input"
+          v-model="form.sum"
+          type="number"
+          placeholder="请输入申请金额"
+        />
+        <text class="clear-btn" v-if="form.sum" @click="form.sum = ''">×</text>
       </view>
-      
-      <view class="form-item">
-        <view class="form-label">备注</view>
-        <textarea v-model="formData.notes" placeholder="请输入备注信息" class="form-textarea"></textarea>
+      <view class="info-item textarea-container">
+        <text class="label">备注说明：</text>
+        <textarea
+          class="textarea"
+          v-model="form.notes"
+          placeholder="请输入备注说明"
+          maxlength="200"
+        />
+        <text class="clear-btn" v-if="form.notes" @click="form.notes = ''">×</text>
       </view>
     </view>
-    
-    <!-- 服务说明 -->
-    <view class="service-desc">
-      <view class="desc-title">服务说明</view>
-      <view class="desc-content">
-        <view class="desc-item">1. 居间服务由合作第三方金融机构提供，申请表单提交后会有专业顾问与您联系；</view>
-        <view class="desc-item">2. 个人信息仅用于为您提供专业的融资咨询和服务，不会用于其他用途；</view>
-        <view class="desc-item">3. 提交申请表示您同意我们的《用户服务协议》和《隐私政策》。</view>
-      </view>
+    <view class="footer">
+      <button class="submit-btn" @click="submit">提交</button>
     </view>
-    
-    <!-- 底部按钮 -->
-    <view class="bottom-button" @click="submitForm">提交申请</view>
   </view>
 </template>
 
 <script>
-import { applyIntermediary } from '@/api/group.js';
+import request from '@/utils/request';
 
 export default {
   data() {
     return {
-      formData: {
+      form: {
         name: '',
         phone: '',
         sum: '',
         notes: ''
       }
-    };
+    }
   },
   methods: {
     goBack() {
       uni.navigateBack();
     },
-    submitForm() {
-      // 表单验证
-      if (!this.formData.name) {
-        uni.showToast({
-          title: '请输入姓名',
-          icon: 'none'
-        });
+    submit() {
+      if (!this.form.name) {
+        uni.showToast({ title: '请输入姓名', icon: 'none' });
         return;
       }
-      
-      if (!this.formData.phone) {
-        uni.showToast({
-          title: '请输入手机号码',
-          icon: 'none'
-        });
+      if (!/^1\d{10}$/.test(this.form.phone)) {
+        uni.showToast({ title: '请输入正确手机号', icon: 'none' });
         return;
       }
-      
-      if (!/^1\d{10}$/.test(this.formData.phone)) {
-        uni.showToast({
-          title: '手机号码格式不正确',
-          icon: 'none'
-        });
+      if (!this.form.sum) {
+        uni.showToast({ title: '请输入申请金额', icon: 'none' });
         return;
       }
-      
-      if (!this.formData.sum) {
-        uni.showToast({
-          title: '请输入融资金额',
-          icon: 'none'
-        });
+      if (!/^\d+(\.\d{1,2})?$/.test(this.form.sum)) {
+        uni.showToast({ title: '请输入正确的金额格式', icon: 'none' });
         return;
       }
-      
-      // 提交表单
-      uni.showLoading({
-        title: '提交中...'
-      });
-      
-      applyIntermediary(this.formData).then(res => {
+
+      // 显示加载中
+      uni.showLoading({ title: '提交中...' });
+
+      // 调用居间服务申请API，使用API文档中的参数
+      request.post('group/intermediary/apply', {
+        name: this.form.name,
+        phone: this.form.phone,
+        sum: this.form.sum,
+        notes: this.form.notes || ''
+      })
+      .then(res => {
         uni.hideLoading();
-        
-        if (res.status === 0) {
-          uni.showToast({
-            title: res.msg || '提交成功',
-            icon: 'success',
-            duration: 2000,
-            success: () => {
-              // 延迟跳转回首页
-              setTimeout(() => {
-                uni.switchTab({
-                  url: '/pages/index/index'
-                });
-              }, 1500);
-            }
+        if (res.status === 200) {
+          // 跳转到带进度条的提交成功页面
+          uni.navigateTo({
+            url: '/pages/intermediary_service/submitSuccess?status=1'
           });
+        } else if (res.status === 400 && res.msg === "居间服务已申请,请勿重复申请") {
+          // 重复申请，检查状态并跳转到对应页面
+          this.checkExistingStatus();
         } else {
-          uni.showToast({
-            title: res.msg || '提交失败',
+          uni.showToast({ 
+            title: res.msg || '提交失败', 
             icon: 'none'
           });
         }
-      }).catch(err => {
+      })
+      .catch(err => {
         uni.hideLoading();
-        uni.showToast({
-          title: err || '提交失败',
-          icon: 'none'
+        // 检查是否是重复申请的错误
+        if (err && err.status === 400 && err.msg === "居间服务已申请,请勿重复申请") {
+          // 重复申请，检查状态并跳转到对应页面
+          this.checkExistingStatus();
+        } else {
+          uni.showToast({ 
+            title: err.msg || '提交失败，请稍后再试', 
+            icon: 'none'
+          });
+        }
+      });
+    },
+    // 检查已存在的申请状态
+    checkExistingStatus() {
+      uni.showLoading({ title: '获取状态...' });
+      
+      // 调用API查询申请状态
+      request.get('group/apply/status', {
+        type: 'intermediary'
+      })
+      .then(res => {
+        uni.hideLoading();
+        if (res.status === 200 && res.data) {
+          if (res.data.has_apply && res.data.apply_info) {
+            const applyInfo = res.data.apply_info;
+            
+            // 根据API返回的状态值跳转到对应页面
+            // API状态: 0-待审核, 1-审核通过, 2-审核拒绝
+            if (applyInfo.status === 0) {
+              // 待审核，跳转到审核中页面
+              uni.navigateTo({
+                url: '/pages/intermediary_service/submitSuccess?status=2'
+              });
+            } else if (applyInfo.status === 1) {
+              // 审核通过，跳转到审核通过页面
+              uni.navigateTo({
+                url: '/pages/intermediary_service/submitSuccess?status=3'
+              });
+            } else {
+              // 其他状态，跳转到状态页面
+              uni.navigateTo({
+                url: '/pages/intermediary_service/status'
+              });
+            }
+          } else {
+            // 没有申请记录，跳转到状态页
+            uni.navigateTo({
+              url: '/pages/intermediary_service/status'
+            });
+          }
+        } else {
+          // 获取状态失败，跳转到状态页
+          uni.navigateTo({
+            url: '/pages/intermediary_service/status'
+          });
+        }
+      })
+      .catch(err => {
+        uni.hideLoading();
+        // 获取状态失败，跳转到状态页
+        uni.navigateTo({
+          url: '/pages/intermediary_service/status'
         });
       });
     }
   }
-};
+}
 </script>
 
-<style lang="scss" scoped>
-.apply-page {
+<style scoped lang="scss">
+.base-info-page {
+  background: #fff;
   min-height: 100vh;
-  background-color: #F8F8F8;
-  display: flex;
-  flex-direction: column;
+  padding-bottom: 80px;
 }
-
-/* 顶部导航栏 */
 .header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-  height: 88rpx;
-  padding: 0 30rpx;
-  background-color: #FFFFFF;
-  border-bottom: 1rpx solid #F2F2F2;
-  
-  .back-icon {
-    width: 60rpx;
-    height: 60rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    .iconfont {
-      font-size: 36rpx;
-      color: #333333;
-    }
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 17px;
+  color: #333;
+  .cancel-btn { 
+    color: #888; 
+    width: 40px; 
   }
-  
-  .title {
-    font-size: 36rpx;
-    color: #1A1A1A;
-    font-weight: 500;
+  .title { 
+    flex: 1; 
+    text-align: center; 
+    font-weight: 500; 
+    color: #222; 
   }
-  
-  .placeholder {
-    width: 60rpx;
+  .placeholder { 
+    width: 40px; 
   }
 }
-
-/* 表单区域 */
-.form-container {
-  background-color: #FFFFFF;
-  padding: 20rpx 30rpx;
-  margin-top: 20rpx;
-  border-radius: 12rpx;
+.info-list {
+  margin-top: 10px;
+  background: #fff;
 }
-
-.form-item {
-  padding: 30rpx 0;
-  border-bottom: 1rpx solid #F2F2F2;
-  
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.form-label {
-  font-size: 28rpx;
-  color: #333333;
-  margin-bottom: 20rpx;
-  font-weight: 500;
-}
-
-.form-input {
-  height: 70rpx;
-  font-size: 28rpx;
-  color: #333333;
-  width: 100%;
-}
-
-.amount-input {
+.info-item {
   display: flex;
   align-items: center;
-  
-  .form-input {
+  height: 54px;
+  padding: 0 16px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 16px;
+  position: relative;
+  .label { 
+    color: #222; 
+    width: 90px; 
+    flex-shrink: 0;
+  }
+  .input {
     flex: 1;
+    border: none;
+    font-size: 16px;
+    background: transparent;
+    padding-left: 8px;
+    padding-right: 30px;
+    height: 100%;
   }
-  
-  .unit {
-    font-size: 28rpx;
-    color: #666666;
-    margin-left: 20rpx;
+  .textarea {
+    flex: 1;
+    border: none;
+    font-size: 16px;
+    background: transparent;
+    padding-left: 8px;
+    padding-right: 30px;
+    min-height: 80px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .clear-btn {
+    position: absolute;
+    right: 16px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    background: #ccc;
+    color: #fff;
+    font-size: 14px;
   }
 }
-
-.form-textarea {
-  height: 200rpx;
+.info-item:last-child { 
+  border-bottom: none; 
+}
+.textarea-container {
+  height: auto;
+  min-height: 100px;
+  align-items: flex-start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  
+  .label {
+    padding-top: 10px;
+  }
+  
+  .clear-btn {
+    top: 10px;
+  }
+}
+.footer {
+  position: fixed;
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  background: #fff;
+  padding: 12px 16px 24px 16px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
+}
+.submit-btn {
   width: 100%;
-  font-size: 28rpx;
-  color: #333333;
-}
-
-/* 服务说明 */
-.service-desc {
-  background-color: #FFFFFF;
-  padding: 30rpx;
-  margin-top: 20rpx;
-  border-radius: 12rpx;
-}
-
-.desc-title {
-  font-size: 32rpx;
-  color: #333333;
-  font-weight: 500;
-  margin-bottom: 20rpx;
-}
-
-.desc-content {
-  
-}
-
-.desc-item {
-  font-size: 26rpx;
-  color: #666666;
-  line-height: 1.6;
-  margin-bottom: 10rpx;
-}
-
-/* 底部按钮 */
-.bottom-button {
-  height: 90rpx;
-  line-height: 90rpx;
-  background-color: #FE8D00;
-  color: #FFFFFF;
-  font-size: 32rpx;
-  text-align: center;
-  margin: 50rpx 30rpx;
-  border-radius: 45rpx;
+  height: 44px;
+  background: #FE8D00;
+  color: #fff;
+  font-size: 18px;
+  border-radius: 22px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

@@ -327,6 +327,14 @@ export function userEdit(data) {
 	return request.post('user/edit', data);
 }
 
+/**
+ * 更新用户性别和生日
+ * @param object data {sex, birthday}
+ */
+export function updateUserProfile(data) {
+	return request.post('user/profile/update', data);
+}
+
 /*
  * 退出登录
  * */

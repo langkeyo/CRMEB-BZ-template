@@ -16,6 +16,7 @@ import util from 'utils/util'
 import configs from './config/app.js'
 import socket from './libs/new_chat.js'
 import i18n from './utils/lang.js';
+import errorHandlingMixin from './mixins/errorHandling.js';
 
 Vue.prototype.$util = util;
 Vue.prototype.$config = configs;
@@ -33,6 +34,9 @@ Vue.component('pageLoading', pageLoading)
 Vue.component('easyLoadimage', easyLoadimage)
 Vue.component('BaseMoney', BaseMoney)
 Vue.component('BaseTag', BaseTag)
+
+// 注册全局错误处理混入
+Vue.mixin(errorHandlingMixin);
 import ActivePermission from './libs/permission.js';
 Vue.prototype.$permission = ActivePermission;
 import {

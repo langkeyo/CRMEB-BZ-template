@@ -416,3 +416,14 @@ export function getEvaluateList(data) {
 export function getRecommendGoods() {
 	return request.get('goods/recommend');
 }
+
+/**
+ * 团购订单支付
+ * @param {String} orderId 订单ID
+ * @param {Number} payType 支付类型：1-微信，2-支付宝，3-余额，4-货到付款
+ */
+export function groupOrderPay(orderId, payType) {
+	return request.post(`group/order/payOrder/${orderId}`, {
+		pay_type: payType
+	});
+}

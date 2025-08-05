@@ -76,15 +76,15 @@
             <view class="bottom-section">
                 <view class="metrics-container">
                     <view class="metric-group">
-                        <view class="metric-value">{{ detail.storeCount }}家</view>
+                        <view class="metric-value">{{ detail.storeCount }}</view>
                         <view class="metric-label">已有门店</view>
                     </view>
                     <view class="metric-group">
-                        <view class="metric-value">{{ detail.years }}年</view>
+                        <view class="metric-value">{{ detail.years }}</view>
                         <view class="metric-label">成立时间</view>
                     </view>
                     <view class="metric-group">
-                        <view class="metric-value">{{ detail.avgCost }}元</view>
+                        <view class="metric-value">{{ detail.avgCost }}</view>
                         <view class="metric-label">人均消费</view>
                     </view>
                     <view class="metric-group">
@@ -100,7 +100,7 @@
             <view class="section-title">品牌数据</view>
             <view class="data-grid">
                 <view class="data-item">
-                    <view class="data-value">{{ detail.storeCount }}家</view>
+                    <view class="data-value">{{ detail.storeCount }}</view>
                     <view class="data-label">现有门店</view>
                 </view>
                 <view class="data-item">
@@ -153,7 +153,7 @@
                     <!-- required-workers -->
                     <view class="condition-card">
                         <view class="card-label">所需人工</view>
-                        <view class="card-value">{{ detail.staffCount }}人</view>
+                        <view class="card-value">{{ detail.staffCount }}</view>
                     </view>
                 </view>
 
@@ -187,6 +187,8 @@
 </template>
 
 <script>
+import { getFranchiseInfo } from '@/api/group.js'
+
 export default {
     name: 'FranchiseDetailPage',
     computed: {
@@ -368,34 +370,81 @@ export default {
         },
 
         // 根据ID获取详情数据
-        getDetailById(id) {
-            // 这里应该是从服务器获取数据
-            // 目前使用模拟数据，后续可以替换为真实接口
-            console.log('获取ID为', id, '的加盟详情');
+        async getDetailById(id) {
+            try {
+                console.log('获取ID为', id, '的加盟详情');
 
-            // 根据不同ID显示不同数据
-            if (id === 1) {
-                // 瑞幸咖啡，使用默认数据
-            } else if (id === 2) {
-                this.detail.name = '盒马鲜生';
-                this.detail.logo = '/static/images/index/business-info/luckin_coffee.png';
-                this.detail.category = '生鲜超市 | 餐饮';
-                this.detail.company = '盒马网络科技有限公司';
-                this.detail.images = [
-                    '/static/images/index/business-info/business_franchise_banner.png',
-                    '/static/images/index/business-info/business_franchise_banner.png',
-                    '/static/images/index/business-info/business_franchise_banner.png'
-                ];
-            } else if (id === 3) {
-                this.detail.name = '喜茶';
-                this.detail.logo = '/static/images/index/business-info/luckin_coffee.png';
-                this.detail.category = '甜点饮品 | 茶饮';
-                this.detail.company = '深圳市喜茶食品有限公司';
-                this.detail.images = [
-                    '/static/images/index/business-info/business_franchise_banner.png',
-                    '/static/images/index/business-info/business_franchise_banner.png',
-                    '/static/images/index/business-info/business_franchise_banner.png'
-                ];
+                const response = await getFranchiseInfo(id);
+
+                if (response.status === 200 && response.data) {
+                    const data = response.data;
+
+                    // 解析JSON字符串字段
+                    let enterpriseInfo = {};
+                    let brandData = {};
+                    let joinCondition = {};
+
+                    try {
+                        enterpriseInfo = data.enterprise_info ? JSON.parse(data.enterprise_info) : {};
+                        brandData = data.brand_data ? JSON.parse(data.brand_data) : {};
+                        joinCondition = data.join_condition ? JSON.parse(data.join_condition) : {};
+                    } catch (e) {
+                        console.error('解析JSON数据失败:', e);
+                    }
+
+                    // 映射API数据到页面数据结构
+                    this.detail = {
+                        ...this.detail,
+                        name: data.title || this.detail.name,
+                        logo: data.image || this.detail.logo,
+                        category: data.tags || this.detail.category,
+                        company: data.join_enterprises || this.detail.company,
+                        images: data.images ? data.images.split(',') : this.detail.images,
+                        franchiseFee: data.franchise_fee || this.detail.franchiseFee,
+                        introduction: data.intro || this.detail.introduction,
+                        detail: data.detail || this.detail.detail,
+                        multipleType: data.multiple_type || this.detail.multipleType,
+                        video: data.video || this.detail.video,
+                        vr: data.vr || this.detail.vr,
+
+                        // 解析后的企业信息（匹配模板字段名）
+                        storeCount: enterpriseInfo['已有门店'] || brandData['现有门店'] || this.detail.storeCount,
+                        years: enterpriseInfo['成立时间'] || this.detail.years,
+                        avgCost: enterpriseInfo['平均消费'] || this.detail.avgCost,
+                        satisfaction: enterpriseInfo['品牌热度'] || brandData['品牌热度'] || this.detail.satisfaction,
+
+                        // 解析后的品牌数据（匹配模板字段名）
+                        provinceCount: brandData['覆盖省份'] || this.detail.provinceCount,
+                        cityCount: brandData['覆盖城市'] || this.detail.cityCount,
+                        provinceCoverage: brandData['省份覆盖率'] || this.detail.provinceCoverage,
+                        cityCoverage: brandData['城市覆盖率'] || this.detail.cityCoverage,
+                        popularity: brandData['品牌热度'] || enterpriseInfo['品牌热度'] || this.detail.popularity,
+
+                        // 解析后的加盟条件（匹配模板字段名）
+                        initialInvestment: joinCondition['前期投入'] || this.detail.initialInvestment,
+                        storeArea: joinCondition['店铺面积'] || this.detail.storeArea,
+                        staffCount: joinCondition['所需人工'] || this.detail.staffCount,
+
+                        // 区域信息
+                        districtName: data.district_name || this.detail.districtName,
+                        communityName: data.community_name || this.detail.communityName,
+                        siteName: data.site_name || this.detail.siteName
+                    };
+
+                    console.log('加盟详情加载成功:', this.detail);
+                } else {
+                    console.error('获取加盟详情失败:', response.msg);
+                    uni.showToast({
+                        title: response.msg || '获取详情失败',
+                        icon: 'none'
+                    });
+                }
+            } catch (error) {
+                console.error('获取加盟详情异常:', error);
+                uni.showToast({
+                    title: '网络错误，请稍后重试',
+                    icon: 'none'
+                });
             }
         },
 
@@ -729,6 +778,11 @@ export default {
             font-size: 40rpx; /* 20px * 2 */
             line-height: 56rpx; /* 28px * 2 */
             color: #333333;
+
+            /* 单行显示，超出省略 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .brand-category {
@@ -740,6 +794,11 @@ export default {
             font-size: 28rpx; /* 14px * 2 */
             line-height: 40rpx; /* 20px * 2 */
             color: #666666;
+
+            /* 单行显示，超出省略 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .brand-company {
@@ -751,6 +810,11 @@ export default {
             font-size: 28rpx; /* 14px * 2 */
             line-height: 40rpx; /* 20px * 2 */
             color: #666666;
+
+            /* 单行显示，超出省略 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     }
 
@@ -821,6 +885,13 @@ export default {
             line-height: 40rpx; /* 20px * 2 */
             color: #FE9227;
             margin-bottom: 6rpx;
+
+            /* 单行显示，超出省略 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            display: block;
         }
 
         .metric-label {
@@ -830,6 +901,13 @@ export default {
             font-size: 22rpx; /* 11px * 2 */
             line-height: 40rpx; /* 20px * 2 */
             color: #808080;
+
+            /* 单行显示，超出省略 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            display: block;
         }
     }
 
@@ -862,11 +940,25 @@ export default {
                 font-weight: bold;
                 color: #333333;
                 margin-bottom: 6rpx;
+
+                /* 单行显示，超出省略 */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                width: 100%;
+                display: block;
             }
 
             .data-label {
                 font-size: 24rpx;
                 color: #999999;
+
+                /* 单行显示，超出省略 */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                width: 100%;
+                display: block;
             }
         }
     }
@@ -938,6 +1030,8 @@ export default {
         white-space: nowrap;
         width: 100%;
         text-align: center;
+        overflow: hidden; /* 隐藏超出部分 */
+        text-overflow: ellipsis; /* 显示省略号 */
     }
 
     /* card-value */
@@ -951,7 +1045,8 @@ export default {
         white-space: nowrap;
         width: 100%;
         text-align: center;
-        overflow: visible; /* 确保文字可见 */
+        overflow: hidden; /* 隐藏超出部分 */
+        text-overflow: ellipsis; /* 显示省略号 */
     }
 
     /* investment-value (特殊样式用于前期投入) */

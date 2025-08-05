@@ -205,7 +205,7 @@
 				colorChange('color_change').then((res) => {
 					this.sginBg = `${this.imgHost}/statics/images/sgin_bg_${res.data.status}.png`;
 					this.sginTip = `${this.imgHost}/statics/images/sgin_tip_${res.data.status}.png`;
-					let theme = ['#1db0fc', '#42CA4D', '#e93323', '#ff448f', '#FE5C2D'];
+					let theme = ['#1db0fc', '#42CA4D', '#e93323', '#ff448f', '#FF840B'];
 					uni.setNavigationBarColor({
 						frontColor: '#ffffff', // 必写项
 						backgroundColor: theme[res.data.status - 1] // 必写项

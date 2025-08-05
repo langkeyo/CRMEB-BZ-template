@@ -1,8 +1,5 @@
 <template>
   <view class="detail-header">
-    <!-- 状态栏 -->
-    <view class="status-bar"></view>
-
     <!-- header-section -->
     <view class="header-section">
       <!-- Rectangle 328 背景 -->
@@ -16,9 +13,6 @@
           </swiper-item>
         </swiper>
       </view>
-
-      <!-- iPhone X (or newer) 状态栏 -->
-      <view class="status-bar-overlay"></view>
 
       <!-- header 顶部导航栏 -->
       <view class="header-navbar">
@@ -142,19 +136,10 @@ export default {
 
 <style lang="scss" scoped>
 .detail-header {
-  .status-bar {
-    height: 44rpx;
-    width: 100%;
-    background-color: transparent;
-    position: absolute;
-    top: 0;
-    z-index: 20;
-  }
-
   /* header-section */
   .header-section {
     width: 750rpx; /* 375px * 2 */
-    height: 500rpx; /* 250px * 2 */
+    height: 400rpx; /* 减少高度，更好利用空间 */
     position: relative;
     overflow: hidden;
     display: flex;
@@ -189,21 +174,12 @@ export default {
     object-fit: cover;
   }
 
-  /* iPhone X (or newer) 状态栏覆盖 */
-  .status-bar-overlay {
-    position: absolute;
-    width: 100%;
-    height: 88rpx; /* 44px * 2 */
-    top: 0;
-    z-index: 10;
-  }
-
   /* header 顶部导航栏 */
   .header-navbar {
     position: absolute;
     width: 704rpx; /* 352px * 2 */
-    height: 42rpx; /* 21px * 2 */
-    top: 96rpx; /* 48px * 2 */
+    height: 48rpx; /* 调整高度 */
+    top: 30rpx; /* 减少顶部距离，去掉状态栏占位 */
     left: 24rpx; /* 12px * 2 */
     display: flex;
     align-items: center;
@@ -211,8 +187,8 @@ export default {
 
     /* back-icon 返回按钮 */
     .back-btn {
-      width: 42rpx; /* 21px * 2 */
-      height: 42rpx; /* 21px * 2 */
+      width: 56rpx; /* 增大按钮容器 */
+      height: 56rpx;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -220,8 +196,8 @@ export default {
       border-radius: 50%; /* 圆形背景 */
 
       .back-icon {
-        width: 22.6rpx; /* 11.3px * 2 */
-        height: 42rpx; /* 21px * 2 */
+        width: 40rpx; /* 增大图标大小 */
+        height: 40rpx;
         filter: brightness(0) invert(1) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 将图标变为白色并添加微妙阴影 */
       }
     }
@@ -232,8 +208,8 @@ export default {
 
     /* favorites-icon 收藏按钮 */
     .favorites-btn {
-      width: 42rpx; /* 21px * 2 */
-      height: 42rpx; /* 21px * 2 */
+      width: 56rpx; /* 增大按钮容器 */
+      height: 56rpx;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -241,31 +217,29 @@ export default {
       cursor: pointer;
 
       .star-icon {
-        width: 44rpx; /* 与您调整的分享图标大小一致 */
-        height: 44rpx;
-        margin-top: 4rpx;
+        width: 40rpx; /* 增大图标大小 */
+        height: 40rpx;
         filter: brightness(0) invert(1) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 白色图标并添加微妙阴影 */
 
         &.collected {
-          filter: brightness(0) saturate(100%) invert(77%) sepia(89%) saturate(1257%) hue-rotate(3deg) brightness(103%) contrast(103%) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 收藏时显示金色 */
+          filter: invert(70%) sepia(81%) saturate(1500%) hue-rotate(358deg) brightness(103%) contrast(107%) drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 收藏时显示金色 */
         }
       }
     }
 
     /* shar-icon 分享按钮 */
     .share-btn {
-      width: 42rpx; /* 21px * 2 */
-      height: 42rpx; /* 21px * 2 */
+      width: 56rpx; /* 增大按钮容器 */
+      height: 56rpx;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
 
       .share-icon {
-        width: 44rpx; /* 21px * 2 */
-        height: 40rpx; /* 21px * 2 */
+        width: 40rpx; /* 增大图标大小 */
+        height: 40rpx;
         filter: drop-shadow(0 1rpx 2rpx rgba(0, 0, 0, 0.3)); /* 添加微妙阴影 */
-        margin-top: 4rpx;
       }
     }
   }

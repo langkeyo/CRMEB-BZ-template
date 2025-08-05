@@ -151,7 +151,12 @@ export default {
 		// 处理下一步（验证码登录/注册）
 		handleNextStep(data) {
 			// 先尝试验证码登录
-			this.tryVerifyCodeLogin(data).catch(() => {
+			this.tryVerifyCodeLogin(data).catch((err) => {
+				// 如果是账号或验证码错误，不进入注册流程
+				if (err && err.status === 410025) {
+					return; // 直接返回，不进入注册流程
+				}
+				
 				// 登录失败，进入注册流程
 				this.registerInfo.account = data.account
 				this.registerInfo.captcha = data.captcha
@@ -184,9 +189,15 @@ export default {
 						let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
 						this.$Cache.clear(BACK_URL)
 
-						getUserInfo().then((userRes) => {
+						// 使用新的用户管理机制
+						this.$store.dispatch('LOGIN_AND_GET_INFO', {
+							token: responseData.token,
+							time: responseData.expires_time - this.$Cache.time(),
+							uid: responseData.uid || 0
+						}).then((result) => {
 							this.keyLock = true
-							this.$store.commit('SETUID', userRes.data.uid)
+							// 触发登录成功事件
+							uni.$emit('userLogin', result.loginData);
 							uni.reLaunch({
 								url: backUrl
 							})
@@ -244,6 +255,13 @@ export default {
 					}
 				}).catch(err => {
 					console.log('团购验证码登录失败:', err);
+					// 特别处理账号或验证码错误的情况（status: 410025）
+					if (err && err.status === 410025) {
+						this.keyLock = true;
+						this.$util.Tips({
+							title: err.msg || '账号或验证码错误'
+						});
+					}
 					reject(err);
 				});
 			});
@@ -260,7 +278,13 @@ export default {
 			}
 
 			// 优先尝试团购登录接口
-			this.tryGroupLogin(data).catch(() => {
+			this.tryGroupLogin(data).catch((err) => {
+				// 如果是账号密码错误，不需要继续尝试原有登录接口
+				if (err && err.status === 410025) {
+					this.keyLock = true;
+					return; // 直接返回，不再尝试其他登录方式
+				}
+				
 				// 团购登录失败，使用原有登录接口
 				loginH5({
 					account: data.account,
@@ -274,17 +298,22 @@ export default {
 						})
 						let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
 						this.$Cache.clear(BACK_URL)
-						getUserInfo()
-							.then((res) => {
-								this.keyLock = true
-								this.$store.commit('SETUID', res.data.uid)
-								uni.reLaunch({
-									url: backUrl
-								})
+						// 使用新的用户管理机制
+						this.$store.dispatch('LOGIN_AND_GET_INFO', {
+							token: data.token,
+							time: data.expires_time - this.$Cache.time(),
+							uid: data.uid || 0
+						}).then((result) => {
+							this.keyLock = true
+							// 触发登录成功事件
+							uni.$emit('userLogin', result.loginData);
+							uni.reLaunch({
+								url: backUrl
 							})
-							.catch((error) => {
-								this.keyLock = true
-							})
+						}).catch((error) => {
+							this.keyLock = true
+							console.error('登录后获取用户信息失败:', error);
+						})
 					})
 					.catch((e) => {
 						this.keyLock = true
@@ -329,6 +358,13 @@ export default {
 					}
 				}).catch(err => {
 					console.log('团购登录失败:', err);
+					// 特别处理账号或密码错误的情况（status: 410025）
+					if (err && err.status === 410025) {
+						this.keyLock = true;
+						this.$util.Tips({
+							title: err.msg || '账号或密码错误'
+						});
+					}
 					reject(err);
 				});
 			});
@@ -393,11 +429,19 @@ export default {
 					})
 					let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
 					this.$Cache.clear(BACK_URL)
-					getUserInfo().then((res) => {
-						this.$store.commit('SETUID', res.data.uid)
+					// 使用新的用户管理机制
+					this.$store.dispatch('LOGIN_AND_GET_INFO', {
+						token: data.token,
+						time: data.expires_time - this.$Cache.time(),
+						uid: data.uid || 0
+					}).then((result) => {
+						// 触发登录成功事件
+						uni.$emit('userLogin', result.loginData);
 						uni.reLaunch({
 							url: backUrl
 						})
+					}).catch((error) => {
+						console.error('注册后登录获取用户信息失败:', error);
 					})
 				})
 				.catch((res) => {
@@ -476,11 +520,10 @@ export default {
 		},
 		
 		skipLogin() {
-			// 跳过登录，返回首页
-			let backUrl = this.$Cache.get(BACK_URL) || '/pages/index/index'
-			this.$Cache.clear(BACK_URL)
+			// 跳过登录，强制返回首页
+			this.$Cache.clear(BACK_URL) // 清除缓存的返回地址
 			uni.reLaunch({
-				url: backUrl
+				url: '/pages/index/index' // 强制跳转到首页
 			})
 		},
 		

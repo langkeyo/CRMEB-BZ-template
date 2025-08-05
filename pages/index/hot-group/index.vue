@@ -17,16 +17,20 @@
 
         <!-- 商品列表 -->
         <view class="goods-list">
+            <!-- 调试信息 -->
+            <view v-if="goodsList.length === 0" style="text-align: center; padding: 40rpx; color: #999;">
+                {{ isLoading ? '加载中...' : '暂无商品数据' }}
+            </view>
             <view class="goods-item" v-for="(item, index) in goodsList" :key="index" @click="navigateToDetail(item)">
-                <view class="item-container" :style="{ backgroundImage: 'url(' + item.image + ')' }">
-                </view>
-                <view class="goods-info">
-                    <text class="goods-name">{{ item.title }}</text>
-                    <view class="price-box">
-                        <view class="price-info">
-                            <text class="price-symbol">¥</text>
-                            <text class="price">{{ item.group_price }}</text>
-                            <text v-if="item.original_price" class="original-price">¥{{ item.original_price }}</text>
+                <view class="item-container">
+                    <image class="product-image" :src="setDomain(item.image)" mode="aspectFill"></image>
+                    <view class="goods-info">
+                        <text class="goods-name">{{ item.title }}</text>
+                        <view class="price-box">
+                            <view class="price-info">
+                                <text class="price-symbol">¥</text>
+                                <text class="price">{{ item.group_price }}</text>
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -42,8 +46,10 @@
 </template>
 
 <script>
-import { getCombinationList } from '@/api/group.js';
+import { getUserCombinationList } from '@/api/group.js'
+import errorHandler from '@/utils/errorHandler.js';
 import CommonHeader from '@/components/CommonHeader/index.vue';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
     components: {
@@ -77,14 +83,22 @@ export default {
             this.isLoading = true
             this.loadingStatus = 1
             
-            getCombinationList({
+            getUserCombinationList({
                 page: this.page,
                 limit: this.limit,
                 keyword: this.keyword
             }).then(res => {
-                if (res.code === 200) {
-                    this.goodsList = res.data.list || []
-                    
+                if ((res.code === 200 || res.status === 200) && res.data) {
+                    // 处理返回的数据，确保字段正确
+                    const list = res.data.list || res.data || []
+                    this.goodsList = list.map(item => ({
+                        id: item.id,
+                        title: item.title || item.name || item.store_name,
+                        image: item.image || item.images?.[0] || '',
+                        group_price: item.group_price || item.price || 0,
+                        original_price: item.original_price || item.ot_price || null
+                    }))
+
                     // 判断是否有更多数据
                     this.hasMore = this.goodsList.length >= this.limit
                     this.loadingStatus = this.hasMore ? 0 : 2
@@ -96,9 +110,9 @@ export default {
                 }
             }).catch(err => {
                 console.error('获取商品列表失败:', err)
-                uni.showToast({
-                    title: '网络错误，请稍后重试',
-                    icon: 'none'
+                // 使用统一的错误处理
+                errorHandler.handleApiError(err, {
+                    defaultMsg: '获取商品列表失败，请稍后重试'
                 })
             }).finally(() => {
                 this.isLoading = false
@@ -113,18 +127,26 @@ export default {
             this.isLoading = true
             this.loadingStatus = 1
             
-            getCombinationList({
+            getUserCombinationList({
                 page: this.page,
                 limit: this.limit,
                 keyword: this.keyword
             }).then(res => {
-                if (res.code === 200) {
-                    const newList = res.data.list || []
-                    
+                if ((res.code === 200 || res.status === 200) && res.data) {
+                    // 处理返回的数据，确保字段正确
+                    const list = res.data.list || res.data || []
+                    const newList = list.map(item => ({
+                        id: item.id,
+                        title: item.title || item.name || item.store_name,
+                        image: item.image || item.images?.[0] || '',
+                        group_price: item.group_price || item.price || 0,
+                        original_price: item.original_price || item.ot_price || null
+                    }))
+
                     // 判断是否有更多数据
                     this.hasMore = newList.length >= this.limit
                     this.loadingStatus = this.hasMore ? 0 : 2
-                    
+
                     // 将新数据添加到列表
                     if (newList.length > 0) {
                         this.goodsList = [...this.goodsList, ...newList]
@@ -174,8 +196,27 @@ export default {
         navigateToDetail(item) {
             // 跳转到商品详情页面
             uni.navigateTo({
-                url: `/pages/index/hot-group/detail?id=${item.id}`
+                url: `/pages/goods_details/index?id=${item.id}&type=combination`
             })
+        },
+
+        // 处理图片URL
+        setDomain(url) {
+            if (!url) return '';
+            url = url.toString();
+
+            // 如果是相对路径，拼接域名
+            if (url.indexOf('/') === 0) {
+                return HTTP_REQUEST_URL + url;
+            }
+
+            // 如果已经是完整URL，直接返回
+            if (url.indexOf("http") === 0) {
+                return url;
+            }
+
+            // 其他情况拼接域名
+            return HTTP_REQUEST_URL + '/' + url;
         }
     }
 }
@@ -187,94 +228,36 @@ export default {
     background-color: #F8F8F8;
 
     .search-container {
-        position: sticky;
-        top: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        height: 138px;
         background-color: #FFFFFF;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        z-index: 100;
+        padding: 24rpx; /* 与商品列表保持一致的左右边距 */
         box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
-        position: relative;
-
-        .back-btn {
-            position: absolute;
-            left: 13px;
-            top: 52px;
-            height: 25px;
-            display: flex;
-            align-items: center;
-
-            .back-icon {
-                width: 7px;
-                height: 13px;
-                background-image: url("/static/images/index/hot_group/back-icon.svg");
-                background-size: contain;
-                background-repeat: no-repeat;
-                background-position: center;
-                margin-right: 8px;
-            }
-
-            .back-text {
-                font-family: 'PingFang SC';
-                font-style: normal;
-                font-weight: 400;
-                font-size: 18px;
-                line-height: 25px;
-                color: #333333;
-            }
-        }
-
-        .title {
-            position: absolute;
-            width: 72px;
-            height: 25px;
-            left: 50%;
-            top: 52px;
-            transform: translateX(-50%);
-            font-family: 'PingFang SC';
-            font-style: normal;
-            font-weight: 400;
-            font-size: 18px;
-            line-height: 25px;
-            color: #1A1A1A;
-        }
     }
 
     .search-box {
-        position: absolute;
-        left: 50%;
-        top: 92px;
-        width: 351px;
-        transform: translateX(-50%);
-        
+        width: 100%;
+
         .search-input {
             display: flex;
             align-items: center;
             background-color: #F5F5F5;
-            border-radius: 8px;
-            height: 32px;
-            padding: 0 12px;
-            
+            border-radius: 16rpx;
+            height: 64rpx;
+            padding: 0 24rpx;
+
             .search-icon {
-                width: 16px;
-                height: 16px;
+                width: 32rpx;
+                height: 32rpx;
                 background-image: url("/static/images/index/hot_group/search-icon.svg");
                 background-size: contain;
                 background-repeat: no-repeat;
-                margin-right: 8px;
+                margin-right: 16rpx;
             }
-            
+
             .search-placeholder, .search-input-field {
-                font-size: 14px;
+                font-size: 28rpx;
                 color: #999999;
             }
-            
+
             .search-input-field {
                 flex: 1;
                 color: #333333;
@@ -286,64 +269,89 @@ export default {
     .goods-list {
         display: flex;
         flex-wrap: wrap;
-        padding: 12px;
-        padding-top: 138px;
-        
+        justify-content: space-between;
+        padding: 24rpx;
+        position: relative;
+
         .goods-item {
-            width: 48%;
-            margin: 1%;
-            margin-bottom: 15px;
+            width: 228rpx; /* 114px * 2 */
+            height: 346rpx; /* 173px * 2 */
+            margin-bottom: 30rpx;
             background-color: #FFFFFF;
-            border-radius: 8px;
+            border-radius: 8rpx; /* 4px * 2 */
             overflow: hidden;
-            
+            box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+            padding: 16rpx; /* 统一的内边距，类似父级padding效果 */
+            display: flex;
+            flex-direction: column;
+
             .item-container {
                 width: 100%;
-                height: 0;
-                padding-bottom: 100%;
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-            }
-            
-            .goods-info {
-                padding: 8px;
-                
-                .goods-name {
-                    font-size: 14px;
-                    color: #333333;
-                    line-height: 20px;
-                    height: 40px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+
+                .product-image {
+                    width: 196rpx; /* 98px * 2 */
+                    height: 206rpx; /* 103px * 2 */
+                    border-radius: 8rpx; /* 4px * 2 */
+                    object-fit: cover;
+                    margin-bottom: 16rpx; /* 图片和文字间距 */
                 }
-                
-                .price-box {
-                    margin-top: 8px;
+
+                .goods-info {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
                     
-                    .price-info {
-                        display: flex;
-                        align-items: baseline;
-                        
-                        .price-symbol {
-                            font-size: 12px;
-                            color: #FF5000;
-                        }
-                        
-                        .price {
-                            font-size: 16px;
-                            color: #FF5000;
-                            font-weight: bold;
-                        }
-                        
-                        .original-price {
-                            font-size: 12px;
-                            color: #999999;
-                            text-decoration: line-through;
-                            margin-left: 8px;
+                    .goods-name {
+                        font-family: 'PingFang SC';
+                        font-style: normal;
+                        font-weight: 400;
+                        font-size: 28rpx; /* 14px * 2 */
+                        line-height: 40rpx; /* 20px * 2 */
+                        color: #333333;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        display: -webkit-box;
+                        -webkit-line-clamp: 1;
+                        -webkit-box-orient: vertical;
+                        margin-bottom: 8rpx; /* 名称和价格间距 */
+                    }
+
+                    .price-box {
+
+                        .price-info {
+                            font-family: 'PingFang SC';
+                            font-style: normal;
+                            font-weight: 400;
+                            font-size: 32rpx; /* 16px * 2 */
+                            line-height: 44rpx; /* 22px * 2 */
+                            color: #333333;
+                            display: flex;
+                            align-items: baseline;
+
+                            .price-symbol {
+                                font-size: 32rpx;
+                                color: #333333;
+                                font-weight: 400;
+                            }
+
+                            .price {
+                                font-size: 32rpx;
+                                color: #333333;
+                                font-weight: 400;
+                                margin-left: 4rpx; /* ￥符号和数字的间距 */
+                            }
+
+                            .original-price {
+                                font-size: 24rpx;
+                                color: #999999;
+                                text-decoration: line-through;
+                                margin-left: 10rpx;
+                                font-weight: 400;
+                            }
                         }
                     }
                 }
@@ -353,9 +361,9 @@ export default {
     
     .loading-more {
         text-align: center;
-        padding: 16px 0;
+        padding: 32rpx 0;
         color: #999999;
-        font-size: 14px;
+        font-size: 28rpx;
     }
 }
 </style>

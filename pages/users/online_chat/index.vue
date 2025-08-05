@@ -143,6 +143,10 @@
 	import {
 		getOrderDetail
 	} from '@/api/order';
+	import {
+		checkLoginStatus,
+		requireLogin
+	} from '@/utils/loginCheck.js';
 	let statusBarHeight = uni.getSystemInfoSync().statusBarHeight + 'px';
 	import Socket from '@/libs/new_chat';
 	const chunk = function(arr, num) {
@@ -234,10 +238,27 @@
 			}
 		},
 		onLoad(options) {
+			// 检查登录状态
+			if (!checkLoginStatus()) {
+				console.log('用户未登录，跳转到登录页面');
+				requireLogin('/pages/users/online_chat/index', '在线咨询需要登录，请先登录');
+				return;
+			}
+
+			// 检查用户ID
+			const uid = this.$store.state.app.uid;
+			if (!uid) {
+				console.log('用户ID不存在，跳转到登录页面');
+				requireLogin('/pages/users/online_chat/index', '登录状态异常，请重新登录');
+				return;
+			}
+
+			console.log('用户已登录，UID:', uid);
 			uni.showLoading({
 				title: this.$t(`客服连接中`)
 			});
-			this.myUid = this.$store.state.app.uid;
+
+			this.myUid = uid;
 			this.toUid = options.to_uid
 			this.productId = parseInt(options.productId) || 0;
 			this.orderId = options.orderId || 0;
@@ -256,10 +277,25 @@
 			dom.style.height = window.innerHeight + 'px'
 			// #endif
 			let initSocket = () => {
+				const token = this.$store.state.app.token;
+				console.log('初始化Socket连接，Token:', token ? '存在' : '不存在');
+				console.log('用户UID:', this.myUid);
+
+				if (!token) {
+					console.error('Token不存在，无法建立Socket连接');
+					uni.hideLoading();
+					this.$util.Tips({
+						title: '登录状态异常，请重新登录'
+					});
+					requireLogin('/pages/users/online_chat/index', '登录状态异常，请重新登录');
+					return;
+				}
+
 				if (app.globalData.isWsOpen) {
+					console.log('WebSocket已打开，发送登录信息');
 					this.$socket.send({
 						data: {
-							token: this.$store.state.app.token,
+							token: token,
 							//#ifdef MP || APP-PLUS
 							form_type: 2,
 							//#endif
@@ -271,6 +307,7 @@
 					});
 					this.getChatList();
 				} else {
+					console.log('WebSocket未打开，开始连接');
 					let form_type
 					//#ifdef MP || APP-PLUS
 					form_type = 2
@@ -278,12 +315,15 @@
 					//#ifdef H5
 					form_type = this.$wechat.isWeixin() ? 1 : 3
 					//#endif
-					this.$socket.onStart(this.$store.state.app.token, form_type);
+					console.log('Form type:', form_type);
+					this.$socket.onStart(token, form_type);
 				}
 				uni.$once('socketOpen', () => {
+					console.log('Socket连接已打开，发送登录信息');
+					const token = this.$store.state.app.token;
 					// 登录
 					this.$socket.send({
-						data: this.$store.state.app.token,
+						data: token,
 						//#ifdef MP || APP-PLUS
 						form_type: 2,
 						//#endif
@@ -292,6 +332,7 @@
 						//#endif
 						type: 'login'
 					});
+					console.log('登录信息已发送，Token:', token ? '存在' : '不存在');
 					this.$nextTick(e => {
 						this.getChatList();
 					})
@@ -342,14 +383,18 @@
 					this.height();
 				});
 			});
-			uni.$on('socket_error', () => {
+			uni.$on('socket_error', (error) => {
+				console.error('Socket连接错误:', error);
+				uni.hideLoading();
 				this.$util.Tips({
 					title: this.$t(`连接失败`)
 				});
 			});
 			uni.$on('err_tip', (e) => {
+				console.error('Socket错误提示:', e);
+				uni.hideLoading();
 				this.$util.Tips({
-					title: e.msg
+					title: e.msg || '连接异常'
 				});
 			});
 			uni.$on('online', data => {

@@ -12,12 +12,12 @@
 
 			<!-- 返回按钮 -->
 			<view class="back-icon" @tap="goBack">
-				<image src="/static/common/icons/navigation/back_arrow.svg"></image>
+				<image src="/static/common/icons/navigation/back_arrow.svg" class="back-icon-img"></image>
 			</view>
 
 			<!-- 分享按钮 - 保持现有资源 -->
 			<view class="share-button" @tap="shareGoods">
-				<image src="/static/images/goods_details/share_icon.svg"></image>
+				<image src="/static/images/goods_details/share_icon.svg" class="share-icon-img"></image>
 			</view>
 
 			<!-- 图片计数器 -->
@@ -33,18 +33,29 @@
 			<view class="card-background"></view>
 
 			<!-- 价格信息 -->
-			<text class="price-text">￥0~5</text>
+			<view class="price-container">
+				<text class="price-text">￥{{ goodsInfo.price }}</text>
+				<!-- 客户要求不显示原价 -->
+				<!-- <text class="original-price-text" v-if="goodsInfo.original_price && goodsInfo.original_price != goodsInfo.price">￥{{ goodsInfo.original_price }}</text> -->
+				<text class="save-price-text" v-if="goodsInfo.save_price && goodsInfo.save_price != '0.00'">省￥{{ goodsInfo.save_price }}</text>
+			</view>
 
 			<!-- 销量信息 -->
-			<text class="sold-text">已售200+</text>
+			<text class="sold-text">已售{{ goodsInfo.sales }}+</text>
 
 			<!-- 商品标题 -->
-			<text class="goods-title-text">乐事薯片（黄瓜味）</text>
+			<text class="goods-title-text">{{ goodsInfo.title }}</text>
 
 			<!-- 产地信息 -->
 			<view class="origin-container">
 				<view class="origin-border"></view>
-				<text class="origin-text">产地丨山东</text>
+				<text class="origin-text">产地丨{{ goodsInfo.origin }}</text>
+			</view>
+
+			<!-- 活动时间信息 -->
+			<view class="activity-info" v-if="goodsInfo.time_left_text">
+				<text class="activity-status">{{ goodsInfo.status_text || '进行中' }}</text>
+				<text class="time-left">剩余{{ goodsInfo.time_left_text }}</text>
 			</view>
 		</view>
 
@@ -76,7 +87,7 @@
 		<view v-if="canBuy" class="delivery-info-section">
 			<!-- 自提点信息 -->
 			<view class="pickup-info">
-				<text class="pickup-text">自提点：北京尚德井小区菜鸟驿站丨免运费</text>
+				<text class="pickup-text">自提点：{{ deliveryInfo.pickupLocation }}丨免运费</text>
 			</view>
 
 			<!-- 预计送达时间 -->
@@ -85,7 +96,7 @@
 					<image class="time-icon" src="/static/images/goods_details/time_icon.svg"></image>
 					<text class="colon">：</text>
 				</view>
-				<text class="time-text">预计明日16：30前送达</text>
+				<text class="time-text">{{ deliveryInfo.deliveryTime }}</text>
 			</view>
 
 			<!-- 送达地址 -->
@@ -94,7 +105,7 @@
 					<image class="location-icon" src="/static/images/goods_details/location_icon.svg"></image>
 					<text class="colon">：</text>
 				</view>
-				<text class="destination-text">送至 北京尚德井小区菜鸟驿站</text>
+				<text class="destination-text">送至 {{ deliveryInfo.deliveryAddress }}</text>
 			</view>
 
 			<!-- 保障信息 -->
@@ -109,8 +120,8 @@
 			<view class="review-header">
 				<!-- 左侧 -->
 				<view class="review-left">
-					<text class="review-title">评价（99+）</text>
-					<text class="review-rate">好评99.8%</text>
+					<text class="review-title">评价（{{ commentStats.total > 99 ? '99+' : commentStats.total }}）</text>
+					<text class="review-rate" v-if="commentStats.total > 0">好评{{ commentStats.goodRate }}%</text>
 				</view>
 
 				<!-- 右侧 -->
@@ -120,22 +131,32 @@
 				</view>
 			</view>
 
-			<!-- 评价卡片1 -->
-			<view class="review-card1">
-				<image class="review-avatar" src="/static/images/avatar.png"></image>
-				<view class="review-content">
-					<text class="reviewer-name">匿名买家</text>
-					<text class="review-text">非常好吃很喜欢这个味儿，还会复购！</text>
+			<!-- 评价卡片 - 动态显示 -->
+			<view v-if="commentList.length > 0">
+				<view
+					v-for="(comment, index) in commentList.slice(0, 2)"
+					:key="comment.id"
+					:class="index === 0 ? 'review-card1' : 'review-card2'"
+				>
+					<image
+						class="review-avatar"
+						:src="comment.avatar || '/static/images/avatar.png'"
+					></image>
+					<view class="review-content">
+						<text class="reviewer-name">{{ comment.nickname || '匿名买家' }}</text>
+						<text class="review-text">{{ comment.comment || comment.content }}</text>
+					</view>
 				</view>
 			</view>
 
-			<!-- 评价卡片2 -->
-			<view class="review-card2">
-				<image class="review-avatar" src="/static/images/avatar.png"></image>
-				<view class="review-content">
-					<text class="reviewer-name">匿名买家</text>
-					<text class="review-text">味道不错孩子非常喜欢吃！</text>
-				</view>
+			<!-- 无评论提示 -->
+			<view v-else-if="!commentLoading" class="no-comments">
+				<text class="no-comments-text">暂无评价，快来抢沙发吧~</text>
+			</view>
+
+			<!-- 加载中提示 -->
+			<view v-else class="loading-comments">
+				<text class="loading-text">评论加载中...</text>
 			</view>
 		</view>
 
@@ -165,26 +186,32 @@
 		<view class="goods-qa-section">
 			<!-- 头部 -->
 			<view class="qa-header">
-				<text class="qa-title">问大家（99+）</text>
-				<view class="qa-header-right">
+				<text class="qa-title">问大家（{{ qaQuestions.length }}+）</text>
+				<view class="qa-header-right" @click="viewAllQuestions">
 					<text class="qa-all-text">全部</text>
 					<text class="qa-arrow">></text>
 				</view>
 			</view>
 
 			<!-- 问题列表 -->
-			<view class="qa-questions">
-				<!-- row1 - 问题1 -->
-				<view class="qa-question-item">
-					<text class="qa-question-text">会不会很酸啊？</text>
-					<text class="qa-answer-count">10个回答</text>
+			<view class="qa-questions" v-if="qaQuestions.length > 0">
+				<view class="qa-question-item"
+					  v-for="question in qaQuestions.slice(0, 2)"
+					  :key="question.id"
+					  @click="viewQuestionDetail(question)">
+					<text class="qa-question-text">{{ question.content }}</text>
+					<text class="qa-answer-count">{{ question.answer_count }}个回答</text>
 				</view>
+			</view>
 
-				<!-- row2 - 问题2 -->
-				<view class="qa-question-item">
-					<text class="qa-question-text">口感咋样啊？</text>
-					<text class="qa-answer-count">5个回答</text>
-				</view>
+			<!-- 空状态 -->
+			<view class="qa-empty" v-else>
+				<text class="empty-text">暂无问答，快来提问吧~</text>
+			</view>
+
+			<!-- 提问按钮 -->
+			<view class="qa-ask-btn" @click="askQuestion">
+				<text class="ask-text">我要提问</text>
 			</view>
 		</view>
 
@@ -197,9 +224,7 @@
 
 			<!-- 内容 -->
 			<view class="intro-content">
-				<text
-					class="intro-content-text">刚收到快递就迫不及待拆开，包装严实，薯片完整无损，必须给物流点赞！选了经典原味和青柠味，每一片都薄脆透光，咬下去"咔嚓"一声，土豆的香气瞬间在嘴里蔓延，原味的纯粹咸香让人停不下来，青柠味更是清新解腻，酸甜比例拿捏得刚刚好！
-					分量也很足，追剧时抱着一大包吃简直幸福感爆棚！</text>
+				<text class="intro-content-text">{{ goodsInfo.description || '暂无产品介绍' }}</text>
 			</view>
 		</view>
 
@@ -234,6 +259,29 @@
 </template>
 
 <script>
+import {
+	getUserCombinationDetail,
+	getGoodsDetail,
+	likeGoods,
+	getGoodsQuestionList,
+	getGoodsAnswerList,
+	createGoodsQA,
+	getGoodsCommentList,
+	getMyCommunityInfo,
+	updateGroupCart
+} from '@/api/group.js';
+import {
+	getAddressDefault
+} from '@/api/user.js';
+import {
+	storeListApi
+} from '@/api/store.js';
+import {
+	GroupCartManager
+} from '@/api/groupCart.js';
+import { handleActionApi } from '@/utils/apiHelper.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
+
 export default {
 	data() {
 		return {
@@ -257,6 +305,10 @@ export default {
 				{ name: '小红', avatar: '/static/images/avatar.png', status: '已购买此商品' },
 				{ name: '小李', avatar: '/static/images/avatar.png', status: '已购买此商品' }
 			],
+
+			// 问答数据
+			qaQuestions: [],
+			qaLoading: false,
 			goodsInfo: {
 				id: 1,
 				price: '45',
@@ -282,18 +334,13 @@ export default {
 				<p>✓ 现摘现发，严选包装，坏果包赔，点击切沙拉单，让这份天然酸甜点亮你的味蕾，解锁健康轻生活！</p>
 				`
 			},
-			evaluations: [
-				{
-					avatar: '/static/images/avatar.png',
-					nickname: '匿名买家',
-					content: '非常好吃很甜很脆，还会复购'
-				},
-				{
-					avatar: '/static/images/avatar.png',
-					nickname: '匿名买家',
-					content: '味道不错孩子非常喜欢吃！不酸！'
-				}
-			],
+			// 评论相关数据
+			commentList: [], // 评论列表
+			commentStats: {
+				total: 0, // 评论总数
+				goodRate: 0 // 好评率
+			},
+			commentLoading: false, // 评论加载状态
 			qaList: [
 				{
 					question: '口感咋样啊?',
@@ -303,7 +350,16 @@ export default {
 					question: '会不会很酸啊?',
 					answerCount: 10
 				}
-			]
+			],
+			// 地址和自提点信息
+			userDefaultAddress: null, // 用户默认地址
+			storeList: [], // 自提点列表
+			communityInfo: null, // 社区信息
+			deliveryInfo: {
+				pickupLocation: '北京尚德井小区菜鸟驿站', // 默认自提点
+				deliveryTime: '预计明日16：30前送达',
+				deliveryAddress: '北京尚德井小区菜鸟驿站'
+			}
 		}
 	},
 	computed: {
@@ -315,6 +371,203 @@ export default {
 		}
 	},
 	methods: {
+		// 获取商品详情
+		async getGoodsDetails(id) {
+			try {
+				// 根据页面类型调用不同的API
+				let res;
+				if (this.pageType === 'group') {
+					// 拼团商品详情
+					res = await getUserCombinationDetail(id);
+				} else {
+					// 普通商品详情
+					res = await getGoodsDetail(id);
+				}
+				if ((res.code === 200 || res.status === 200) && res.data) {
+					const data = res.data;
+
+					// 根据页面类型处理不同的数据结构
+					if (this.pageType === 'group') {
+						// 拼团商品数据结构
+						this.goodsInfo = {
+							...this.goodsInfo,
+							id: data.id,
+							title: data.title || data.name || data.store_name,
+							price: data.group_price || data.price || '0',
+							sales: data.sales || '0',
+							origin: data.origin || '未知',
+							images: data.images ? data.images.map(img => this.setDomain(img)) : [this.setDomain(data.image)],
+							description: data.description || '',
+							original_price: data.original_price || data.ot_price,
+							people: data.people || 2,
+							effective_time: data.effective_time,
+							effective_time_text: data.effective_time_text,
+							// 拼团特有字段
+							save_price: data.save_price || '0.00',
+							start_time: data.start_time,
+							end_time: data.end_time,
+							start_time_text: data.start_time_text,
+							stop_time_text: data.stop_time_text,
+							time_left_text: data.time_left_text,
+							time_left_seconds: data.time_left_seconds,
+							status_text: data.status_text,
+							product_id: data.product_id,
+							group_id: data.group_id,
+							min_buy_num: data.min_buy_num,
+						max_buy_num: data.max_buy_num,
+						quota: data.quota,
+						limit_buy: data.limit_buy,
+						stock: data.stock,
+						rule_desc: data.rule_desc,
+						receiving_time: data.receiving_time,
+						receiving_time_text: data.receiving_time_text,
+						is_host: data.is_host
+					};
+				} else {
+					// 普通商品数据结构
+					this.goodsInfo = {
+						...this.goodsInfo,
+						id: data.id,
+						title: data.title || data.name,
+						price: data.min_price || '0',
+						sales: data.sales || '0',
+						origin: '未知', // 普通商品API可能没有产地信息
+						images: data.images ? data.images.split(',').map(img => this.setDomain(img.trim())) : [this.setDomain(data.image)],
+						description: data.description || '',
+						original_price: data.max_price || data.min_price,
+						// 普通商品特有字段
+						like: data.like || 0,
+						dislike: data.dislike || 0,
+						is_like: data.is_like || -1,
+						buy_list: data.buy_list || []
+					};
+
+					// 更新购买意向数据（使用API返回的真实数据）
+					this.wantCount = data.like || 0;
+					this.noWantCount = data.dislike || 0;
+				}
+
+				// 加载商品评论（不论拼团商品还是普通商品，评论接口都一致）
+				this.loadGoodsComments(this.goodsInfo.id);
+
+				// 加载配送信息
+				this.loadDeliveryInfo();
+				} else {
+					// 特殊处理：商品不存在或不在社区范围内的情况
+					if ((res.status === 400 || res.code === 400) && res.msg && res.msg.includes('拼团商品不存在或不在您的社区范围内')) {
+						this.handleProductNotAvailable(res.msg);
+					} else if (res.msg && res.msg.includes('拼团商品不存在或不在您的社区范围内')) {
+						this.handleProductNotAvailable(res.msg);
+					} else {
+						uni.showToast({
+							title: res.msg || '获取商品详情失败',
+							icon: 'none'
+						});
+					}
+				}
+			} catch (err) {
+				console.error('获取商品详情失败:', err);
+
+				// 检查是否是业务逻辑错误（400状态码）
+				if (err && (err.status === 400 || err.code === 400)) {
+					// 检查是否是商品不存在或不在社区范围内的错误
+					const errorMessage = err.msg || err.message || '';
+					if (errorMessage.includes('拼团商品不存在或不在您的社区范围内')) {
+						this.handleProductNotAvailable(errorMessage);
+						return;
+					}
+
+					// 其他400错误，显示具体错误信息
+					uni.showToast({
+						title: errorMessage || '商品信息获取失败',
+						icon: 'none'
+					});
+					return;
+				}
+
+				// 检查是否是登录相关错误
+				if (err && err.isLoginError) {
+					// 登录相关错误已经由request.js自动处理
+					console.log('商品详情获取失败：用户未登录');
+					return;
+				}
+
+				// 检查错误信息是否包含商品不存在的提示（兼容处理）
+				const errorMessage = err.message || err.msg || '';
+				if (errorMessage.includes('拼团商品不存在或不在您的社区范围内')) {
+					this.handleProductNotAvailable(errorMessage);
+				} else {
+					// 网络错误或其他未知错误
+					uni.showToast({
+						title: '网络错误，请稍后重试',
+						icon: 'none'
+					});
+				}
+			}
+		},
+
+		// 处理商品不可用的情况
+		handleProductNotAvailable(message) {
+			console.log('商品不可用:', message);
+
+			uni.showModal({
+				title: '商品不可用',
+				content: '很抱歉，该商品不存在或不在您的社区范围内。\n\n您可以：\n• 查看其他商品\n• 切换到您的社区范围内\n• 联系客服了解详情',
+				showCancel: true,
+				cancelText: '查看其他',
+				confirmText: '返回上页',
+				success: (res) => {
+					if (res.confirm) {
+						// 用户选择返回上页
+						this.goBackToList();
+					} else if (res.cancel) {
+						// 用户选择查看其他商品，跳转到今日团购页面
+						uni.redirectTo({
+							url: '/pages/index/today-group-buying/index'
+						});
+					}
+				},
+				fail: () => {
+					// 如果弹窗失败，直接返回
+					this.goBackToList();
+				}
+			});
+		},
+
+		// 返回到商品列表
+		goBackToList() {
+			// 延迟一下再返回，让用户看到提示
+			setTimeout(() => {
+				uni.navigateBack({
+					fail: () => {
+						// 如果返回失败，跳转到今日团购页面
+						uni.redirectTo({
+							url: '/pages/index/today-group-buying/index'
+						});
+					}
+				});
+			}, 300);
+		},
+
+		// 处理图片URL
+		setDomain(url) {
+			if (!url) return '';
+			url = url.toString();
+
+			// 如果是相对路径，拼接域名
+			if (url.indexOf('/') === 0) {
+				return HTTP_REQUEST_URL + url;
+			}
+
+			// 如果已经是完整URL，直接返回
+			if (url.indexOf("http") === 0) {
+				return url;
+			}
+
+			// 其他情况拼接域名
+			return HTTP_REQUEST_URL + '/' + url;
+		},
+
 		// 返回上一页
 		goBack() {
 			uni.navigateBack()
@@ -348,18 +601,108 @@ export default {
 		},
 
 		// 加入购物车
-		addToCart() {
-			uni.showToast({
-				title: '已加入购物车',
-				icon: 'success'
-			})
+		async addToCart() {
+			try {
+				console.log('开始添加商品到购物车...', this.goodsInfo.id);
+
+				// 显示加载状态
+				uni.showLoading({
+					title: '添加中...'
+				});
+
+				// 直接调用API，避免可能的中间层问题
+				const response = await updateGroupCart({
+					goods_id: this.goodsInfo.id.toString(),
+					quantity: '1'
+				});
+
+				uni.hideLoading();
+
+				// 详细记录API响应结构，帮助调试
+				console.log('购物车API直接响应:', response);
+				console.log('响应结构:', {
+					hasData: !!response.data,
+					dataType: response.data ? typeof response.data : 'undefined',
+					hasStatus: response.data && response.data.status !== undefined,
+					status: response.data && response.data.status !== undefined ? response.data.status : 'undefined',
+					msg: response.data && response.data.msg ? response.data.msg : 'undefined',
+					topStatus: response.status,
+					topMsg: response.msg
+				});
+
+				// 处理API响应
+				if (response && response.data && response.data.status === 200) {
+					// 显示API返回的提示信息
+					console.log('显示嵌套状态提示:', response.data.msg || '已加入购物车');
+					uni.showToast({
+						title: response.data.msg || '已加入购物车',
+						icon: 'success',
+						duration: 2000
+					});
+					
+					// 更新购物车数量（可选）
+					try {
+						// 可以在这里触发购物车数量更新
+						uni.$emit('update-cart-count');
+					} catch (e) {
+						console.error('更新购物车数量失败:', e);
+					}
+				} else if (response && response.status === 200) {
+					// 处理顶层status为200的情况
+					console.log('显示顶层状态提示:', response.msg || '已加入购物车');
+					uni.showToast({
+						title: response.msg || '已加入购物车',
+						icon: 'success',
+						duration: 2000
+					});
+				} else {
+					// 使用API处理工具，避免显示技术性的"success"信息
+					console.log('使用handleActionApi处理其他情况');
+					const result = handleActionApi(response, {
+						successMsg: '已加入购物车',
+						errorMsg: '添加失败'
+					});
+				}
+
+			} catch (error) {
+				uni.hideLoading();
+				console.error('添加购物车异常:', error);
+
+				// 处理异常情况，尝试从错误对象中提取错误信息
+				let errorMsg = '网络错误，请重试';
+				
+				// 检查错误对象中是否有API返回的错误信息
+				if (error && error.data && error.data.msg) {
+					errorMsg = error.data.msg;
+				} else if (error && error.msg) {
+					errorMsg = error.msg;
+				} else if (typeof error === 'string') {
+					errorMsg = error;
+				}
+				
+				console.log('显示错误提示:', errorMsg);
+				uni.showToast({
+					title: errorMsg,
+					icon: 'none'
+				});
+			}
 		},
 
 		// 立即购买
 		buyNow() {
+			console.log('立即购买商品:', this.goodsInfo.id);
+
+			// 直接跳转到订单确认页面，让订单页面处理登录检查
 			uni.navigateTo({
-				url: '/pages/goods/order_confirm/new_order_confirm?id=' + this.goodsInfo.id
-			})
+				url: '/pages/goods/order_confirm/new_order_confirm?id=' + this.goodsInfo.id,
+				fail: (err) => {
+					console.error('跳转订单页面失败:', err);
+					uni.showToast({
+						title: '页面跳转失败',
+						icon: 'none'
+					});
+				}
+			});
 		},
 
 		// 启动轮播
@@ -396,48 +739,108 @@ export default {
 		// 查看全部评价
 		viewAllReviews() {
 			uni.navigateTo({
-				url: '/pages/goods_details/review_list'
+				url: `/pages/goods/goods_comment_list/index?product_id=${this.goodsInfo.id}`
 			})
 		},
 
 		// 切换"不想买"状态
-		toggleNoWant() {
-			if (this.userWantStatus === 'noWant') {
-				// 已经选择了"不想买"，再次点击取消
-				this.noWantCount--;
-				this.userWantStatus = null;
-			} else {
-				// 未选择或选择了"想买"
-				if (this.userWantStatus === 'want') {
-					// 如果之前选择了"想买"，需要减去"想买"的计数
-					this.wantCount--;
+		async toggleNoWant() {
+			// 普通商品调用API
+			if (this.pageType === 'category') {
+				try {
+					// 由于API没有直接的dislike接口，我们使用like接口并传入-1表示不想买
+					const res = await likeGoods(this.goodsInfo.id, -1);
+					
+					if (res.status === 200) {
+						// 更新本地状态
+						if (this.goodsInfo.is_like === -1) {
+							// 已经是不想买，再次点击取消
+							this.goodsInfo.is_like = 0;
+							this.noWantCount--;
+						} else {
+							// 设为不想买
+							if (this.goodsInfo.is_like === 1) {
+								// 如果之前是想买，先减少想买数
+								this.wantCount--;
+							}
+							this.goodsInfo.is_like = -1;
+							this.noWantCount++;
+						}
+						
+						uni.showToast({
+							title: this.goodsInfo.is_like === -1 ? '已标记为不想买' : '已取消标记',
+							icon: 'success'
+						});
+					}
+				} catch (error) {
+					console.error('操作失败:', error);
+					uni.showToast({
+						title: '操作失败',
+						icon: 'none'
+					});
 				}
-				this.noWantCount++;
-				this.userWantStatus = 'noWant';
+			} else {
+				// 拼团商品使用原来的本地逻辑
+				if (this.userWantStatus === 'noWant') {
+					this.noWantCount--;
+					this.userWantStatus = null;
+				} else {
+					if (this.userWantStatus === 'want') {
+						this.wantCount--;
+					}
+					this.noWantCount++;
+					this.userWantStatus = 'noWant';
+				}
+				
+				this.saveUserChoice();
 			}
-
-			// 保存用户选择到本地存储
-			this.saveUserChoice();
 		},
 
 		// 切换"想买"状态
-		toggleWant() {
-			if (this.userWantStatus === 'want') {
-				// 已经选择了"想买"，再次点击取消
-				this.wantCount--;
-				this.userWantStatus = null;
-			} else {
-				// 未选择或选择了"不想买"
-				if (this.userWantStatus === 'noWant') {
-					// 如果之前选择了"不想买"，需要减去"不想买"的计数
-					this.noWantCount--;
-				}
-				this.wantCount++;
-				this.userWantStatus = 'want';
-			}
+		async toggleWant() {
+			// 只有普通商品才调用API
+			if (this.pageType === 'category') {
+				try {
+					// 根据当前状态决定是点赞还是取消点赞
+					const type = this.goodsInfo.is_like === 1 ? 0 : 1;
+					const res = await likeGoods(this.goodsInfo.id, type);
 
-			// 保存用户选择到本地存储
-			this.saveUserChoice();
+					if (res.status === 200) {
+						// 更新本地状态
+						if (type === 1) {
+							this.goodsInfo.is_like = 1;
+							this.wantCount++;
+						} else {
+							this.goodsInfo.is_like = -1;
+							this.wantCount--;
+						}
+
+						uni.showToast({
+							title: type === 1 ? '已点赞' : '已取消点赞',
+							icon: 'success'
+						});
+					}
+				} catch (error) {
+					console.error('点赞操作失败:', error);
+					uni.showToast({
+						title: '操作失败',
+						icon: 'none'
+					});
+				}
+			} else {
+				// 拼团商品使用原来的本地逻辑
+				if (this.userWantStatus === 'want') {
+					this.wantCount--;
+					this.userWantStatus = null;
+				} else {
+					if (this.userWantStatus === 'noWant') {
+						this.noWantCount--;
+					}
+					this.wantCount++;
+					this.userWantStatus = 'want';
+				}
+				this.saveUserChoice();
+			}
 		},
 
 		// 保存用户选择到本地存储
@@ -457,23 +860,189 @@ export default {
 			if (savedChoice) {
 				this.userWantStatus = savedChoice;
 			}
+		},
+
+		// 加载问答列表
+		async loadQAQuestions(goodsId) {
+			if (this.qaLoading) return;
+
+			this.qaLoading = true;
+			try {
+				const response = await getGoodsQuestionList(goodsId, {
+					page: 1,
+					limit: 10
+				});
+
+				if (response.status === 200 && response.data) {
+					this.qaQuestions = response.data.list || [];
+					console.log('问答列表加载成功:', this.qaQuestions);
+				}
+			} catch (error) {
+				console.error('加载问答列表失败:', error);
+			} finally {
+				this.qaLoading = false;
+			}
+		},
+
+		// 查看所有问题
+		viewAllQuestions() {
+			// 跳转到问答列表页面
+			uni.navigateTo({
+				url: `/pages/goods/goods_qa_list/index?goodsId=${this.goodsInfo.id}`
+			});
+		},
+
+		// 查看问题详情
+		viewQuestionDetail(question) {
+			// 跳转到问题详情页面
+			uni.navigateTo({
+				url: `/pages/goods/goods_qa_detail/index?questionId=${question.id}`
+			});
+		},
+
+		// 我要提问
+		askQuestion() {
+			// 跳转到提问页面
+			uni.navigateTo({
+				url: `/pages/goods/goods_ask_question/index?goodsId=${this.goodsInfo.id}`
+			});
+		},
+
+		// 加载商品评论
+		async loadGoodsComments(goodsId) {
+			if (this.commentLoading) return;
+
+			this.commentLoading = true;
+			try {
+				const response = await getGoodsCommentList(goodsId, {
+					page: 1,
+					limit: 2 // 详情页只显示前2条评论
+				});
+
+				if (response.status === 200 && response.data) {
+					this.commentList = response.data.list || [];
+					this.commentStats.total = response.data.count || 0;
+
+					// 计算好评率（假设评分4-5星为好评）
+					if (this.commentList.length > 0) {
+						const goodComments = this.commentList.filter(comment =>
+							comment.star_grade >= 4
+						).length;
+						this.commentStats.goodRate = this.commentStats.total > 0
+							? Math.round((goodComments / this.commentStats.total) * 100)
+							: 0;
+					}
+
+					console.log('评论列表加载成功:', this.commentList);
+				}
+			} catch (error) {
+				console.error('加载评论列表失败:', error);
+				// 不显示错误提示，静默失败
+			} finally {
+				this.commentLoading = false;
+			}
+		},
+
+		// 加载配送信息
+		async loadDeliveryInfo() {
+			// 优先获取我的社区信息
+			try {
+				const communityRes = await getMyCommunityInfo();
+				if (communityRes.status === 200 && communityRes.data && communityRes.data.is_bind && communityRes.data.community) {
+					this.communityInfo = communityRes.data;
+					const community = communityRes.data.community;
+					console.log('获取社区信息成功:', this.communityInfo);
+
+					// 使用社区信息更新配送信息
+					// 自提点使用社区名称，但要控制长度保持显示效果一致
+					let pickupName = community.name;
+					// 参考原来的静态数据"北京尚德井小区菜鸟驿站"(11个字符)，控制在相似长度
+					if (pickupName.length > 10) {
+						pickupName = pickupName.substring(0, 10) + '...';
+					}
+					// 如果社区名称太短，可以添加"自提点"后缀保持一致性
+					if (pickupName.length < 6 && !pickupName.includes('自提点')) {
+						pickupName = pickupName + '自提点';
+					}
+					this.deliveryInfo.pickupLocation = pickupName;
+
+					// 配送地址使用社区的完整地址（模板中已有"送至"，这里不需要重复）
+					// 控制配送地址长度，避免换行影响布局
+					let deliveryAddress = community.full_address;
+					if (deliveryAddress.length > 20) {
+						deliveryAddress = deliveryAddress.substring(0, 20) + '...';
+					}
+					this.deliveryInfo.deliveryAddress = deliveryAddress;
+
+					// 更新预计送达时间（使用接口返回的真实数据）
+					if (this.goodsInfo.receiving_time_text) {
+						this.deliveryInfo.deliveryTime = `预计${this.goodsInfo.receiving_time_text}送达`;
+					}
+
+					// 如果社区信息获取成功，就不需要再获取其他信息了
+					return;
+				} else if (communityRes.status === 200 && communityRes.data && !communityRes.data.is_bind) {
+					console.log('用户未绑定社区，使用默认配送信息');
+				}
+			} catch (error) {
+				console.log('获取社区信息失败，尝试其他方式:', error);
+			}
+
+			// 如果社区信息获取失败，尝试获取用户默认地址
+			try {
+				const addressRes = await getAddressDefault();
+				if (addressRes.status === 200 && addressRes.data && addressRes.data.length > 0) {
+					this.userDefaultAddress = addressRes.data;
+					// 使用用户默认地址更新配送信息（模板中已有"送至"，这里不需要重复）
+					const address = addressRes.data;
+					this.deliveryInfo.deliveryAddress = `${address.province}${address.city}${address.district}${address.detail}`;
+				}
+			} catch (error) {
+				console.log('获取用户地址失败，使用默认配送信息:', error);
+			}
+
+			// 尝试获取自提点列表
+			try {
+				const storeRes = await storeListApi({
+					page: 1,
+					limit: 10
+				});
+				if (storeRes.status === 200 && storeRes.data && storeRes.data.list && storeRes.data.list.length > 0) {
+					this.storeList = storeRes.data.list;
+					// 使用第一个自提点作为默认自提点
+					const firstStore = storeRes.data.list[0];
+					this.deliveryInfo.pickupLocation = `${firstStore.name || firstStore.address}`;
+				}
+			} catch (error) {
+				console.log('获取自提点列表失败，使用默认自提点:', error);
+			}
+
+			// 根据接口返回的 receiving_time_text 更新预计送达时间
+			if (this.goodsInfo.receiving_time_text) {
+				this.deliveryInfo.deliveryTime = `预计${this.goodsInfo.receiving_time_text}送达`;
+			}
 		}
 	},
 	onLoad(options) {
 		// 获取页面类型参数
 		if (options.type) {
 			this.pageType = options.type; // 'category' 或 'group'
+		} else {
+			this.pageType = 'category'; // 默认为分类页面类型
 		}
 
-		// 安全机制：只有明确传入canBuy=true且来源是group时才允许购买
-		if (options.canBuy === 'true' && options.type === 'group') {
+		// 安全机制：只有明确传入canBuy=true时才允许购买
+		if (options.canBuy === 'true') {
 			this.canBuy = true;
 		} else {
 			this.canBuy = false; // 默认不可购买，确保安全
 		}
 
-		// 这里应该请求后台数据
-		// this.getGoodsDetails(options.id);
+		// 获取商品详情数据
+		if (options.id) {
+			this.getGoodsDetails(options.id);
+			this.loadQAQuestions(options.id);
+		}
 
 		// 只有不可购买时（显示团购用户区域）才启动轮播
 		if (!this.canBuy) {
@@ -526,16 +1095,19 @@ export default {
 	/* 返回按钮 */
 	.back-icon {
 		position: absolute;
-		width: 18rpx;
-		height: 34rpx;
+		width: 48rpx;
+		height: 48rpx;
 		left: 24rpx;
-		top: 40rpx;
+		top: 30rpx;
 		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 
-		image {
-			width: 100%;
-			height: 100%;
-			filter: invert(1);
+		.back-icon-img {
+			width: 32rpx; /* 统一图标大小 */
+			height: 32rpx;
+			filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 		}
 	}
 
@@ -543,14 +1115,18 @@ export default {
 	.share-button {
 		position: absolute;
 		width: 48rpx;
-		height: 50rpx;
-		right: 32rpx;
+		height: 48rpx;
+		right: 24rpx;
 		top: 30rpx;
 		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 
-		image {
-			width: 100%;
-			height: 100%;
+		.share-icon-img {
+			width: 32rpx; /* 统一图标大小 */
+			height: 32rpx;
+			filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 		}
 	}
 
@@ -595,17 +1171,45 @@ export default {
 		position: relative;
 	}
 
-	/* 价格文字 */
-	.price-text {
+	/* 价格容器 */
+	.price-container {
 		position: absolute;
 		left: 6rpx;
 		top: 16rpx;
+		display: flex;
+		align-items: baseline;
+		gap: 8rpx;
+	}
+
+	/* 价格文字 */
+	.price-text {
 		font-family: 'PingFang SC';
 		font-style: normal;
 		font-weight: 400;
 		font-size: 48rpx;
 		line-height: 68rpx;
 		color: #1A1A1A;
+	}
+
+	/* 原价文字 */
+	.original-price-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 24rpx;
+		line-height: 34rpx;
+		color: #999999;
+		text-decoration: line-through;
+	}
+
+	/* 节省金额文字 */
+	.save-price-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 24rpx;
+		line-height: 34rpx;
+		color: #FF6B35;
 	}
 
 	/* 销量文字 */
@@ -664,6 +1268,37 @@ export default {
 		font-size: 24rpx;
 		line-height: 34rpx;
 		color: #999999;
+	}
+
+	/* 活动信息 */
+	.activity-info {
+		position: absolute;
+		right: 16rpx;
+		bottom: 16rpx;
+		display: flex;
+		align-items: center;
+		gap: 12rpx;
+	}
+
+	.activity-status {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 24rpx;
+		line-height: 34rpx;
+		color: #FF6B35;
+		background: rgba(255, 107, 53, 0.1);
+		padding: 2rpx 8rpx;
+		border-radius: 4rpx;
+	}
+
+	.time-left {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 24rpx;
+		line-height: 34rpx;
+		color: #666666;
 	}
 
 	/* 团购用户区域 */
@@ -910,6 +1545,48 @@ export default {
 		font-size: 16px;
 		line-height: 22px;
 		color: #1A1A1A;
+	}
+
+	/* 无评论提示 */
+	.no-comments {
+		position: absolute;
+		left: 8px;
+		top: 52px;
+		width: 327px;
+		height: 49px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.no-comments-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #999999;
+	}
+
+	/* 加载中提示 */
+	.loading-comments {
+		position: absolute;
+		left: 8px;
+		top: 52px;
+		width: 327px;
+		height: 49px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.loading-text {
+		font-family: 'PingFang SC';
+		font-style: normal;
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 20px;
+		color: #999999;
 	}
 
 	/* 买家秀区域 */
@@ -1183,6 +1860,11 @@ export default {
 		font-size: 16px;
 		line-height: 22px;
 		color: #999999;
+		/* 确保文本不会换行，保持布局一致 */
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
 	}
 
 	/* 预计送达时间 */
@@ -1244,6 +1926,11 @@ export default {
 		font-size: 16px;
 		line-height: 22px;
 		color: #4D4D4D;
+		/* 确保配送地址不会换行，保持布局一致 */
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
 	}
 
 	/* 保障信息 */

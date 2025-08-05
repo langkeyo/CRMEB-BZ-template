@@ -22,36 +22,49 @@
 			<view class="hot-tag">
 				<text>最近热品</text>
 			</view>
-			
-			<!-- 卡片列表区域 -->
-			<view class="product-grid">
-				<!-- Nike运动鞋卡片 -->
-				<view class="product-card featured-card" @tap="goDetail(featuredProduct)">
-					<view class="product-image">
-						<image :src="featuredProduct.image" mode="aspectFill"></image>
-					</view>
-					<view class="product-bottom">
-						<view class="product-title">{{ featuredProduct.title }}</view>
-						<view class="product-meta">
-							<view class="user-avatars">
-								<view class="avatar-item" v-for="(avatar, index) in avatars" :key="index">
-									<image :src="avatar" mode="aspectFill"></image>
+			<!-- 瀑布流卡片列表区域 -->
+			<view class="waterfall-grid">
+				<view class="waterfall-column">
+					<view 
+						class="product-card waterfall-card" 
+						v-for="(product, index) in leftColumn" 
+						:key="'left-' + index"
+						@tap="goDetail(product)"
+					>
+						<view v-if="index === 0" class="hot-tag">
+							<text>最近热品</text>
+						</view>
+						<view class="product-image" :class="{'hot-image': index === 0}">
+							<image :src="product.image" mode="aspectFill"></image>
+						</view>
+						<view class="product-bottom">
+							<view class="product-title">{{ product.title }}</view>
+							<view v-if="index === 0" class="product-meta">
+								<view class="user-avatars-scroll">
+									<scroll-view scroll-x class="avatar-scroll">
+										<view class="avatar-item" v-for="(avatar, idx) in avatars" :key="idx">
+											<image :src="avatar" mode="aspectFill"></image>
+										</view>
+									</scroll-view>
+								</view>
+								<view class="product-likes">
+									<text class="iconfont icon-dianzan1"></text>
+									<text class="likes-count">{{ product.likes || '9995' }}</text>
 								</view>
 							</view>
-							<view class="product-likes">
-								<text class="iconfont icon-dianzan1"></text>
-								<text class="likes-count">{{ featuredProduct.likes }}</text>
+							<view v-else class="product-price">
+								<text class="price">{{ product.price }}</text>
+								<text v-if="index !== 0" class="seckill-tag">秒杀价</text>
+								<text class="sales">{{ product.sales }}</text>
 							</view>
 						</view>
 					</view>
 				</view>
-
-				<!-- 右侧商品卡片列表 -->
-				<view class="right-column">
+				<view class="waterfall-column">
 					<view 
-						class="product-card small-card" 
-						v-for="(product, index) in products" 
-						:key="index"
+						class="product-card waterfall-card" 
+						v-for="(product, index) in rightColumn" 
+						:key="'right-' + index"
 						@tap="goDetail(product)"
 					>
 						<view class="product-image">
@@ -78,48 +91,24 @@
 import { mapGetters } from 'vuex';
 import { navigateToHome, navigateToOrderDetails } from '@/utils/orderNavigation.js';
 
+// 引入获取推荐拼团商品的API
+import { getRecommendCombinations } from '@/api/group.js';
+
 export default {
 	data() {
 		return {
 			orderId: '',
 			isIphoneX: false,
 			avatars: [
-				'/static/images/avatars/avatar1.png',
-				'/static/images/avatars/avatar2.png',
-				'/static/images/avatars/avatar3.png'
+				'https://randomuser.me/api/portraits/men/32.jpg',
+				'https://randomuser.me/api/portraits/women/44.jpg',
+				'https://randomuser.me/api/portraits/men/65.jpg',
+				'https://randomuser.me/api/portraits/women/68.jpg'
 			],
-			featuredProduct: {
-				id: 1,
-				title: 'Nike耐克男鞋网面运动慢跑步鞋',
-				image: '/static/images/products/nike-shoes.jpg',
-				likes: '9995'
-			},
-			products: [
-				{
-					id: 2,
-					title: '精品白条鸡',
-					image: '/static/images/products/chicken.jpg',
-					price: '￥88',
-					sales: '已售365单',
-					tag: '秒杀价'
-				},
-				{
-					id: 3,
-					title: '蚕丝鸭绒床上四件...',
-					image: '/static/images/products/bedding.jpg',
-					price: '￥188',
-					sales: '已售112单',
-					tag: '秒杀价'
-				},
-				{
-					id: 4,
-					title: '超值海鲜礼盒',
-					image: '/static/images/products/seafood.jpg',
-					price: '￥218',
-					sales: '已售103单',
-					tag: '秒杀价'
-				}
-			]
+			products: [],
+			leftColumn: [],
+			rightColumn: [],
+			baseUrl: 'http://wx.laizhangluo.com' // 添加基础URL
 		};
 	},
 	computed: {
@@ -132,6 +121,9 @@ export default {
 		if (options.order_id) {
 			this.orderId = options.order_id;
 		}
+		
+		// 获取推荐商品
+		this.getRecommendProducts();
 	},
 	methods: {
 		// 检测是否为iPhone X以上机型
@@ -167,6 +159,102 @@ export default {
 			uni.navigateTo({
 				url: `/pages/goods_details/index?id=${product.id}`
 			});
+		},
+		splitProducts() {
+			this.leftColumn = [];
+			this.rightColumn = [];
+			this.products.forEach((item, idx) => {
+				if (idx % 2 === 0) {
+					this.leftColumn.push(item);
+				} else {
+					this.rightColumn.push(item);
+				}
+			});
+		},
+		// 获取推荐商品
+		getRecommendProducts() {
+			uni.showLoading({
+				title: '加载中...'
+			});
+			
+			// 调用今日开团商品API中的推荐商品接口
+			getRecommendCombinations({}).then(res => {
+				uni.hideLoading();
+				if (res.status === 200 && res.data && res.data.length > 0) {
+					// 根据销量排序（降序）
+					const sortedProducts = res.data.sort((a, b) => b.sales - a.sales);
+					
+					// 转换为本地数据格式
+					this.products = sortedProducts.map(item => {
+						// 处理图片URL，拼接域名
+						const imageUrl = item.image.startsWith('http') 
+							? item.image 
+							: this.baseUrl + item.image;
+						
+						return {
+							id: item.id,
+							title: item.title,
+							image: imageUrl,
+							price: '￥' + item.group_price,
+							sales: `已售${item.sales}单`,
+							tag: '秒杀价',
+							likes: item.sales.toString() // 用销量作为点赞数
+						};
+					});
+					
+					// 分配到左右两列
+					this.splitProducts();
+				} else {
+					// 如果接口失败，使用默认数据
+					this.useDefaultProducts();
+				}
+			}).catch(() => {
+				uni.hideLoading();
+				// 接口请求失败，使用默认数据
+				this.useDefaultProducts();
+			});
+		},
+		
+		// 使用默认商品数据
+		useDefaultProducts() {
+			this.products = [
+				{
+					id: 1,
+					title: 'Nike耐克男鞋网面运动慢跑步鞋',
+					image: '/static/images/products/nike-shoes.jpg',
+					price: '￥399',
+					sales: '已售9995单',
+					tag: '秒杀价',
+					likes: '9995'
+				},
+				{
+					id: 2,
+					title: '精品白条鸡',
+					image: '/static/images/products/chicken.jpg',
+					price: '￥88',
+					sales: '已售365单',
+					tag: '秒杀价'
+				},
+				{
+					id: 3,
+					title: '蚕丝鸭绒床上四件...',
+					image: '/static/images/products/bedding.jpg',
+					price: '￥188',
+					sales: '已售112单',
+					tag: '秒杀价'
+				},
+				{
+					id: 4,
+					title: '超值海鲜礼盒',
+					image: '/static/images/products/seafood.jpg',
+					price: '￥218',
+					sales: '已售103单',
+					tag: '秒杀价'
+				}
+			];
+			
+			// 分配到左右两列
+			this.splitProducts();
 		}
 	}
 };
@@ -230,12 +318,12 @@ export default {
 		.hot-tag {
 			position: absolute;
 			top: 0;
-			left: 0;
+			left: 12rpx;
 			z-index: 10;
 			width: 124rpx;
 			height: 52rpx;
 			background: linear-gradient(90deg, #F69F75 0%, #EC6732 100%);
-			border-radius: 8rpx 0 8rpx 0;
+			border-radius: 16rpx 0 8rpx 0;
 			display: flex;
 			align-items: center;
 			justify-content: center;
@@ -369,6 +457,79 @@ export default {
 		}
 	}
 	
+	.waterfall-grid {
+		display: flex;
+		justify-content: center;
+		margin-top: 80rpx;
+	}
+	.waterfall-column {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 32rpx;
+	}
+	.waterfall-card {
+		background: #fff;
+		border-radius: 16rpx;
+		margin: 0 12rpx 32rpx 12rpx;
+		box-shadow: 0 4rpx 24rpx 0 rgba(0,0,0,0.04);
+		overflow: hidden;
+		padding-bottom: 0;
+		position: relative;
+	}
+	.waterfall-card .product-image {
+		width: 100%;
+		height: 260rpx;
+		border-radius: 16rpx 16rpx 0 0;
+		overflow: hidden;
+	}
+	.waterfall-card .product-image.hot-image {
+		height: 320rpx;
+	}
+	.waterfall-card .product-image image {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.waterfall-card .product-bottom {
+		padding: 20rpx 20rpx 16rpx 20rpx;
+	}
+	.waterfall-card .product-title {
+		font-size: 28rpx;
+		color: #1A1A1A;
+		font-weight: 500;
+		margin-bottom: 12rpx;
+		line-height: 1.3;
+	}
+	.waterfall-card .product-price {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		min-width: 0;
+	}
+	.waterfall-card .price {
+		color: #1A1A1A;
+		font-size: 28rpx;
+		font-weight: bold;
+		margin-right: 8rpx;
+		white-space: nowrap;
+	}
+	.waterfall-card .seckill-tag {
+		color: #1A1A1A;
+		font-size: 28rpx;
+		font-weight: normal;
+		margin-right: 16rpx;
+		white-space: nowrap;
+	}
+	.waterfall-card .sales {
+		color: #D1D1D1;
+		font-size: 22rpx;
+		white-space: nowrap;
+		margin-left: auto;
+	}
+	
 	.home-indicator {
 		width: 100%;
 		height: 64rpx;
@@ -377,5 +538,52 @@ export default {
 		bottom: 0;
 		left: 0;
 	}
+}
+// 横向头像轮播紧凑重叠样式
+.user-avatars-scroll {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8rpx;
+}
+.avatar-scroll {
+	display: flex;
+	flex-direction: row;
+	width: 72rpx;
+	height: 36rpx;
+	white-space: nowrap;
+	overflow-x: scroll;
+	max-width: 72rpx;
+}
+.avatar-item {
+	display: inline-block;
+	width: 36rpx;
+	height: 36rpx;
+	border-radius: 50%;
+	overflow: hidden;
+	margin-right: -18rpx;
+	border: 2rpx solid #fff;
+	box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+}
+.avatar-item:nth-child(3) {
+	margin-right: 0;
+}
+.avatar-item image {
+	width: 100%;
+	height: 100%;
+}
+.product-meta {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.product-likes {
+	display: flex;
+	align-items: center;
+	font-size: 26rpx;
+	color: #999;
+}
+.product-likes .iconfont {
+	font-size: 30rpx;
+	margin-right: 6rpx;
 }
 </style> 

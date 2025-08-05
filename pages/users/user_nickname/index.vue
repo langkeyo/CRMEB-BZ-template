@@ -47,8 +47,15 @@ export default {
 		// 获取用户信息
 		getUserInfo() {
 			getUserInfo().then(res => {
-				this.nickname = res.data.nickname || '';
-				this.originalNickname = res.data.nickname || '';
+				if (res.status === 200 || res.code === 200) {
+					// 确保昵称不为空，如果为空则不设置
+					this.nickname = res.data.nickname || '用户';
+					this.originalNickname = res.data.nickname || '用户';
+				} else {
+					this.$util.Tips({
+						title: res.msg || '获取用户信息失败'
+					});
+				}
 			}).catch(err => {
 				this.$util.Tips({
 					title: err || '获取用户信息失败'
@@ -68,25 +75,61 @@ export default {
 				return this.navigateBack();
 			}
 			
-			// 提交修改
-			userEdit({
-				nickname: this.nickname
-			}).then(res => {
-				this.$util.Tips({
-					title: '昵称修改成功',
-					icon: 'success'
-				});
-				
-				// 通知父页面刷新
-				uni.$emit('updateUserInfo');
-				
-				// 延迟返回
-				setTimeout(() => {
-					this.navigateBack();
-				}, 1500);
+			uni.showLoading({
+				title: '保存中...'
+			});
+			
+			// 获取当前用户信息，确保其他字段不会丢失
+			getUserInfo().then(userRes => {
+				if (userRes.status === 200 || userRes.code === 200) {
+					const userInfo = userRes.data;
+					
+					// 构建完整的用户数据，只更新昵称
+					const userData = {
+						nickname: this.nickname,
+						// 保留其他关键信息
+						avatar: userInfo.avatar || '',
+						sex: typeof userInfo.sex !== 'undefined' ? userInfo.sex : 0,
+						birthday: userInfo.birthday || 0
+					};
+					
+					// 提交修改 - 继续使用userEdit接口，因为昵称不在API文档的性别和生日接口中
+					userEdit(userData).then(res => {
+						uni.hideLoading();
+						if (res.status === 200 || res.code === 200) {
+							this.$util.Tips({
+								title: '昵称修改成功',
+								icon: 'success'
+							});
+							
+							// 通知父页面刷新
+							uni.$emit('updateUserInfo');
+							
+							// 延迟返回
+							setTimeout(() => {
+								this.navigateBack();
+							}, 1500);
+						} else {
+							this.$util.Tips({
+								title: res.msg || '昵称修改失败'
+							});
+						}
+					}).catch(err => {
+						uni.hideLoading();
+						this.$util.Tips({
+							title: err || '昵称修改失败'
+						});
+					});
+				} else {
+					uni.hideLoading();
+					this.$util.Tips({
+						title: userRes.msg || '获取用户信息失败'
+					});
+				}
 			}).catch(err => {
+				uni.hideLoading();
 				this.$util.Tips({
-					title: err || '昵称修改失败'
+					title: err || '获取用户信息失败'
 				});
 			});
 		},

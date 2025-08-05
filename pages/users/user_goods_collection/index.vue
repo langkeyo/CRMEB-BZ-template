@@ -55,23 +55,7 @@
 		
 		<!-- 收藏内容 -->
 		<view class="collect-content" v-if="activeTab === 'collect'">
-			<!-- 广告区域 -->
-			<view class="ad-container">
-				<view class="ad-card">
-					<view class="ad-left">
-						<image class="ad-logo" src="/static/images/luckin-coffee.png"></image>
-					</view>
-					<view class="ad-info">
-						<view class="ad-title">瑞幸咖啡Coffee</view>
-						<view class="ad-subtitle">加盟费：12万-18万</view>
-						<view class="ad-desc">全国加盟上万家，饮品行业领头者</view>
-						<view class="ad-status">全国连锁</view>
-					</view>
-					<view class="ad-action">
-						<view class="ad-button">查看</view>
-					</view>
-				</view>
-			</view>
+			<!-- 广告区域已隐藏 -->
 			
 			<view class='collectionGoods' v-if="collectProductList.length">
 				<checkbox-group @change.stop="checkboxChange">
@@ -100,10 +84,11 @@
 				</view>
 			</view>
 			
-			<view class='noCommodity' v-else-if="!collectProductList.length && page > 1">
+			<view class='noCommodity' v-if="!collectProductList.length && !loading && loadend">
 				<view class='pictrue'>
 					<image :src="imgHost + '/statics/images/noCollection.png'"></image>
 				</view>
+				<view class="empty-text">暂无收藏商品</view>
 				<recommend :hostProduct="hostProduct"></recommend>
 			</view>
 		</view>
@@ -130,7 +115,8 @@
 <script>
 	import {
 		getCollectList,
-		deleteCollect
+		deleteCollect,
+		batchCollect
 	} from '@/api/group.js';
 	import {
 		getProductHot
@@ -197,12 +183,10 @@
 				this.loadend = false;
 				this.page = 1;
 				
-				if (this.activeTab === 'browse') {
-					this.getBrowseHistory();
-				} else {
-					this.collectProductList = [];
-					this.getUserCollectProduct();
-				}
+				// 默认显示收藏选项卡
+				this.activeTab = 'collect';
+				this.collectProductList = [];
+				this.getUserCollectProduct();
 			} else {
 				toLogin();
 			}
@@ -211,12 +195,10 @@
 			this.loadend = false;
 			this.page = 1;
 			
-			if (this.activeTab === 'browse') {
-				this.getBrowseHistory();
-			} else {
-				this.$set(this, 'collectProductList', []);
-				this.getUserCollectProduct();
-			}
+			// 默认显示收藏选项卡
+			this.activeTab = 'collect';
+			this.$set(this, 'collectProductList', []);
+			this.getUserCollectProduct();
 		},
 		/**
 		 * 页面上拉触底事件的处理函数
@@ -241,26 +223,34 @@
 				}
 				this.$set(this, 'ids', e.detail.value);
 			},
+			/**
+			 * 批量取消收藏
+			 */
 			subDel() {
-				let that = this
+				let that = this;
 				if (this.ids.length) {
-					// 批量取消收藏
-					const deletePromises = this.ids.map(id => {
-						return deleteCollect({
-							fav_id: id,
-							type: '0' // 假设0是商品收藏类型
-						});
-					});
-					
-					Promise.all(deletePromises).then(() => {
-						that.loadend = false;
-						that.$util.Tips({
-							title: that.$t(`取关成功`)
-						});
-						that.page = 1;
-						that.collectProductList = [];
-						that.getUserCollectProduct();
-						that.ids = [];
+					// 使用批量操作API
+					batchCollect({
+						action: 'del',
+						items: this.ids.map(id => ({
+							fav_id: id.toString(),
+							type: '0' // 0表示商品收藏类型
+						}))
+					}).then(res => {
+						if (res.status === 200) {
+							that.loadend = false;
+							that.$util.Tips({
+								title: that.$t(`取关成功`)
+							});
+							that.page = 1;
+							that.collectProductList = [];
+							that.getUserCollectProduct();
+							that.ids = [];
+						} else {
+							that.$util.Tips({
+								title: res.msg || '操作失败'
+							});
+						}
 					}).catch(err => {
 						that.$util.Tips({
 							title: that.$t(`操作失败`)
@@ -271,7 +261,6 @@
 						title: that.$t(`请选择商品`)
 					});
 				}
-
 			},
 			checkboxAllChange(event) {
 				let value = event.detail.value;
@@ -319,13 +308,23 @@
 				let that = this;
 				deleteCollect({
 					fav_id: pid.toString(),
-					type: '0' // 假设0是商品收藏类型
+					type: '0' // 0表示商品收藏类型
 				}).then(res => {
-					that.collectProductList.splice(index, 1);
-					that.count = that.collectProductList.length;
+					if (res.status === 200) {
+						that.collectProductList.splice(index, 1);
+						that.count = that.collectProductList.length;
+						that.$util.Tips({
+							title: res.msg || '取消收藏成功'
+						});
+					} else {
+						that.$util.Tips({
+							title: res.msg || '取消收藏失败'
+						});
+					}
+				}).catch(err => {
 					that.$util.Tips({
-						title: res.msg
-					})
+						title: '操作失败，请稍后重试'
+					});
 				});
 			},
 			/**
@@ -337,23 +336,40 @@
 				if (that.loadend) return;
 				that.loading = true;
 				that.loadTitle = '';
+				
 				getCollectList({
-					type: '0', // 假设0是商品收藏类型
+					type: '0', // 0表示商品收藏类型
 					page: that.page,
 					limit: that.limit
 				}).then(res => {
-					if (res.code === 200) {
-						let list = res.data.list || [];
+					that.loading = false;
+					
+					// 处理成功响应
+					if (res.status === 200) {
+						// 检查是否有数据
+						if (!res.data || !res.data.list || res.data.list.length === 0) {
+							// 没有数据，显示空状态
+							if (that.page === 1) {
+								that.collectProductList = [];
+								that.get_host_product();
+							}
+							that.loadend = true;
+							that.loadTitle = that.$t(`我也是有底线的`);
+							return;
+						}
+						
+						// 处理商品数据
+						let list = res.data.list;
 						let productList = list.map(item => {
 							return {
-								pid: item.id || item.fav_id,
-								id: item.id || item.fav_id,
-								store_name: item.title || item.name,
-								price: item.price || '0.00',
-								image: item.image,
-								is_show: item.is_show !== undefined ? item.is_show : true,
+								pid: item.fav_id,
+								id: item.fav_id,
+								store_name: item.item_info?.title || item.item_info?.name || '未知商品',
+								price: item.item_info?.price || '0.00',
+								image: item.item_info?.image || '',
+								is_show: item.item_info?.is_available !== undefined ? item.item_info.is_available : true,
 								checked: false
-							}
+							};
 						});
 						
 						let collectProductList = that.$util.SplitArray(productList, that.collectProductList);
@@ -362,23 +378,89 @@
 						that.loadend = list.length < that.limit;
 						that.loadTitle = that.loadend ? that.$t(`我也是有底线的`) : that.$t(`加载更多`);
 						that.page = that.page + 1;
-						that.loading = false;
-						
-						if (!that.collectProductList.length && res.data.count) that.getUserCollectProduct();
 					} else {
-						that.loading = false;
-						that.loadTitle = that.$t(`加载更多`);
-						that.$util.Tips({
-							title: res.msg
-						});
+						// 处理错误响应
+						that.handleErrorResponse(res);
 					}
 				}).catch(err => {
 					that.loading = false;
+
+					// 处理复杂的嵌套错误响应格式
+					let errorStatus = null;
+					let errorMsg = '';
+
+					if (err && typeof err === 'object') {
+						// 优先检查 data 对象中的状态码和消息（这是实际的业务错误信息）
+						if (err.data && typeof err.data === 'object') {
+							if (err.data.status !== undefined) {
+								errorStatus = err.data.status;
+								errorMsg = err.data.msg || err.data.message || '';
+							}
+						}
+
+						// 如果 data 中没有找到，再检查顶层的状态码
+						if (errorStatus === null && err.status !== undefined) {
+							errorStatus = err.status;
+							errorMsg = err.msg || err.message || '';
+						}
+
+						// 如果都没有状态码，但有错误消息，使用错误消息
+						if (errorStatus === null && (err.msg || err.message)) {
+							errorMsg = err.msg || err.message;
+						}
+					}
+
+					// 处理特定的错误状态码
+					if (errorStatus === 400) {
+						// 处理"暂无收藏数据"的情况 - 这是正常的业务状态，不是真正的错误
+						that.handleEmptyData(errorMsg || '暂无收藏数据');
+						return;
+					} else if (errorStatus === 110002) {
+						// 处理登录失效的情况
+						setTimeout(() => {
+							toLogin();
+						}, 1500);
+						return;
+					}
+
+					// 其他错误的处理
 					that.loadTitle = that.$t(`加载更多`);
 					that.$util.Tips({
-						title: that.$t(`网络错误`)
+						title: errorMsg || that.$t(`网络错误`)
 					});
+
+					// 在网络错误时，如果是第一页，显示空状态
+					if (that.page === 1) {
+						that.collectProductList = [];
+						that.get_host_product();
+					}
 				});
+			},
+
+			// 处理错误响应
+			handleErrorResponse(res) {
+				if (res.status === 400 || (res.data && res.data.status === 400)) {
+					const errorMsg = res.msg || (res.data && res.data.msg) || '暂无收藏数据';
+					this.handleEmptyData(errorMsg);
+				} else {
+					this.loadTitle = this.$t(`加载更多`);
+					this.$util.Tips({
+						title: res.msg || '获取收藏列表失败'
+					});
+				}
+			},
+
+			// 处理空数据
+			handleEmptyData(msg) {
+				this.loadend = true;
+				this.loadTitle = this.$t(`我也是有底线的`);
+
+				if (this.page === 1) {
+					this.collectProductList = [];
+					// 对于"暂无收藏数据"这种正常的业务状态，不显示错误提示
+					// 页面会自然显示空状态和推荐商品
+					this.get_host_product();
+				}
 			},
 			/**
 			 * 获取我的推荐
@@ -422,39 +504,10 @@
 					this.getUserCollectProduct();
 				}
 			},
-			// 模拟获取浏览记录
+			// 获取真实的浏览历史记录
 			getBrowseHistory() {
-				const today = `今天`;
-				const yesterday = `3月26日`;
-
-				this.groupedBrowseList = [
-					{
-						date: today,
-						items: [
-							{ 
-								id: 1, 
-								image: '/static/images/goods/goods1.jpg', 
-								store_name: '巧克力-提拉米苏', 
-								price: '105', 
-								spec: '单份巧克力蛋糕/40g' 
-							}
-						]
-					},
-					{
-						date: yesterday,
-						items: [
-							{ 
-								id: 3, 
-								image: '/static/images/goods/goods3.jpg', 
-								store_name: '三面软毛牙刷', 
-								price: '4.9', 
-								spec: '【店长补贴 与本冲量】' 
-							}
-						]
-					}
-				];
-				
-				// 设置加载状态
+				// 浏览历史功能暂未实现，显示空状态
+				this.groupedBrowseList = [];
 				this.browseLoading = false;
 				this.browseLoadend = true;
 				this.loadTitle = this.$t(`我也是有底线的`);
@@ -752,6 +805,30 @@
 		background-color: #fff;
 		padding-top: 1rpx;
 		border-top: 0;
+	}
+
+	.noCommodity {
+		background-color: #fff;
+		padding-top: 1rpx;
+		border-top: 0;
+		
+		.pictrue {
+			width: 414rpx;
+			height: 336rpx;
+			margin: 30rpx auto 50rpx auto;
+			
+			image {
+				width: 100%;
+				height: 100%;
+			}
+		}
+		
+		.empty-text {
+			text-align: center;
+			font-size: 28rpx;
+			color: #999;
+			margin-bottom: 50rpx;
+		}
 	}
 
 	.footer {
