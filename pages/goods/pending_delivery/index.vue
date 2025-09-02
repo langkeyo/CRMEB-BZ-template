@@ -43,7 +43,7 @@
 
     <!-- 空状态 -->
     <view v-if="orderList.length === 0" class="empty-state">
-      <image class="empty-image" src="/static/images/empty_order.png"></image>
+      <image class="empty-image" src="/static/images//common/no-orders.png" mode="aspectFit"></image>
       <text class="empty-text">暂无待收货订单</text>
     </view>
 
@@ -92,7 +92,7 @@ import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
   mixins: [colors],
-  data () {
+  data() {
     return {
       status: 'onway', // 订单状态：在路上
       showPopup: false,
@@ -109,7 +109,7 @@ export default {
     this.getRecommendProducts()
   },
   methods: {
-    goBack () {
+    goBack() {
       uni.navigateBack()
     },
     formatImage(url) {
@@ -119,10 +119,10 @@ export default {
     },
     formatDeliveryTime(createTime) {
       if (!createTime) return '今日';
-      
+
       const orderDate = new Date(createTime * 1000);
       const now = new Date();
-      
+
       // 如果是今天的订单
       if (orderDate.toDateString() === now.toDateString()) {
         // 预计2小时内送达
@@ -155,15 +155,15 @@ export default {
         this.orderList = [];
       });
     },
-    confirmDelivery (order) {
+    confirmDelivery(order) {
       // 显示确认弹窗
       uni.showModal({
         title: '确认收货',
         content: '确定已收到商品了吗？',
         success: (res) => {
           if (res.confirm) {
-            confirmReceipt({ 
-              order_id: order.id || order.order_id || order.order_number 
+            confirmReceipt({
+              order_id: order.id || order.order_id || order.order_number
             }).then(resp => {
               if (resp.status === 200) {
                 this.popupText = '收货成功！'
@@ -191,19 +191,19 @@ export default {
         }
       })
     },
-    showNotFoundNotice () {
+    showNotFoundNotice() {
       this.popupText = '未找到商品？已反馈平台管理员'
       this.showPopup = true
       setTimeout(() => {
         this.showPopup = false
       }, 2000)
     },
-    gotoOrderComplete () {
+    gotoOrderComplete() {
       uni.navigateTo({
         url: '/pages/goods/order_list/all_orders'
       })
     },
-    handlePopupConfirm () {
+    handlePopupConfirm() {
       this.showPopup = false
     },
     getRecommendProducts() {
@@ -252,29 +252,36 @@ export default {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 88rpx; /* 44px * 2 */
+      height: 88rpx;
+      /* 44px * 2 */
 
       .left {
         position: absolute;
-        left: 30rpx; /* 15px * 2 */
+        left: 30rpx;
+        /* 15px * 2 */
         display: flex;
         align-items: center;
 
         .back-icon {
-          width: 20rpx; /* 10px * 2 */
-          height: 36rpx; /* 18px * 2 */
-          margin-right: 10rpx; /* 5px * 2 */
+          width: 20rpx;
+          /* 10px * 2 */
+          height: 36rpx;
+          /* 18px * 2 */
+          margin-right: 10rpx;
+          /* 5px * 2 */
         }
 
         text {
           color: #333333;
-          font-size: 36rpx; /* 18px * 2 */
+          font-size: 36rpx;
+          /* 18px * 2 */
           margin-left: 10rpx;
         }
       }
 
       .title {
-        font-size: 36rpx; /* 18px * 2 */
+        font-size: 36rpx;
+        /* 18px * 2 */
         font-weight: 400;
         color: #1A1A1A;
       }
@@ -290,9 +297,12 @@ export default {
   // 订单卡片
   .order-card {
     background: #FFFFFF;
-    border-radius: 8rpx; /* 4px * 2 */
-    margin: 20rpx 30rpx; /* 10px 15px * 2 */
-    padding: 30rpx; /* 15px * 2 */
+    border-radius: 8rpx;
+    /* 4px * 2 */
+    margin: 20rpx 30rpx;
+    /* 10px 15px * 2 */
+    padding: 30rpx;
+    /* 15px * 2 */
 
     .order-info {
       display: flex;
@@ -301,25 +311,32 @@ export default {
 
       .order-no {
         color: #B3B3B3;
-        font-size: 26rpx; /* 13px * 2 */
+        font-size: 26rpx;
+        /* 13px * 2 */
       }
 
       .order-status {
         color: #DA3232;
-        font-size: 30rpx; /* 15px * 2 */
+        font-size: 30rpx;
+        /* 15px * 2 */
       }
     }
 
     .product-info {
       display: flex;
-      margin: 30rpx 0; /* 15px * 2 */
+      margin: 30rpx 0;
+      /* 15px * 2 */
 
       .product-image {
-        width: 190rpx; /* Make it square */
-        height: 190rpx; /* Keep the same height */
-        border-radius: 8rpx; /* 4px * 2 */
+        width: 190rpx;
+        /* Make it square */
+        height: 190rpx;
+        /* Keep the same height */
+        border-radius: 8rpx;
+        /* 4px * 2 */
         overflow: hidden;
-        margin-right: 30rpx; /* 15px * 2 */
+        margin-right: 30rpx;
+        /* 15px * 2 */
 
         image {
           width: 100%;
@@ -335,76 +352,97 @@ export default {
         justify-content: space-between;
 
         .product-name {
-          font-size: 30rpx; /* 15px * 2 */
+          font-size: 30rpx;
+          /* 15px * 2 */
           color: #1A1A1A;
-          margin-bottom: 10rpx; /* 5px * 2 */
+          margin-bottom: 10rpx;
+          /* 5px * 2 */
         }
 
         .product-spec {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 10rpx; /* 5px * 2 */
+          margin-bottom: 10rpx;
+          /* 5px * 2 */
 
           .spec-tag {
             background: #F7F7F7;
             color: #999999;
-            font-size: 28rpx; /* 14px * 2 */
-            padding: 4rpx 16rpx; /* 2px 8px * 2 */
-            border-radius: 12rpx; /* 6px * 2 */
+            font-size: 28rpx;
+            /* 14px * 2 */
+            padding: 4rpx 16rpx;
+            /* 2px 8px * 2 */
+            border-radius: 12rpx;
+            /* 6px * 2 */
           }
 
           .product-quantity {
             color: #999999;
-            font-size: 28rpx; /* 14px * 2 */
+            font-size: 28rpx;
+            /* 14px * 2 */
           }
         }
 
         .product-price {
-          font-size: 30rpx; /* 15px * 2 */
+          font-size: 30rpx;
+          /* 15px * 2 */
           color: #1A1A1A;
         }
       }
     }
 
     .divider {
-      height: 1rpx; /* 0.5px * 2 */
+      height: 1rpx;
+      /* 0.5px * 2 */
       background: #F0F0F0;
-      margin-bottom: 30rpx; /* 15px * 2 */
+      margin-bottom: 30rpx;
+      /* 15px * 2 */
     }
 
     .logistics-status {
-      padding: 20rpx 30rpx; /* 10px 15px * 2 */
+      padding: 20rpx 30rpx;
+      /* 10px 15px * 2 */
       color: #000000;
-      font-size: 30rpx; /* 15px * 2 */
-      margin-bottom: 30rpx; /* 15px * 2 */
+      font-size: 30rpx;
+      /* 15px * 2 */
+      margin-bottom: 30rpx;
+      /* 15px * 2 */
       background-color: #F8F8F8;
-      border-radius: 8rpx; /* 4px * 2 */
+      border-radius: 8rpx;
+      /* 4px * 2 */
       display: flex;
       align-items: center;
 
       image {
-        width: 40rpx; /* 20px * 2 */
-        height: 40rpx; /* 20px * 2 */
-        margin-right: 16rpx; /* 8px * 2 */
+        width: 40rpx;
+        /* 20px * 2 */
+        height: 40rpx;
+        /* 20px * 2 */
+        margin-right: 16rpx;
+        /* 8px * 2 */
       }
 
       &.delivered {
         font-weight: 500;
 
         .delivered-icon {
-          width: 40rpx; /* 20px * 2 */
-          height: 40rpx; /* 20px * 2 */
+          width: 40rpx;
+          /* 20px * 2 */
+          height: 40rpx;
+          /* 20px * 2 */
           border-radius: 50%;
           background-color: #4CD964;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-right: 10rpx; /* 5px * 2 */
+          margin-right: 10rpx;
+          /* 5px * 2 */
 
           .iconfont {
             color: #FFFFFF;
-            font-size: 24rpx; /* 12px * 2 */
+            font-size: 24rpx;
+            /* 12px * 2 */
           }
         }
       }
@@ -416,16 +454,21 @@ export default {
       align-items: center;
 
       .not-found-btn {
-        height: 60rpx; /* 30px * 2 */
-        padding: 0 30rpx; /* 0 15px * 2 */
-        border-radius: 30rpx; /* 15px * 2 */
+        height: 60rpx;
+        /* 30px * 2 */
+        padding: 0 30rpx;
+        /* 0 15px * 2 */
+        border-radius: 30rpx;
+        /* 15px * 2 */
         background: #FFFFFF;
         color: #4D4D4D;
-        font-size: 30rpx; /* 15px * 2 */
+        font-size: 30rpx;
+        /* 15px * 2 */
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-right: 20rpx; /* 10px * 2 */
+        margin-right: 20rpx;
+        /* 10px * 2 */
 
         &.active {
           background: #4D4D4D;
@@ -434,12 +477,16 @@ export default {
       }
 
       .confirm-btn {
-        height: 60rpx; /* 30px * 2 */
-        padding: 0 30rpx; /* 0 15px * 2 */
-        border-radius: 30rpx; /* 15px * 2 */
+        height: 60rpx;
+        /* 30px * 2 */
+        padding: 0 30rpx;
+        /* 0 15px * 2 */
+        border-radius: 30rpx;
+        /* 15px * 2 */
         background: #FF840B;
         color: #FFFFFF;
-        font-size: 30rpx; /* 15px * 2 */
+        font-size: 30rpx;
+        /* 15px * 2 */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -454,14 +501,16 @@ export default {
   // 查找订单提示
   .find-order-tip {
     text-align: center;
-    font-size: 26rpx; /* 13px * 2 */
+    font-size: 26rpx;
+    /* 13px * 2 */
     color: #999999;
     margin: 30rpx 0;
     margin-top: 60rpx;
     font-family: 'PingFang SC';
     font-style: normal;
     font-weight: 400;
-    line-height: 36rpx; /* 18px * 2 */
+    line-height: 36rpx;
+    /* 18px * 2 */
 
     .link {
       color: #47B9FB;
@@ -477,13 +526,17 @@ export default {
 
   // 猜你喜欢
   .guess-like {
-    padding: 30rpx; /* 15px * 2 */
-    margin-top: 20rpx; /* 10px * 2 */
+    padding: 30rpx;
+    /* 15px * 2 */
+    margin-top: 20rpx;
+    /* 10px * 2 */
 
     .title {
-      font-size: 36rpx; /* 18px * 2 */
+      font-size: 36rpx;
+      /* 18px * 2 */
       color: #000000;
-      margin-bottom: 30rpx; /* 15px * 2 */
+      margin-bottom: 30rpx;
+      /* 15px * 2 */
     }
 
     .like-list {
@@ -496,12 +549,14 @@ export default {
         flex-direction: column;
         gap: 12rpx;
         width: 48%;
-        margin-bottom: 30rpx; /* 15px * 2 */
+        margin-bottom: 30rpx;
+        /* 15px * 2 */
         overflow: hidden;
 
         image {
           width: 100%;
-          height: 320rpx; /* Increased to match Figma design (approximately 161px) */
+          height: 320rpx;
+          /* Increased to match Figma design (approximately 161px) */
           display: block;
           object-fit: cover;
           border-radius: 8rpx 8rpx 0 0;
@@ -530,7 +585,7 @@ export default {
               font-size: 28rpx;
               color: #333333;
               font-weight: 550;
-              
+
               &::before {
                 content: '￥';
                 font-size: 26rpx;
@@ -542,12 +597,12 @@ export default {
               display: flex;
               align-items: baseline;
               margin-left: 8rpx;
-              
+
               .sales-text {
                 font-size: 22rpx;
                 color: #CCCCCC;
               }
-              
+
               .sales-number {
                 font-size: 20rpx;
                 color: #CCCCCC;
@@ -558,7 +613,7 @@ export default {
       }
     }
   }
-  
+
   .no-recommend {
     text-align: center;
     padding: 40rpx 0;
@@ -575,16 +630,22 @@ export default {
     font-family: 'PingFang SC';
     font-style: normal;
     font-weight: 400;
-    font-size: 32rpx; /* 16px * 2 */
-    line-height: 44rpx; /* 22px * 2 */
+    font-size: 32rpx;
+    /* 16px * 2 */
+    line-height: 44rpx;
+    /* 22px * 2 */
     text-align: center;
     color: #FFFFFF;
     background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 20rpx; /* 10px * 2 */
-    padding: 24rpx 40rpx; /* 12px 20px * 2 */
+    border-radius: 20rpx;
+    /* 10px * 2 */
+    padding: 24rpx 40rpx;
+    /* 12px 20px * 2 */
     z-index: 1000;
-    white-space: nowrap; /* 强制单行显示 */
-    max-width: 90%; /* 最大宽度90%，避免超出屏幕 */
+    white-space: nowrap;
+    /* 强制单行显示 */
+    max-width: 90%;
+    /* 最大宽度90%，避免超出屏幕 */
     box-sizing: border-box;
   }
 
@@ -595,11 +656,13 @@ export default {
     align-items: center;
     justify-content: center;
     padding: 100rpx 0;
+
     .empty-image {
       width: 200rpx;
       height: 200rpx;
       margin-bottom: 20rpx;
     }
+
     .empty-text {
       font-size: 28rpx;
       color: #999;

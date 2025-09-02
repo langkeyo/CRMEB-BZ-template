@@ -75,7 +75,7 @@
     </view>
     
     <!-- 商铺列表 -->
-    <scroll-view scroll-y class="shop-list">
+    <scroll-view scroll-y class="shop-list" @scrolltolower="onLoadMore">
       <view class="shop-card" v-for="item in shopList" :key="item.id" @click="viewDetail(item.id)">
         <view class="shop-img">
           <image :src="item.image" mode="aspectFill"></image>
@@ -89,11 +89,30 @@
           </view>
         </view>
       </view>
+      
+      <!-- 加载状态 -->
+      <view class="loading-more" v-if="loading">
+        <text class="loading-text">加载中...</text>
+      </view>
+      
+      <!-- 没有更多 -->
+      <view class="no-more" v-if="!loading && loadEnd && shopList.length > 0">
+        <text class="no-more-text">没有更多了</text>
+      </view>
+      
+      <!-- 空状态 -->
+      <view class="empty-state" v-if="!loading && shopList.length === 0">
+        <image class="empty-icon" src="/static/images/empty.png" mode="aspectFit"></image>
+        <text class="empty-text">暂无商铺信息</text>
+      </view>
     </scroll-view>
   </view>
 </template>
 
 <script>
+import { getHouseRentalList } from '@/api/group.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
+
 export default {
   data() {
     return {
@@ -113,46 +132,30 @@ export default {
       moreOptions: ['面积', '装修', '转让费', '租金'],
       
       // 商铺列表
-      shopList: [
-        {
-          id: 1,
-          title: '朝阳区餐饮店转让',
-          price: '转让费：5万',
-          address: '朝阳区建国路88号',
-          image: '/static/images/index/business-info/shop_transfer_bg.jpg',
-          tags: ['餐饮', '临街', '可明火']
-        },
-        {
-          id: 2,
-          title: '海淀区服装店转让',
-          price: '转让费：3万',
-          address: '海淀区中关村大街1号',
-          image: '/static/images/index/business-info/shop_transfer_bg.jpg',
-          tags: ['服装', '商场内', '客流大']
-        },
-        {
-          id: 3,
-          title: '西城区美容院转让',
-          price: '转让费：8万',
-          address: '西城区西单商场附近',
-          image: '/static/images/index/business-info/shop_transfer_bg.jpg',
-          tags: ['美容', '小区门口', '精装修']
-        },
-        {
-          id: 4,
-          title: '丰台区奶茶店转让',
-          price: '转让费：2万',
-          address: '丰台区丰台科技园',
-          image: '/static/images/index/business-info/shop_transfer_bg.jpg',
-          tags: ['餐饮', '写字楼', '客流稳定']
-        }
-      ]
+      shopList: [],
+      loading: false,
+      loadEnd: false,
+      page: 1,
+      limit: 10,
+      total: 0,
+      queryParams: {
+        page: 1,
+        limit: 10,
+        keyword: '',
+        type: '1' // 默认查询类型为商铺转让
+      }
     }
+  },
+  onLoad() {
+    this.loadShopList();
   },
   methods: {
     search() {
-      console.log('搜索关键词：', this.keyword);
-      // 实现搜索功能
+      this.queryParams.search = this.keyword;
+      this.queryParams.page = 1;
+      this.shopList = [];
+      this.loadEnd = false;
+      this.loadShopList();
     },
     toggleFilter(type) {
       // 关闭其他筛选
@@ -201,18 +204,128 @@ export default {
       this.applyFilters();
     },
     applyFilters() {
-      console.log('应用筛选：', {
-        area: this.selectedArea,
-        price: this.selectedPrice,
-        type: this.selectedType,
-        more: this.selectedMore
+      // 重置分页并应用筛选条件
+      this.queryParams.page = 1;
+      this.shopList = [];
+      this.loadEnd = false;
+      
+      // 区域筛选
+      if (this.selectedArea && this.selectedArea !== '全部区域') {
+        this.queryParams.area = this.selectedArea;
+      } else {
+        this.queryParams.area = '';
+      }
+      
+      // 价格筛选
+      if (this.selectedPrice) {
+        if (this.selectedPrice === '1万以下') {
+          this.queryParams.price_max = '10000';
+          this.queryParams.price_min = '0';
+        } else if (this.selectedPrice === '1-3万') {
+          this.queryParams.price_min = '10000';
+          this.queryParams.price_max = '30000';
+        } else if (this.selectedPrice === '3-5万') {
+          this.queryParams.price_min = '30000';
+          this.queryParams.price_max = '50000';
+        } else if (this.selectedPrice === '5-10万') {
+          this.queryParams.price_min = '50000';
+          this.queryParams.price_max = '100000';
+        } else if (this.selectedPrice === '10万以上') {
+          this.queryParams.price_min = '100000';
+          this.queryParams.price_max = '';
+        } else {
+          this.queryParams.price_min = '';
+          this.queryParams.price_max = '';
+        }
+      }
+      
+      // 类型筛选
+      if (this.selectedType) {
+        this.queryParams.business_type = this.selectedType;
+      } else {
+        this.queryParams.business_type = '';
+      }
+      
+      this.loadShopList();
+    },
+    // 加载商铺列表
+    loadShopList() {
+      if (this.loading) return;
+      
+      this.loading = true;
+      uni.showLoading({
+        title: '加载中...'
       });
-      // 实现筛选逻辑
+      
+      getHouseRentalList(this.queryParams).then(res => {
+        uni.hideLoading();
+        this.loading = false;
+        
+        if (res.status === 200 && res.data) {
+          const newList = res.data.list || [];
+          
+          // 处理数据格式
+          const formattedList = newList.map(item => ({
+            id: item.id,
+            title: item.title || '',
+            price: item.price ? `¥${item.price}${item.unit || '/月'}` : '价格面议',
+            address: item.address || '',
+            image: this.setDomain(item.image),
+            tags: item.tags ? item.tags.split(',') : []
+          }));
+          
+          this.shopList = [...this.shopList, ...formattedList];
+          this.total = res.data.count || 0;
+          this.loadEnd = this.shopList.length >= this.total;
+          
+          // 更新页码
+          if (!this.loadEnd) {
+            this.queryParams.page++;
+          }
+        } else {
+          uni.showToast({
+            title: res.msg || '加载失败',
+            icon: 'none'
+          });
+        }
+      }).catch(err => {
+        uni.hideLoading();
+        this.loading = false;
+        uni.showToast({
+          title: '网络错误',
+          icon: 'none'
+        });
+        console.error('加载商铺列表失败:', err);
+      });
     },
     viewDetail(id) {
       uni.navigateTo({
         url: `/pages/index/shop-transfer/detail?id=${id}`
       });
+    },
+    // 加载更多
+    onLoadMore() {
+      if (!this.loadEnd && !this.loading) {
+        this.loadShopList();
+      }
+    },
+    // 处理图片URL
+    setDomain(url) {
+      if (!url) return '';
+      url = url.toString();
+
+      // 如果是相对路径，拼接域名
+      if (url.indexOf('/') === 0) {
+        return HTTP_REQUEST_URL + url;
+      }
+
+      // 如果已经是完整URL，直接返回
+      if (url.indexOf("http") === 0) {
+        return url;
+      }
+
+      // 其他情况拼接域名
+      return HTTP_REQUEST_URL + '/' + url;
     }
   }
 }
@@ -385,6 +498,40 @@ export default {
         margin-bottom: 10rpx;
       }
     }
+  }
+}
+
+/* 加载状态 */
+.loading-more, .no-more {
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  
+  .loading-text, .no-more-text {
+    font-size: 28rpx;
+    color: #999;
+  }
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 100rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+  .empty-icon {
+    width: 200rpx;
+    height: 200rpx;
+    margin-bottom: 30rpx;
+  }
+  
+  .empty-text {
+    font-size: 30rpx;
+    color: #999;
   }
 }
 </style>

@@ -51,9 +51,15 @@
         <view class="divider"></view>
         <view class="section-title">—— 猜你喜欢 ——</view>
         <view class="product-grid">
-          <view class="product-item" v-for="(item, index) in likeProducts" :key="index">
+          <view 
+            class="product-item" 
+            v-for="(item, index) in likeProducts" 
+            :key="index"
+            @click="goToGroupDetail(item.id)"
+          >
             <image :src="setDomain(item.image)" mode="aspectFill"></image>
             <view class="product-name">{{item.name}}</view>
+            <view class="product-price">¥{{item.price}}</view>
           </view>
         </view>
       </view>
@@ -113,10 +119,12 @@ import {
   getGroupCart,
   updateGroupCart,
   removeGroupCartItem,
-  checkoutCart
+  checkoutCart,
+  updateStoreCartNum
 } from "@/api/groupCart.js";
 import { getProductHot } from "@/api/store.js";
 import { handleListApi } from "@/utils/apiHelper.js";
+import { getRecommendGroupGoods } from "@/api/group.js";  // Add this import for recommended group products
 
 import { mapGetters } from "vuex";
 import recommend from "@/components/recommend/index.vue";
@@ -387,34 +395,95 @@ export default {
               const response = await GroupCartManager.removeItem(that.selectValue);
               console.log('删除API响应:', response);
 
-              const result = GroupCartManager.handleResponse(response);
-              console.log('删除处理结果:', result);
+              // 特殊处理：检查响应中的data.status或顶层status
+              let isSuccess = false;
+              let message = '';
+
+              if (response.data && response.data.status === 200) {
+                isSuccess = true;
+                message = response.data.msg || '删除成功';
+              } else if (response.status === 200) {
+                isSuccess = true;
+                message = response.msg || '删除成功';
+              } else {
+                // 使用标准处理方式
+                const result = GroupCartManager.handleResponse(response);
+                isSuccess = result.success;
+                message = result.message || '删除失败';
+              }
 
               uni.hideLoading();
 
-              if (result.success) {
-                that.$util.Tips({ title: result.message || that.$t(`删除成功`) });
-                that.getCartList();
-                that.$store.dispatch("updateCartNum");
+              if (isSuccess) {
+                that.$util.Tips({ title: message });
+                
+                // 重置选中状态
+                that.selectValue = [];
+                that.isAllSelect = false;
+                that.selectCountPrice = '0.00';
+                
+                // 刷新购物车数据
+                await that.getCartList();
+                
+                // 更新购物车数量 - 修正为正确的action名称
+                that.$store.dispatch("indexData/setCartnumber", 0);
+                
+                // 强制更新视图
+                that.$forceUpdate();
+                
+                // 如果购物车为空，确保显示空购物车提示
+                if (that.cartList.valid.length === 0 && that.cartList.invalid.length === 0) {
+                  that.canShow = true;
+                }
               } else {
-                that.$util.Tips({ title: result.message || '删除失败' });
+                that.$util.Tips({ title: message });
               }
 
             } catch (error) {
               uni.hideLoading();
               console.error('删除商品失败:', error);
 
-              // 尝试从错误中提取更详细的信息
-              let errorMsg = '删除失败，请重试';
-              if (error && error.data && error.data.msg) {
-                errorMsg = error.data.msg;
-              } else if (error && error.msg) {
-                errorMsg = error.msg;
-              } else if (typeof error === 'string') {
-                errorMsg = error;
+              // 特殊处理：检查错误对象中可能包含的成功响应
+              let isSuccess = false;
+              let message = '';
+
+              if (error && error.data && error.data.status === 200) {
+                isSuccess = true;
+                message = error.data.msg || '删除成功';
+              } else if (error && error.status === 200) {
+                isSuccess = true;
+                message = error.msg || '删除成功';
+              } else {
+                // 尝试从错误中提取更详细的信息
+                message = '删除失败，请重试';
+                if (error && error.data && error.data.msg) {
+                  message = error.data.msg;
+                } else if (error && error.msg) {
+                  message = error.msg;
+                } else if (typeof error === 'string') {
+                  message = error;
+                }
               }
 
-              that.$util.Tips({ title: errorMsg });
+              if (isSuccess) {
+                that.$util.Tips({ title: message });
+                
+                // 重置选中状态
+                that.selectValue = [];
+                that.isAllSelect = false;
+                that.selectCountPrice = '0.00';
+                
+                // 刷新购物车数据
+                await that.getCartList();
+                
+                // 更新购物车数量 - 修正为正确的action名称
+                that.$store.dispatch("indexData/setCartnumber", 0);
+                
+                // 强制更新视图
+                that.$forceUpdate();
+              } else {
+                that.$util.Tips({ title: message });
+              }
             }
           }
         }
@@ -473,6 +542,7 @@ export default {
             customToast.info('购物车已更新，请重新选择商品');
             that.getCartList(); // 刷新购物车
           } else {
+            // 直接展示后端返回的错误信息，而不是通用的"结算失败"
             that.$util.Tips({ title: result.message || '结算失败' });
           }
         }
@@ -495,7 +565,8 @@ export default {
             customToast.info('购物车已更新，请重新选择商品');
             that.getCartList(); // 刷新购物车
           } else {
-            that.$util.Tips({ title: '结算失败，请重试' });
+            // 直接展示后端返回的错误信息，而不是通用的"结算失败，请重试"
+            that.$util.Tips({ title: result.message || '结算失败，请重试' });
           }
         }
       } finally {
@@ -754,7 +825,11 @@ export default {
             return total + (item.quantity || 0);
           }, 0);
 
+          // 使用正确的action名称更新购物车数量
           that.$store.dispatch("indexData/setCartnumber", totalQuantity);
+          
+          // 同时更新全局购物车数量
+          await updateStoreCartNum();
         }
       } catch (error) {
         console.error('获取购物车数量失败:', error);
@@ -870,17 +945,20 @@ export default {
 
             // 计算价格相关信息
             that.calculatePrices();
-
-            // 强制触发Vue响应式更新
-            that.$forceUpdate();
-
-            // 确保canShow为true
-            that.canShow = true;
           } else {
+            // 清空购物车数据
             that.cartList.valid = [];
             that.cartList.invalid = [];
+            that.selectValue = [];
+            that.selectCountPrice = '0.00';
+            that.isAllSelect = false;
           }
 
+          // 强制触发Vue响应式更新
+          that.$forceUpdate();
+
+          // 确保canShow为true，显示空购物车提示
+          that.canShow = true;
           that.loading = false;
           that.loadend = true;
           that.loadTitle = that.$t(`没有更多了`);
@@ -898,6 +976,12 @@ export default {
 
           // 设置空的购物车数据
           that.cartList = { valid: [], invalid: [] };
+          that.selectValue = [];
+          that.selectCountPrice = '0.00';
+          that.isAllSelect = false;
+          
+          // 强制更新视图
+          that.$forceUpdate();
         }
 
       } catch (error) {
@@ -915,6 +999,12 @@ export default {
 
         // 设置空的购物车数据
         that.cartList = { valid: [], invalid: [] };
+        that.selectValue = [];
+        that.selectCountPrice = '0.00';
+        that.isAllSelect = false;
+        
+        // 强制更新视图
+        that.$forceUpdate();
       }
     },
 
@@ -1084,6 +1174,14 @@ export default {
       let selectCountPrice = 0.00; // 确保初始值为数字
       let isAllSelect = true;
 
+      // 检查购物车是否为空
+      if (!this.cartList.valid || this.cartList.valid.length === 0) {
+        this.selectValue = [];
+        this.selectCountPrice = '0.00';
+        this.isAllSelect = false;
+        return;
+      }
+
       // 遍历有效商品，计算选中商品的价格
       for (let i = 0; i < this.cartList.valid.length; i++) {
         let item = this.cartList.valid[i];
@@ -1134,6 +1232,12 @@ export default {
     // 添加一个新方法来重新计算总价
     recalculateTotalPrice() {
       let selectCountPrice = 0.00;
+      
+      // 检查购物车是否为空
+      if (!this.cartList.valid || this.cartList.valid.length === 0) {
+        this.selectCountPrice = '0.00';
+        return;
+      }
       
       for (let i = 0; i < this.cartList.valid.length; i++) {
         let item = this.cartList.valid[i];
@@ -1186,20 +1290,42 @@ export default {
     // 加载猜你喜欢商品
     async loadLikeProducts() {
       try {
-        const response = await getProductHot(1, 4);
+        // 替换为团购推荐API
+        const response = await getRecommendGroupGoods();
+        console.log('推荐拼团商品响应:', response);
+        
+        // 根据实际API响应结构处理数据
         if (response.status === 200 && response.data) {
-          const products = response.data.list || response.data;
-          this.likeProducts = products.map(item => ({
-            id: item.id,
-            name: item.title || item.store_name,
-            image: item.image,
-            price: item.price || item.min_price
+          // 适配数据结构
+          this.likeProducts = response.data.map(item => ({
+            id: item.id || 0,
+            name: item.title || '',
+            image: item.image || '',
+            price: item.group_price || item.original_price || ''
           }));
+          console.log('处理后的推荐商品数据:', this.likeProducts);
         }
       } catch (error) {
         console.error('加载推荐商品失败:', error);
         // 静默失败，不显示错误提示
+        this.likeProducts = [];
       }
+    },
+
+    // 跳转到团购详情页
+    goToGroupDetail(groupId) {
+      if (!groupId) return;
+      console.log('跳转到拼团商品详情，ID:', groupId);
+      // 使用正确的商品详情页路径
+      uni.navigateTo({
+        url: `/pages/goods_details/index?id=${groupId}&type=group&canBuy=true`
+      }).catch(err => {
+        console.error('跳转失败:', err);
+        uni.showToast({
+          title: '跳转失败，请重试',
+          icon: 'none'
+        });
+      });
     }
   },
   onReachBottom() {
@@ -1293,10 +1419,10 @@ export default {
     .product-item {
       width: 48%;
       margin-bottom: 20rpx;
-      background-color: transparent;
-      border-radius: 0;
-      overflow: visible;
-      padding: 0;
+      background-color: #FFFFFF;
+      border-radius: 8rpx;
+      overflow: hidden;
+      box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1317,14 +1443,14 @@ export default {
 /* 猜你喜欢区域的商品名称样式 */
 .product-grid .product-item .product-name {
   margin-top: 0; /* 移除上边距，与图片紧贴 */
-  padding: 24rpx 20rpx; /* 增加上下内边距 */
-  min-height: 80rpx; /* 设置最小高度，确保文字区域有足够空间 */
+  padding: 24rpx 20rpx 10rpx 20rpx; /* 减少底部内边距，为价格留出空间 */
+  min-height: 60rpx; /* 减少最小高度，因为下面有价格 */
   font-size: 28rpx; /* 稍微增大字号 */
   color: #333333;
   text-align: center;
   background: #FFFFFF;
-  border-radius: 0 0 8rpx 8rpx; /* 只有下方圆角 */
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06);
+  border-radius: 0; /* 去掉圆角，因为底部还有价格 */
+  box-shadow: none; /* 去掉阴影，整体由父元素控制 */
   line-height: 1.5; /* 增加行高 */
   width: 100%;
   box-sizing: border-box;
@@ -1335,6 +1461,19 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: normal;
+  border-bottom: none; /* 确保没有底部边框 */
+}
+
+/* 猜你喜欢商品价格样式 */
+.product-grid .product-item .product-price {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #FF840B;
+  text-align: center;
+  padding-bottom: 16rpx;
+  background: #FFFFFF;
+  width: 100%;
+  border-radius: 0 0 8rpx 8rpx;
 }
 
 /* 加载更多样式 */

@@ -5,24 +5,26 @@
 			<view class="header-title">我的优惠券</view>
 		</view>
 		<view class="navbar">
-			<view class="item" :class="{ on: navOn === 0 }" @click="onNav(0)">未使用({{statusCounts.unused_count}})</view>
-			<view class="item" :class="{ on: navOn === 1 }" @click="onNav(1)">已使用({{statusCounts.used_count}})</view>
-			<view class="item" :class="{ on: navOn === 2 }" @click="onNav(2)">已失效({{statusCounts.expired_count}})</view>
+			<view class="item" :class="{ on: navOn === 0 }" @click="onNav(0)">未使用({{ statusCounts.unused_count }})</view>
+			<view class="item" :class="{ on: navOn === 1 }" @click="onNav(1)">已使用({{ statusCounts.used_count }})</view>
+			<view class="item" :class="{ on: navOn === 2 }" @click="onNav(2)">已失效({{ statusCounts.expired_count }})</view>
 		</view>
 		<view class='coupon-list' v-if="couponsList.length">
-			<view class='item' v-for='(item,index) in couponsList' :key="index">
+			<view class='item' v-for='(item, index) in couponsList' :key="index">
 				<view class="left-area">
-					<view class="tag">{{item.usage_rules && item.usage_rules[0] ? item.usage_rules[0] : (item.type === 1 ? '满减券' : '折扣券')}}</view>
+					<view class="tag">{{ item.usage_rules && item.usage_rules[0] ? item.usage_rules[0] : (item.type === 1
+						? '满减券' : '折扣券')}}</view>
 					<view class="money-row">
-						<text class="money-symbol">￥</text><text class="money-num">{{item.discount_amount}}</text>
+						<text class="money-symbol">￥</text><text class="money-num">{{ item.discount_amount }}</text>
 					</view>
-					<view class="condition">满{{item.min_amount}}可用</view>
+					<view class="condition">满{{ item.min_amount }}可用</view>
 				</view>
 				<view class="right-area">
-					<view class="coupon-title">{{item.name}}</view>
+					<view class="coupon-title">{{ item.name }}</view>
 					<view class="date-btn-row">
-						<view class="coupon-date">有效期至{{item.expire_time}}</view>
-						<view class="use-btn" v-if="navOn === 0 && item.can_use" @click.stop="useCoupon(item)">去使用</view>
+						<view class="coupon-date">有效期至{{ item.expire_time }}</view>
+						<view class="use-btn" v-if="navOn === 0 && item.can_use" @click.stop="useCoupon(item)">去使用
+						</view>
 						<view class="use-btn disabled" v-else-if="navOn === 1">已使用</view>
 						<view class="use-btn disabled" v-else-if="navOn === 2">已失效</view>
 					</view>
@@ -36,7 +38,9 @@
 			</view>
 		</view>
 		<view v-if="showInfoIndex >= 0 && couponsList[showInfoIndex]" class="usage-rules-card">
-			<view v-for="(rule, i) in (couponsList[showInfoIndex].usage_rules || (couponsList[showInfoIndex].description ? couponsList[showInfoIndex].description.split('\n') : []))" :key="i" class="desc-line">
+			<view
+				v-for="(rule, i) in (couponsList[showInfoIndex].usage_rules || (couponsList[showInfoIndex].description ? couponsList[showInfoIndex].description.split('\n') : []))"
+				:key="i" class="desc-line">
 				{{ i + 1 }}.{{ rule }}
 			</view>
 		</view>
@@ -52,7 +56,7 @@
 		<!-- #ifndef MP -->
 		<!-- <home></home> -->
 		<!-- #endif -->
-		
+
 		<!-- 加载更多 -->
 		<view class="loading-more" v-if="loadingStatus === 1 && couponsList.length > 0">
 			<text>正在加载更多...</text>
@@ -64,195 +68,270 @@
 </template>
 
 <script>
-	import { getMyCoupons, getOrderAvailableCoupons, receiveCoupon } from '@/api/group.js';
-	import {
-		toLogin
-	} from '@/libs/login.js';
-	import {
-		mapGetters
-	} from "vuex";
-	// #ifdef MP
-	import authorize from '@/components/Authorize';
-	// #endif
-	// import home from '@/components/home';
-	import colors from '@/mixins/color.js';
-	import {
-		HTTP_REQUEST_URL
-	} from '@/config/app';
-	export default {
-		components: {
-			// #ifdef MP
-			authorize,
-			// #endif
-			// home
-		},
-		mixins: [colors],
-		data() {
-			return {
-				imgHost: HTTP_REQUEST_URL,
-				couponsList: [
-					{
-						type: 1, // 满减券
-						discount_amount: 10,
-						discount_rate: 1,
-						min_amount: 50,
-						name: '新人10元优惠券',
-						expire_time: '2025.05.01',
-						can_use: true,
-						status: 0,
-						usage_rules: ['全品类通用', '使用期限2025.04.01-2025.04.30', '仅限于下单支付时使用', '优惠券不可兑换现金'],
-						description: '全品类通用\n使用期限2025.04.01-2025.04.30\n仅限于下单支付时使用\n优惠券不可兑换现金',
-						receive_time: '2024.05.01',
-					}
-				],
-				loading: false,
-				isAuto: false, //没有授权的不会自动授权
-				isShowAuth: false, //是否隐藏授权
-				navOn: 0,
-				page: 1,
-				limit: 15,
-				finished: false,
-				showInfoIndex: -1, // 显示使用说明的优惠券索引，-1表示不显示
-				loadingStatus: 0, // 0: 不显示, 1: 加载中, 2: 已全部加载
-				statusCounts: { // 各状态优惠券数量
-					unused_count: 0,
-					used_count: 0,
-					expired_count: 0
-				}
-			};
-		},
-		computed: mapGetters(['isLogin']),
-		watch: {
-			isLogin: {
-				handler: function(newV, oldV) {
-					if (newV) {
-						this.getMyCouponList();
-					}
-				},
-				deep: true
+import { getMyCoupons, getOrderAvailableCoupons, receiveCoupon } from '@/api/group.js';
+import dayjs from '@/plugin/dayjs/dayjs.min.js';
+import {
+	toLogin
+} from '@/libs/login.js';
+import {
+	mapGetters
+} from "vuex";
+// #ifdef MP
+import authorize from '@/components/Authorize';
+// #endif
+// import home from '@/components/home';
+import colors from '@/mixins/color.js';
+import {
+	HTTP_REQUEST_URL
+} from '@/config/app';
+export default {
+	components: {
+		// #ifdef MP
+		authorize,
+		// #endif
+		// home
+	},
+	mixins: [colors],
+	data() {
+		return {
+			imgHost: HTTP_REQUEST_URL,
+			couponsList: [], // 初始化为空数组，通过API获取数据
+			loading: false,
+			isAuto: false, //没有授权的不会自动授权
+			isShowAuth: false, //是否隐藏授权
+			navOn: 0,
+			page: 1,
+			limit: 15,
+			finished: false,
+			showInfoIndex: -1, // 显示使用说明的优惠券索引，-1表示不显示
+			loadingStatus: 0, // 0: 不显示, 1: 加载中, 2: 已全部加载
+			statusCounts: { // 各状态优惠券数量
+				unused_count: 0,
+				used_count: 0,
+				expired_count: 0
 			}
-		},
-		onLoad() {
-			if (this.isLogin) {
-				this.getMyCouponList();
-			} else {
-				toLogin();
-			}
-		},
-		onReachBottom() {
-			this.loadMoreCoupons();
-		},
-		methods: {
-			showInfo(index) {
-				this.showInfoIndex = index;
-			},
-			hideInfo() {
-				this.showInfoIndex = -1;
-			},
-			onNav: function(type) {
-				this.navOn = type;
-				this.couponsList = [];
-				this.page = 1;
-				this.finished = false;
-				this.loadingStatus = 0;
-				this.getMyCouponList();
-			},
-			useCoupon(item) {
-				if (item.status != 0) return;
-				
-				// 跳转到商品列表页面，可以使用该优惠券
-				uni.switchTab({
-					url: '/pages/goods/goods_list/index'
-				});
-			},
-			/**
-			 * 授权回调
-			 */
-			onLoadFun: function() {
-				this.getMyCouponList();
-			},
-			// 授权关闭
-			authColse: function(e) {
-				this.isShowAuth = e
-			},
-			/**
-			 * 获取优惠券列表
-			 */
-			getMyCouponList: function() {
-				let that = this;
-				if (that.loading || that.finished) {
-					return;
-				}
-				that.loading = true;
-				that.loadingStatus = 1;
-				uni.showLoading({
-					title: that.$t(`正在加载…`)
-				});
-				
-				// 使用API文档中的接口
-				getMyCoupons({
-					status: this.navOn, // 0-未使用，1-已使用，2-已过期
-					page: this.page,
-					limit: this.limit
-				}).then(res => {
-					that.loading = false;
-					uni.hideLoading();
-					
-					if (res.status === 200) {
-						const list = res.data.list || [];
-						that.couponsList = that.couponsList.concat(list);
-						that.finished = list.length < that.limit;
-						that.loadingStatus = that.finished ? 2 : 0;
-						that.page += 1;
-						
-						// 更新各状态优惠券数量
-						if (res.data.unused_count !== undefined) {
-							that.statusCounts = {
-								unused_count: res.data.unused_count || 0,
-								used_count: res.data.used_count || 0,
-								expired_count: res.data.expired_count || 0
-							};
-						}
-					} else {
-						uni.showToast({
-							title: res.msg || that.$t(`获取优惠券失败`),
-							icon: 'none'
-						});
-						that.loadingStatus = 0;
-					}
-				}).catch(err => {
-					that.loading = false;
-					that.loadingStatus = 0;
-					uni.hideLoading();
-					uni.showToast({
-						title: that.$t(`获取优惠券失败`),
-						icon: 'none'
-					});
-				});
-			},
-			
-			/**
-			 * 加载更多优惠券
-			 */
-			loadMoreCoupons: function() {
-				if (!this.finished && !this.loading) {
+		};
+	},
+	computed: mapGetters(['isLogin']),
+	watch: {
+		isLogin: {
+			handler: function (newV, oldV) {
+				if (newV) {
 					this.getMyCouponList();
 				}
 			},
-			goBack() {
-				uni.navigateBack();
-			},
-			toggleInfo(index) {
-				this.showInfoIndex = this.showInfoIndex === index ? -1 : index;
-			}
+			deep: true
 		}
-	};
+	},
+	onLoad() {
+		if (this.isLogin) {
+			this.getMyCouponList();
+		} else {
+			toLogin();
+		}
+	},
+	onReachBottom() {
+		this.loadMoreCoupons();
+	},
+	methods: {
+		showInfo(index) {
+			this.showInfoIndex = index;
+		},
+		hideInfo() {
+			this.showInfoIndex = -1;
+		},
+		onNav: function (type) {
+			this.navOn = type;
+			this.couponsList = [];
+			this.page = 1;
+			this.finished = false;
+			this.loadingStatus = 0;
+			this.getMyCouponList();
+		},
+		useCoupon(item) {
+			if (item.status != 0) return;
+
+			// 跳转到商品列表页面，可以使用该优惠券
+			uni.switchTab({
+				url: '/pages/goods/goods_list/index'
+			});
+		},
+		/**
+		 * 授权回调
+		 */
+		onLoadFun: function () {
+			this.getMyCouponList();
+		},
+		// 授权关闭
+		authColse: function (e) {
+			this.isShowAuth = e
+		},
+		/**
+		 * 获取优惠券列表
+		 */
+		getMyCouponList: function () {
+			let that = this;
+			if (that.loading || that.finished) {
+				return;
+			}
+			that.loading = true;
+			that.loadingStatus = 1;
+			uni.showLoading({
+				title: that.$t(`正在加载…`)
+			});
+
+			// 使用API文档中的接口
+			getMyCoupons({
+				status: this.navOn, // 0-未使用，1-已使用，2-已过期
+				page: this.page,
+				limit: this.limit
+			}).then(res => {
+				that.loading = false;
+				uni.hideLoading();
+
+				if (res.status === 200) {
+					// 处理API返回的数据，确保字段名称与模板中使用的一致
+					const rawList = res.data.list || [];
+					const list = rawList.map(item => {
+						return {
+							...item,
+							// 确保必要字段存在，如果API返回的字段名不同，在这里进行转换
+							type: item.type || 1, // 默认为满减券
+							discount_amount: item.discount_amount || 0,
+							min_amount: item.min_amount || 0,
+							name: item.name || '优惠券',
+							expire_time: dayjs(item.expire_time).format('YYYY-MM-DD') || '',
+							can_use: item.status === 0, // 根据状态判断是否可用
+							usage_rules: item.usage_rules || [],
+							description: item.description || ''
+						};
+					});
+
+					that.couponsList = that.couponsList.concat(list);
+					that.finished = list.length < that.limit;
+					that.loadingStatus = that.finished ? 2 : 0;
+					that.page += 1;
+
+					// 更新各状态优惠券数量
+					if (res.data.unused_count !== undefined) {
+						that.statusCounts = {
+							unused_count: res.data.unused_count || 0,
+							used_count: res.data.used_count || 0,
+							expired_count: res.data.expired_count || 0
+						};
+					}
+				} else {
+					uni.showToast({
+						title: res.msg || that.$t(`获取优惠券失败`),
+						icon: 'none'
+					});
+					that.loadingStatus = 0;
+				}
+			}).catch(err => {
+				that.loading = false;
+				that.loadingStatus = 0;
+				uni.hideLoading();
+				uni.showToast({
+					title: that.$t(`获取优惠券失败`),
+					icon: 'none'
+				});
+			});
+		},
+
+		/**
+		 * 加载更多优惠券
+		 */
+		loadMoreCoupons: function () {
+			if (!this.finished && !this.loading) {
+				this.getMyCouponList();
+			}
+		},
+		goBack() {
+			uni.navigateBack();
+		},
+		toggleInfo(index) {
+			this.showInfoIndex = this.showInfoIndex === index ? -1 : index;
+		},
+
+		/**
+		 * 领取优惠券
+		 * @param {Number} couponId 优惠券ID
+		 */
+		receiveCoupon(couponId) {
+			if (!this.isLogin) {
+				toLogin();
+				return;
+			}
+
+			uni.showLoading({
+				title: this.$t(`领取中...`)
+			});
+
+			receiveCoupon({
+				coupon_id: couponId
+			}).then(res => {
+				uni.hideLoading();
+
+				if (res.status === 200) {
+					uni.showToast({
+						title: this.$t(`领取成功`),
+						icon: 'success'
+					});
+
+					// 刷新优惠券列表
+					this.page = 1;
+					this.couponsList = [];
+					this.finished = false;
+					this.loadingStatus = 0;
+					this.getMyCouponList();
+				} else {
+					uni.showToast({
+						title: res.msg || this.$t(`领取失败`),
+						icon: 'none'
+					});
+				}
+			}).catch(err => {
+				uni.hideLoading();
+				uni.showToast({
+					title: this.$t(`领取失败`),
+					icon: 'none'
+				});
+			});
+		},
+
+		/**
+		 * 获取订单可用优惠券
+		 * @param {Number} orderAmount 订单金额
+		 */
+		getOrderAvailableCoupon(orderAmount) {
+			if (!this.isLogin) {
+				toLogin();
+				return Promise.reject('未登录');
+			}
+
+			return new Promise((resolve, reject) => {
+				getOrderAvailableCoupons({
+					order_amount: orderAmount
+				}).then(res => {
+					if (res.status === 200) {
+						resolve(res.data);
+					} else {
+						reject(res.msg || '获取失败');
+					}
+				}).catch(err => {
+					reject(err);
+				});
+			});
+		}
+	}
+};
 </script>
 
 <style lang="scss" scoped>
 .coupon-container {
 	min-height: 100vh;
 	background: #f5f5f5;
+
 	.custom-header {
 		position: fixed;
 		top: 0;
@@ -265,6 +344,7 @@
 		justify-content: center;
 		z-index: 100;
 		border-bottom: 1rpx solid #ededed;
+
 		.back-btn {
 			position: absolute;
 			left: 30rpx;
@@ -277,6 +357,7 @@
 			margin-top: -20rpx;
 			background: transparent;
 		}
+
 		.header-title {
 			font-size: 36rpx;
 			color: #222;
@@ -284,6 +365,7 @@
 			text-align: center;
 		}
 	}
+
 	.navbar {
 		margin-top: 100rpx;
 		display: flex;
@@ -291,6 +373,7 @@
 		height: 90rpx;
 		background: #fff;
 		border-bottom: 1rpx solid #ededed;
+
 		.item {
 			flex: 1;
 			text-align: center;
@@ -299,9 +382,11 @@
 			font-weight: 500;
 			position: relative;
 			padding: 0 0 18rpx 0;
+
 			&.on {
 				color: #222;
 				font-weight: bold;
+
 				&:after {
 					content: '';
 					position: absolute;
@@ -316,45 +401,62 @@
 			}
 		}
 	}
+
 	.coupon-list {
 		padding: 32rpx 0 0 0;
+
 		.item {
 			display: flex;
 			background: #fff;
 			border-radius: 16rpx;
-			box-shadow: 0 4rpx 24rpx rgba(0,0,0,0.06);
+			box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
 			margin: 0 24rpx 24rpx 24rpx;
-			min-height: 240rpx; /* 进一步增加最小高度 */
+			min-height: 240rpx;
+
+			/* 进一步增加最小高度 */
 			.left-area {
 				width: 180rpx;
 				display: flex;
 				flex-direction: column;
 				align-items: center;
-				justify-content: space-between; /* 改为空间分布 */
-				background: linear-gradient(180deg, #fff6f0 80%, #fff 100%);
+				justify-content: space-between;
+				/* 改为空间分布 */
 				border-radius: 16rpx 0 0 16rpx;
-				padding: 30rpx 0; /* 增加上下内边距 */
+				padding: 30rpx 0;
+				/* 增加上下内边距 */
 				box-sizing: border-box;
-				height: 100%; /* 确保高度100% */
+				height: 100%;
+				position: relative;
+				background: #FFF4F3;
+
+				/* 确保高度100% */
 				.tag {
 					width: 100%;
-					background: #fff0ee;
+					background: linear-gradient(90deg, #FEE3E3 0%, #FFF4F3 100%);
 					color: #ff3a30;
-					font-size: 26rpx; /* 调整字体大小 */
+					font-size: 26rpx;
+					/* 调整字体大小 */
 					font-weight: bold;
 					border-radius: 16rpx 0 0 0;
 					padding: 16rpx 10rpx;
-					text-align: center;
+					text-align: start;
 					box-sizing: border-box;
-					margin-bottom: 0; /* 移除底部边距 */
-					margin-top: 0;
+					position: absolute;
+					top: 0;
+					left: 0;
+					height: 25px;
+					padding: 10px;
+					line-height: 1px;
 				}
+
 				.money-row {
 					display: flex;
 					align-items: flex-end;
 					justify-content: center;
 					width: 100%;
-					margin: 0; /* 移除边距 */
+					margin-top: 20px;
+
+					/* 移除边距 */
 					.money-symbol {
 						color: #ff3a30;
 						font-size: 40rpx;
@@ -362,6 +464,7 @@
 						line-height: 1;
 						margin-right: 2rpx;
 					}
+
 					.money-num {
 						color: #ff3a30;
 						font-size: 60rpx;
@@ -369,18 +472,25 @@
 						line-height: 1;
 					}
 				}
+
 				.condition {
 					color: #ff3a30;
-					font-size: 26rpx; /* 调整字体大小 */
-					margin-top: 0; /* 移除顶部边距 */
+					font-size: 28rpx;
+					/* 调整字体大小 */
+					font-family: 'PingFang SC';
+					margin-bottom: 30rpx;
+					/* 移除顶部边距 */
 					text-align: center;
 					font-weight: 500;
 					width: 100%;
-					padding: 0 10rpx; /* 添加左右内边距 */
+					padding: 0 10rpx;
+					/* 添加左右内边距 */
 					box-sizing: border-box;
-					white-space: nowrap; /* 防止换行 */
+					white-space: nowrap;
+					/* 防止换行 */
 				}
 			}
+
 			.right-area {
 				flex: 1;
 				display: flex;
@@ -388,6 +498,7 @@
 				justify-content: flex-start;
 				padding: 30rpx 24rpx;
 				min-width: 0;
+
 				.coupon-title {
 					font-size: 28rpx;
 					color: #222;
@@ -397,20 +508,24 @@
 					overflow: hidden;
 					text-overflow: ellipsis;
 				}
+
 				.date-btn-row {
 					display: flex;
 					align-items: center;
 					margin-bottom: 16rpx;
 					position: relative;
+
 					.use-btn {
-					transform: translateX(-15px);
+						transform: translateX(-15px);
 					}
 				}
+
 				.coupon-date {
-					font-size: 22rpx;
+					font-size: 28rpx;
 					color: #999;
 					margin-bottom: 0;
 				}
+
 				.use-btn {
 					position: absolute;
 					right: 0;
@@ -422,18 +537,22 @@
 					padding: 0 24rpx;
 					height: 52rpx;
 					line-height: 52rpx;
-					margin-left: 40rpx; /* 20px右偏移 */
+					margin-left: 40rpx;
+					/* 20px右偏移 */
 				}
+
 				.bottom-row {
 					display: flex;
 					align-items: center;
 					margin-top: auto;
+
 					.desc {
 						color: #bdbdbd;
-						font-size: 22rpx;
+						font-size: 28rpx;
 						display: flex;
 						align-items: center;
 						cursor: pointer;
+
 						.arrow {
 							margin-left: 6rpx;
 							display: inline-block;
@@ -443,12 +562,15 @@
 							border-width: 0 3rpx 3rpx 0;
 							transform: rotate(45deg);
 							transition: transform 0.2s;
+
 							&.up {
 								transform: rotate(-135deg);
+								margin-top: 10px;
 							}
 						}
 					}
 				}
+
 				.use-btn {
 					background: #ff3a30;
 					color: #fff;
@@ -462,63 +584,65 @@
 				}
 			}
 		}
-		
+
 		.coupon-desc-detail {
 			background: #fff;
 			border-radius: 0 0 16rpx 16rpx;
 			margin: 0 24rpx 24rpx 24rpx;
-			box-shadow: 0 4rpx 24rpx rgba(0,0,0,0.06);
+			box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
 			padding: 20rpx 24rpx;
 			font-size: 22rpx;
 			color: #999;
 			line-height: 1.8;
+
 			.desc-line {
 				margin-bottom: 8rpx;
 			}
 		}
-		
+
 		.usage-rules-card {
 			background: #fff;
 			border-radius: 16rpx;
 			margin: 0 24rpx 24rpx 24rpx;
-			box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.02);
+			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02);
 			padding: 24rpx;
 			font-size: 22rpx;
 			color: #cccccc;
 			line-height: 1.7;
 			text-align: left;
-			
+
 			/deep/ .desc-line,
 			::v-deep .desc-line,
-			>>> .desc-line {
+			>>>.desc-line {
 				margin-bottom: 0;
 				text-align: left;
 				word-break: break-all;
 			}
 		}
 	}
+
 	.noCommodity {
 		padding-top: 100rpx;
 		text-align: center;
-		
+
 		.pictrue {
 			width: 300rpx;
 			height: 300rpx;
 			margin: 0 auto;
-			
+
 			image {
 				width: 100%;
 				height: 100%;
 			}
 		}
-		
+
 		.no-data-text {
 			padding: 30rpx 0;
 			font-size: 28rpx;
 			color: #999;
 		}
 	}
-	
+
 	.loading-more {
 		text-align: center;
 		padding: 20rpx 0;
@@ -527,7 +651,7 @@
 	}
 
 	/* 移除优惠券使用说明弹窗样式 */
-	
+
 	/* 添加已禁用按钮样式 */
 	.use-btn.disabled {
 		background: #ccc;
@@ -537,19 +661,19 @@
 
 /* 使用说明卡片样式 - 重写 */
 ::v-deep .usage-rules-card {
-  background-color: #ffffff !important;
-  border-radius: 16rpx !important;
-  margin: 0 24rpx 24rpx 24rpx !important;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.02) !important;
-  padding: 24rpx !important;
+	background-color: #ffffff !important;
+	border-radius: 16rpx !important;
+	margin: 0 24rpx 24rpx 24rpx !important;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02) !important;
+	padding: 24rpx !important;
 }
 
 ::v-deep .usage-rules-card .desc-line {
-  font-size: 22rpx !important;
-  color: #cccccc !important;
-  line-height: 1.7 !important;
-  text-align: left !important;
-  margin-bottom: 0 !important;
-  word-break: break-all !important;
+	font-size: 22rpx !important;
+	color: #cccccc !important;
+	line-height: 1.7 !important;
+	text-align: left !important;
+	margin-bottom: 0 !important;
+	word-break: break-all !important;
 }
 </style>

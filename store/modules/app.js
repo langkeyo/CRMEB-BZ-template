@@ -14,7 +14,8 @@ import {
 import {
 	LOGIN_STATUS,
 	UID,
-	USER_INFO
+	USER_INFO,
+	SITE_INFO
 } from '../../config/cache';
 import Cache from '../../utils/cache';
 
@@ -26,7 +27,14 @@ const state = {
 	homeActive: false,
 	phoneStatus: true,
 	pageFooter: uni.getStorageSync('pageFoot') || {},
-	activityTab: ''
+	activityTab: '',
+	// 站点信息
+	siteInfo: Cache.get(SITE_INFO) || {
+		name: '',
+		location: '',
+		deliveryTime: '',
+		type: ''
+	}
 };
 
 const mutations = {
@@ -71,6 +79,11 @@ const mutations = {
 	},
 	FOOT_UPLOAD(state, data) {
 		state.pageFooter = data
+	},
+	// 更新站点信息
+	UPDATE_SITEINFO(state, siteInfo) {
+		state.siteInfo = siteInfo;
+		Cache.set(SITE_INFO, siteInfo, 0); // 0表示永不过期
 	}
 };
 
@@ -150,6 +163,11 @@ const actions = {
 				});
 			});
 		});
+	},
+	
+	// 设置站点信息
+	SET_SITEINFO({ commit }, siteInfo) {
+		commit('UPDATE_SITEINFO', siteInfo);
 	}
 };
 

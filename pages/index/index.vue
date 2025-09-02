@@ -9,9 +9,7 @@
 		<customTabbar></customTabbar>
 
 		<!-- 社区选择弹窗 -->
-		<CommunitySelector
-			:visible="showCommunitySelector"
-			@close="showCommunitySelector = false"
+		<CommunitySelector :visible="showCommunitySelector" @close="showCommunitySelector = false"
 			@bind-success="onCommunityBindSuccess" />
 	</view>
 </template>
@@ -28,6 +26,8 @@ import CommunitySelector from '@/components/CommunitySelector/index.vue'
 import {
 	getMyCommunityInfo
 } from '@/api/group.js'
+import { mapGetters } from 'vuex';
+import { updateStoreCartNum } from '@/api/groupCart.js';
 
 export default {
 	name: 'IndexStatic',
@@ -47,15 +47,25 @@ export default {
 			communityInfo: null
 		}
 	},
+	computed: {
+		...mapGetters(['isLogin']),
+	},
 	onLoad() {
 		this.checkCommunityBinding();
+
+		// 更新购物车数量
+		if (this.isLogin) {
+			updateStoreCartNum().catch(err => {
+				console.error('首页更新购物车数量失败:', err);
+			});
+		}
 	},
 	methods: {
 		// 检查社区绑定状态
 		async checkCommunityBinding() {
 			try {
 				const response = await getMyCommunityInfo();
-				
+
 				if (response.status === 200) {
 					// 检查是否已绑定社区
 					if (response.data && response.data.is_bind === true && response.data.community) {
@@ -103,11 +113,12 @@ export default {
 </script>
 
 <style lang="scss">
-.index-page{
+.index-page {
 	padding-bottom: 50px;
 	overflow-y: scroll;
 	overflow-x: hidden;
-	background-color: #FFFFFF;  /* 改为白色背景，避免灰色透出 */
+	background-color: #FFFFFF;
+	/* 改为白色背景，避免灰色透出 */
 }
 
 .myApplet {

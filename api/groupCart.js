@@ -68,6 +68,25 @@ export function getGroupCartCount() {
 }
 
 /**
+ * 更新Vuex中的购物车数量
+ * @returns {Promise} 更新结果
+ */
+export async function updateStoreCartNum() {
+	try {
+		const count = await getGroupCartCount();
+		// 获取Vue实例
+		const app = getApp();
+		if (app && app.$store) {
+			app.$store.dispatch("indexData/setCartnumber", count);
+		}
+		return count;
+	} catch (error) {
+		console.error('更新购物车数量失败:', error);
+		return 0;
+	}
+}
+
+/**
  * 购物车操作工具类
  */
 export class GroupCartManager {
@@ -95,8 +114,51 @@ export class GroupCartManager {
 				goods_id: goodsId.toString(),
 				quantity: quantity.toString()
 			});
+
+			// 特殊处理：检查是否包含成功信息
+			if ((response.status === 200) ||
+					(response.data && response.data.status === 200)) {
+				// 这是一个成功的响应，即使有错误消息
+				console.log('添加购物车成功:', response);
+				// 添加成功后更新购物车数量
+				await updateStoreCartNum();
+				return response;
+			}
+
 			return response;
 		} catch (error) {
+			// 增强的错误处理：检查错误对象中可能包含的成功响应
+			console.log('添加购物车捕获到异常，详细信息:', JSON.stringify(error));
+			
+			// 检查嵌套的成功状态
+			if (error && error.data && error.data.status === 200) {
+				console.log('添加购物车成功(从错误对象中提取):', error);
+				// 构建一个新的成功响应对象，确保外层状态码也是200
+				// 添加成功后更新购物车数量
+				await updateStoreCartNum();
+				return {
+					status: 200,
+					data: error.data,
+					msg: error.data.msg || '商品已添加到购物车'
+				};
+			}
+			
+			// 检查错误对象中的其他成功指示
+			if (error && error.data && 
+				(error.data.msg && (error.data.msg.includes('已添加') || 
+								  error.data.msg.includes('更新') || 
+								  error.data.msg.includes('成功')))) {
+				console.log('添加购物车成功(从错误消息中判断):', error);
+				// 构建一个新的成功响应对象
+				// 添加成功后更新购物车数量
+				await updateStoreCartNum();
+				return {
+					status: 200,
+					data: error.data,
+					msg: error.data.msg
+				};
+			}
+
 			console.error('添加购物车失败:', error);
 			throw error;
 		}
@@ -113,12 +175,17 @@ export class GroupCartManager {
 				goods_id: goodsId.toString(),
 				quantity: quantity.toString()
 			});
+			// 更新成功后更新购物车数量
+			await updateStoreCartNum();
 			return response;
 		} catch (error) {
 			// 检查是否是真正的错误
 			const result = GroupCartManager.handleResponse(error);
 			if (!result.success) {
 				console.error('更新数量失败:', error);
+			} else {
+				// 更新成功后更新购物车数量
+				await updateStoreCartNum();
 			}
 			throw error;
 		}
@@ -171,8 +238,31 @@ export class GroupCartManager {
 			const response = await removeGroupCartItem({
 				cart_ids: idsString
 			});
+
+			// 特殊处理：检查是否包含成功信息
+			if ((response.status === 200) ||
+					(response.data && response.data.status === 200) ||
+					(response.data && response.data.success_count !== undefined)) {
+				// 这是一个成功的响应，即使有错误消息
+				console.log('删除商品成功:', response);
+				// 删除成功后更新购物车数量
+				await updateStoreCartNum();
+				return response;
+			}
+
 			return response;
 		} catch (error) {
+			// 特殊处理：检查错误对象中可能包含的成功响应
+			if ((error && error.status === 200) ||
+					(error && error.data && error.data.status === 200) ||
+					(error && error.data && error.data.success_count !== undefined)) {
+				// 这是一个成功的响应，但被当作错误处理了
+				console.log('删除商品成功(从错误对象中提取):', error);
+				// 删除成功后更新购物车数量
+				await updateStoreCartNum();
+				return error; // 返回错误对象作为成功响应
+			}
+
 			console.error('删除商品失败:', error);
 			throw error;
 		}
@@ -207,8 +297,22 @@ export class GroupCartManager {
 
 		// console.log('API响应原始数据:', response);
 
+		// 特殊处理：添加购物车的成功响应
+		if (response.data && response.data.msg && response.data.msg.includes('已添加到购物车')) {
+			status = 200; // 明确是添加购物车成功的消息
+			msg = response.data.msg;
+			data = response.data;
+			// console.log('检测到添加购物车的成功响应');
+		}
+		// 特殊处理：删除购物车商品的成功响应
+		else if (response.data && response.data.success_count !== undefined) {
+			status = 200; // 有成功删除的商品就认为成功
+			msg = response.data.msg || `批量删除完成：成功${response.data.success_count}个，失败${response.data.fail_count || 0}个`;
+			data = response.data;
+			// console.log('检测到删除购物车商品的成功响应');
+		}
 		// 优先检查嵌套的data.status（购物车API的情况）
-		if (response.data && typeof response.data === 'object' && response.data.status !== undefined) {
+		else if (response.data && typeof response.data === 'object' && response.data.status !== undefined) {
 			status = response.data.status;
 			msg = response.data.msg || '';
 			data = response.data;

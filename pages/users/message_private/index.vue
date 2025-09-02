@@ -38,7 +38,7 @@
           class="message-item"
           v-for="(item, index) in messageList"
           :key="index"
-          @click="goToChat(item)">
+          @click="goToServiceNotice">
           <image class="avatar" :src="item.avatar" mode="aspectFill"></image>
           <view class="message-content">
             <view class="message-title">{{item.title}}</view>
@@ -63,31 +63,10 @@ export default {
       messageList: [
         {
           id: 1,
-          title: '面包计划旗舰店',
+          title: '系统通知',
           lastMessage: '亲还需要其他帮忙的，随时告诉我哦，我在...',
           time: '16:48',
-          avatar: '/static/images/message/store_1.jpg'
-        },
-        {
-          id: 2,
-          title: '天天食品专营店',
-          lastMessage: '请问有什么可以帮到您的？',
-          time: '16:20',
-          avatar: '/static/images/message/store_2.jpg'
-        },
-        {
-          id: 3,
-          title: '德芙专营店',
-          lastMessage: '好的，亲',
-          time: '15:58',
-          avatar: '/static/images/message/store_3.jpg'
-        },
-        {
-          id: 4,
-          title: '时刻生鲜专卖店',
-          lastMessage: '好的，立刻给您发货',
-          time: '15:30',
-          avatar: '/static/images/message/store_4.jpg'
+          avatar: '/static/images/avatar.png'
         }
       ]
     }

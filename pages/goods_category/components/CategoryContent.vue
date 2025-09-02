@@ -17,7 +17,7 @@
             class="product-item"
             @tap="viewProduct(item)"
           >
-            <image :src="item.image" mode="aspectFit" class="product-image"></image>
+            <image :src="item.image" mode="aspectFill" class="product-image"></image>
             <view class="product-text">{{item.name}}</view>
           </view>
         </view>
@@ -50,7 +50,7 @@
             class="product-item"
             @tap="viewProduct(item)"
           >
-            <image :src="item.image" mode="aspectFit" class="product-image"></image>
+            <image :src="item.image" mode="aspectFill" class="product-image"></image>
             <view class="product-text">{{item.name}}</view>
           </view>
         </view>
@@ -74,7 +74,7 @@
             class="product-item"
             @tap="viewProduct(item)"
           >
-            <image :src="item.image" mode="aspectFit" class="product-image"></image>
+            <image :src="item.image" mode="aspectFill" class="product-image"></image>
             <view class="product-text">{{item.name}}</view>
           </view>
         </view>
@@ -643,9 +643,9 @@ export default {
 .product-image {
   width: 52.65px;
   height: 52.65px;
-  border-radius: 26.325px; /* 圆形图片 */
+  border-radius: 4px; /* 改为方形图片，添加小圆角 */
   margin-bottom: 8px;
-  object-fit: cover;
+  object-fit: cover; /* 保持cover以确保图片填满区域 */
 }
 
 /* 最后一个商品图片添加阴影效果 - 按照Figma设计（第6个商品：鸡蛋） */
@@ -754,7 +754,7 @@ export default {
   position: relative;
   width: 261px;
   height: 21px;
-  margin: 20px 0;
+  // margin: 20px 0;
   --active-left: 0px;
 }
 
@@ -815,10 +815,11 @@ export default {
 }
 
 .product-list-image {
-  width: 88rpx;
+  width: 120rpx;
   height: 120rpx;
-  object-fit: contain;
+  object-fit: cover;
   margin-right: 24rpx;
+  border-radius: 4rpx; /* 添加小圆角 */
 }
 
 .product-info {

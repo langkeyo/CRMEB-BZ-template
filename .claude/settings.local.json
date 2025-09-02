@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"D:\\Programs\\crmb\\CRMEB-BZ v5.6.0(20250308)\\template\\uni-app\\pages\\publish\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

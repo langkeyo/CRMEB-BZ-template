@@ -64,7 +64,7 @@ export default {
   },
   methods: {
     goBack() {
-      uni.navigateBack();
+      uni.navigateBack()
     },
     goOrderDetails(aftersales_id) {
       if (!aftersales_id) return this.$util.Tips({ title: this.$t('缺少售后单号无法查看详情') })
@@ -134,6 +134,7 @@ export default {
 .after-sales-page {
   background: #f5f6fa;
   min-height: 100vh;
+
   .header {
     display: flex;
     align-items: center;
@@ -141,6 +142,7 @@ export default {
     height: 90rpx;
     background: #fff;
     position: relative;
+
     .back {
       position: absolute;
       left: 30rpx;
@@ -150,25 +152,30 @@ export default {
       align-items: center;
       color: #333;
       font-size: 30rpx;
+
       .iconfont {
         font-size: 36rpx;
         margin-right: 8rpx;
       }
     }
+
     .title {
       font-size: 36rpx;
       font-weight: bold;
       color: #222;
     }
   }
+
   .after-sales-list {
     padding: 24rpx 16rpx 0 16rpx;
+
     .card {
       background: #fff;
       border-radius: 16rpx;
       margin-bottom: 24rpx;
-      box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03);
+      box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
       padding: 24rpx;
+
       .card-header {
         display: flex;
         justify-content: space-between;
@@ -176,67 +183,87 @@ export default {
         font-size: 30rpx;
         color: #222;
         margin-bottom: 12rpx;
+
         .shop-name {
           font-weight: bold;
         }
+
         .status {
           color: #bcbcbc;
           font-size: 28rpx;
         }
       }
+
       .product-info {
         display: flex;
         align-items: flex-start;
+
         .product-img {
           width: 120rpx;
           height: 120rpx;
           border-radius: 8rpx;
           margin-right: 18rpx;
         }
+
         .product-detail {
           flex: 1;
+
           .product-title {
             font-size: 28rpx;
             color: #222;
             font-weight: 500;
             margin-bottom: 8rpx;
           }
+
           .product-desc {
             font-size: 26rpx;
             color: #bcbcbc;
             margin-bottom: 8rpx;
           }
+
           .refund {
             font-size: 26rpx;
             color: #bcbcbc;
           }
         }
       }
+
       .card-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-top: 18rpx;
+        background-color: #F6F7F9;
+        padding: 12rpx 16rpx;
+        font-family: 'PingFang SC';
+
         .footer-status {
           display: flex;
           align-items: center;
+
           .status-main {
             font-size: 32rpx;
             font-weight: bold;
             margin-right: 16rpx;
           }
+
           .status-done {
-            color: #222;
+            // color: #222;
+            color: #333;
+            font-weight: bold;
           }
+
           .status-pending {
             color: #FF9900;
           }
+
           .footer-tip {
-            font-size: 26rpx;
+            font-size: 24rpx;
             color: #bcbcbc;
             font-weight: normal;
           }
         }
+
         .detail-btn {
           background: #fff;
           border: 1rpx solid #bcbcbc;
@@ -248,6 +275,7 @@ export default {
       }
     }
   }
+
   .empty {
     margin-top: 120rpx;
   }

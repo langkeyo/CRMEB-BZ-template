@@ -9,11 +9,11 @@
 
             <!-- 搜索框 -->
             <view class="search-container">
-                <view class="search-box" @click="search">
+                <view class="search-box">
                     <image class="search-icon" src="/static/icons/search.svg" />
-                    <text class="search-text">{{ keyword }}</text>
+                    <input class="search-input" type="text" v-model="keyword" placeholder="搜索项目名称" @confirm="searchItems" />
                 </view>
-                <view class="search-btn" @click="search">搜索</view>
+                <view class="search-btn" @click="searchItems">搜索</view>
             </view>
         </view>
 
@@ -92,23 +92,43 @@
             </view>
 
             <!-- 列表区域 -->
-            <scroll-view scroll-y class="business-list">
+            <scroll-view scroll-y class="business-list" @scrolltolower="onScrollToLower">
                 <!-- 内容容器 -->
                 <view class="content-container">
                     <!-- 加盟商家列表 -->
                     <transition name="slide-fade">
                         <view v-if="currentType === 'franchise'" key="franchise" class="list-container">
-                            <view class="business-card" v-for="item in businessList" :key="item.id" @click="viewDetail(item.id)">
-                                <view class="business-img-box">
-                                    <image class="business-img" :src="item.image" mode="aspectFill" />
+                            <view class="franchise-list">
+                                <view class="franchise-card" v-for="item in franchiseList" :key="item.id" @click="viewDetail(item.id)">
+                                    <!-- 内容 -->
+                                    <view class="business-img-box">
+                                        <image class="business-img" :src="item.image || '/static/images/empty.png'" mode="aspectFill" />
+                                    </view>
+                                    <view class="business-info">
+                                        <view class="business-title">{{ item.name }}</view>
+                                        <view class="business-desc">加盟费：{{ item.fee }}</view>
+                                        <view class="business-desc">{{ item.desc }}</view>
+                                        <view class="business-tag">{{ item.tag }}</view>
+                                    </view>
+                                    <view class="view-btn">查看</view>
                                 </view>
-                                <view class="business-info">
-                                    <view class="business-title">{{ item.name }}</view>
-                                    <view class="business-desc">加盟费：{{ item.fee }}</view>
-                                    <view class="business-desc">{{ item.desc }}</view>
-                                    <view class="business-tag">{{ item.tag }}</view>
+                                
+                                <!-- 加载状态 -->
+                                <view class="loading-state" v-if="pageParams.franchise.loading">
+                                    <view class="loading-spinner"></view>
+                                    <text class="loading-text">加载中...</text>
                                 </view>
-                                <view class="view-btn">查看</view>
+                                
+                                <!-- 没有更多 -->
+                                <view class="no-more-state" v-if="!pageParams.franchise.loading && pageParams.franchise.finished && franchiseList.length > 0">
+                                    <text class="no-more-text">没有更多了</text>
+                                </view>
+                                
+                                <!-- 空状态 -->
+                                <view class="empty-state" v-if="!pageParams.franchise.loading && franchiseList.length === 0">
+                                    <image class="empty-icon" src="/static/images/empty.png" mode="aspectFit"></image>
+                                    <text class="empty-text">暂无数据</text>
+                                </view>
                             </view>
                         </view>
                     </transition>
@@ -116,38 +136,58 @@
                     <!-- 招商合作列表 -->
                     <transition name="slide-fade">
                         <view v-if="currentType === 'cooperation'" key="cooperation" class="list-container">
-                            <view class="business-cooperation-card" v-for="item in businessCooperationList" :key="item.id" @click="viewBusinessDetail(item.id)">
-                                <!-- 项目标题 -->
-                                <view class="cooperation-title">{{ item.name }}</view>
-
-                                <!-- 标签组 -->
-                                <view class="cooperation-tag-group">
-                                    <view class="cooperation-tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{ tag }}</view>
+                            <view class="cooperation-list">
+                                <view class="cooperation-card" v-for="item in cooperationList" :key="item.id" @click="viewBusinessDetail(item.id)">
+                                    <!-- 内容 -->
+                                    <!-- 项目标题 -->
+                                    <view class="cooperation-title">{{ item.name }}</view>
+                                    
+                                    <!-- 标签组 -->
+                                    <view class="cooperation-tag-group">
+                                        <view class="cooperation-tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{ tag }}</view>
+                                    </view>
+                                    
+                                    <!-- 信息区域 -->
+                                    <view class="info-section">
+                                        <!-- 第一行：对接费用 + 房屋租金 -->
+                                        <view class="info-row">
+                                            <view class="info-item contact-fee">对接费用：{{ item.contactFee }}</view>
+                                            <view class="info-item rent-fee">房屋租金：{{ item.rentFee }}</view>
+                                        </view>
+                                        
+                                        <!-- 第二行：招商类别 + 房屋面积 -->
+                                        <view class="info-row">
+                                            <view class="info-item category">招商类别：{{ item.category }}</view>
+                                            <view class="info-item area">房屋面积：{{ item.area }}</view>
+                                        </view>
+                                        
+                                        <!-- 第三行：招商区域 -->
+                                        <view class="info-row">
+                                            <view class="info-item region">招商区域：{{ item.region }}</view>
+                                        </view>
+                                    </view>
+                                    
+                                    <!-- 查看按钮 -->
+                                    <view class="preview-button">
+                                        <view class="preview-btn-text">查看</view>
+                                    </view>
                                 </view>
-
-                                <!-- 信息区域 -->
-                                <view class="info-section">
-                                    <!-- 第一行：对接费用 + 房屋租金 -->
-                                    <view class="info-row">
-                                        <view class="info-item contact-fee">对接费用：{{ item.contactFee }}</view>
-                                        <view class="info-item rent-fee">房屋租金：{{ item.rentFee }}</view>
-                                    </view>
-
-                                    <!-- 第二行：招商类别 + 房屋面积 -->
-                                    <view class="info-row">
-                                        <view class="info-item category">招商类别：{{ item.category }}</view>
-                                        <view class="info-item area">房屋面积：{{ item.area }}</view>
-                                    </view>
-
-                                    <!-- 第三行：招商区域 -->
-                                    <view class="info-row">
-                                        <view class="info-item region">招商区域：{{ item.region }}</view>
-                                    </view>
+                                
+                                <!-- 加载状态 -->
+                                <view class="loading-state" v-if="pageParams.cooperation.loading">
+                                    <view class="loading-spinner"></view>
+                                    <text class="loading-text">加载中...</text>
                                 </view>
-
-                                <!-- 查看按钮 -->
-                                <view class="preview-button">
-                                    <view class="preview-btn-text">查看</view>
+                                
+                                <!-- 没有更多 -->
+                                <view class="no-more-state" v-if="!pageParams.cooperation.loading && pageParams.cooperation.finished && cooperationList.length > 0">
+                                    <text class="no-more-text">没有更多了</text>
+                                </view>
+                                
+                                <!-- 空状态 -->
+                                <view class="empty-state" v-if="!pageParams.cooperation.loading && cooperationList.length === 0">
+                                    <image class="empty-icon" src="/static/images/empty.png" mode="aspectFit"></image>
+                                    <text class="empty-text">暂无数据</text>
                                 </view>
                             </view>
                         </view>
@@ -158,22 +198,23 @@
                         <view v-if="currentType === 'service'" key="service" class="list-container">
                             <view class="service-list">
                                 <view class="service-card" v-for="item in serviceList" :key="item.id" @click="viewServiceDetail(item.id)">
+                                    <!-- 内容 -->
                                     <!-- left 左侧图片 -->
                                     <view class="service-left">
                                         <image :src="item.image" mode="aspectFill" class="service-image"></image>
                                     </view>
-
+                                    
                                     <!-- right 右侧内容 -->
                                     <view class="service-right">
                                         <!-- 服务标题 -->
                                         <view class="service-title">{{ item.name }}</view>
-
+                                        
                                         <!-- service-coverage 服务覆盖区域 -->
                                         <view class="service-coverage">
                                             <view class="coverage-bg"></view>
                                             <view class="coverage-text">{{ item.area }} {{ item.serviceType }}</view>
                                         </view>
-
+                                        
                                         <!-- review 评分区域 -->
                                         <view class="service-review">
                                             <!-- 星级评分 -->
@@ -183,16 +224,33 @@
                                             <!-- 评分数字 -->
                                             <view class="rating-score">{{ item.rating }}</view>
                                         </view>
-
+                                        
                                         <!-- 平台保障 -->
                                         <view class="service-guarantee">平台保障</view>
-
+                                        
                                         <!-- view-btn 查看按钮 -->
                                         <view class="view-btn">
                                             <view class="btn-bg"></view>
                                             <view class="btn-text">查看</view>
                                         </view>
                                     </view>
+                                </view>
+                                
+                                <!-- 加载状态 -->
+                                <view class="loading-state" v-if="pageParams.service.loading">
+                                    <view class="loading-spinner"></view>
+                                    <text class="loading-text">加载中...</text>
+                                </view>
+                                
+                                <!-- 没有更多 -->
+                                <view class="no-more-state" v-if="!pageParams.service.loading && pageParams.service.finished && serviceList.length > 0">
+                                    <text class="no-more-text">没有更多了</text>
+                                </view>
+                                
+                                <!-- 空状态 -->
+                                <view class="empty-state" v-if="!pageParams.service.loading && serviceList.length === 0">
+                                    <image class="empty-icon" src="/static/images/empty.png" mode="aspectFit"></image>
+                                    <text class="empty-text">暂无数据</text>
                                 </view>
                             </view>
                         </view>
@@ -218,13 +276,22 @@ export default {
     name: 'BusinessInfoPage',
     data () {
         return {
-            keyword: 'Coffee',
+            keyword: '',
             activeFilter: '', // 默认不选中任何过滤器
             moreOptions: ['加盟', '招商合作', '便民服务'], // 更多选项列表
             showMoreOptions: false, // 是否显示下拉菜单
             activeMoreOption: '更多', // 当前选中的更多选项
             currentType: 'franchise', // 当前显示的数据类型：franchise(加盟), business(招商合作), service(便民服务)
             isLoading: false, // 加载状态
+            // 分页参数
+            pageParams: {
+                franchise: { page: 1, limit: 10, loading: false, finished: false },
+                cooperation: { page: 1, limit: 10, loading: false, finished: false },
+                service: { page: 1, limit: 10, loading: false, finished: false }
+            },
+            // 筛选参数
+            selectedArea: '',
+            selectedCategory: '',
             // 轮播图数据（暂时让同一张图片轮播4次，方便后续接口对接）
             bannerList: [
                 {
@@ -250,6 +317,8 @@ export default {
             ],
             currentBannerIndex: 0, // 当前轮播图索引
             bannerTimer: null, // 轮播定时器
+            franchiseList: [], // 加盟列表数据
+            cooperationList: [], // 招商合作列表数据
             businessList: [
                 {
                     id: 1,
@@ -365,7 +434,26 @@ export default {
             ]
         }
     },
+    onLoad() {
+        // 初始化数据
+        this.franchiseList = this.businessList || [];
+        this.cooperationList = this.businessCooperationList || [];
+        
+        // 根据当前类型加载对应数据
+        this.loadDataByType();
+    },
     methods: {
+        // 加载初始数据
+        loadInitialData() {
+            // 根据当前类型加载数据
+            if (this.currentType === 'franchise') {
+                this.loadFranchiseList();
+            } else if (this.currentType === 'cooperation') {
+                this.loadCooperationList();
+            } else if (this.currentType === 'service') {
+                this.loadServiceList();
+            }
+        },
         goBack () {
             uni.navigateBack()
         },
@@ -388,11 +476,10 @@ export default {
             });
         },
         search () {
-            // 搜索功能实现
-            uni.showToast({
-                title: '搜索功能开发中',
-                icon: 'none'
-            })
+            // 打开搜索页面
+            uni.navigateTo({
+                url: `/pages/goods_search/index`
+            });
         },
         selectFilter (filter) {
             // 这些按钮暂时只是显示选中状态，不切换内容
@@ -507,6 +594,8 @@ export default {
                         tag: item.multiple_type, // multiple_type -> tag
                         image: item.image ? this.getImageUrl(item.image) : '/static/images/index/business-info/luckin_coffee.png' // 兼容处理图片URL
                     }));
+                    // 同时更新franchiseList
+                    this.franchiseList = this.businessList;
                     console.log('加盟项目数据加载成功:', this.businessList);
                 }
             } catch (error) {
@@ -551,6 +640,8 @@ export default {
                         region: item.district_name || '全国', // 招商区域
                         image: item.image ? this.getImageUrl(item.image) : '' // 使用helper处理图片URL
                     }));
+                    // 同时更新cooperationList
+                    this.cooperationList = this.businessCooperationList;
                     console.log('招商合作数据加载成功:', this.businessCooperationList);
                 }
             } catch (error) {
@@ -628,18 +719,216 @@ export default {
             }
             // 其他情况，也拼接域名
             return `${HTTP_REQUEST_URL}/${url}`;
-        }
-    },
+        },
 
-    // 页面加载时调用API
-    onLoad() {
-        // 根据当前类型加载对应数据
-        this.loadDataByType();
+        // 搜索项目
+        searchItems() {
+            // 重置分页并搜索
+            this.resetPageParams();
+            
+            // 根据当前类型执行对应的搜索
+            if (this.currentType === 'franchise') {
+                this.loadFranchiseList(true);
+            } else if (this.currentType === 'cooperation') {
+                this.loadCooperationList(true);
+            } else if (this.currentType === 'service') {
+                this.loadServiceList(true);
+            }
+        },
+
+        // 重置分页参数
+        resetPageParams() {
+            this.pageParams = {
+                franchise: { page: 1, limit: 10, loading: false, finished: false },
+                cooperation: { page: 1, limit: 10, loading: false, finished: false },
+                service: { page: 1, limit: 10, loading: false, finished: false }
+            };
+            
+            // 清空对应数据
+            if (this.currentType === 'franchise') {
+                this.franchiseList = [];
+            } else if (this.currentType === 'cooperation') {
+                this.cooperationList = [];
+            } else if (this.currentType === 'service') {
+                this.serviceList = [];
+            }
+        },
+
+        // 加载加盟项目列表
+        loadFranchiseList(isRefresh = false) {
+            const params = this.pageParams.franchise;
+            if (params.loading || params.finished) return;
+            
+            params.loading = true;
+            this.isLoading = true;
+            
+            getFranchiseList({
+                page: params.page,
+                limit: params.limit,
+                search: this.keyword,
+                area: this.selectedArea,
+                category: this.selectedCategory
+            }).then(res => {
+                params.loading = false;
+                this.isLoading = false;
+                
+                if (res.status === 200 && res.data) {
+                    const list = res.data.list || [];
+                    
+                    if (isRefresh) {
+                        this.franchiseList = list;
+                    } else {
+                        this.franchiseList = [...this.franchiseList, ...list];
+                    }
+                    
+                    params.finished = list.length < params.limit;
+                    
+                    if (!params.finished) {
+                        params.page++;
+                    }
+                } else {
+                    uni.showToast({
+                        title: res.msg || '加载失败',
+                        icon: 'none'
+                    });
+                }
+            }).catch(err => {
+                params.loading = false;
+                this.isLoading = false;
+                
+                console.error('加载加盟项目失败:', err);
+                uni.showToast({
+                    title: '网络错误',
+                    icon: 'none'
+                });
+            });
+        },
+
+        // 加载招商合作列表
+        loadCooperationList(isRefresh = false) {
+            const params = this.pageParams.cooperation;
+            if (params.loading || params.finished) return;
+            
+            params.loading = true;
+            this.isLoading = true;
+            
+            getCooperationList({
+                page: params.page,
+                limit: params.limit,
+                search: this.keyword,
+                area: this.selectedArea,
+                category: this.selectedCategory
+            }).then(res => {
+                params.loading = false;
+                this.isLoading = false;
+                
+                if (res.status === 200 && res.data) {
+                    const list = (res.data.list || []).map(item => ({
+                        id: item.id,
+                        name: item.title || '招商合作项目',
+                        tags: item.tags ? item.tags.split('|') : ['优质项目', '合作共赢'], // 使用|分割
+                        contactFee: '面议', // API中没有此字段，使用默认值
+                        rentFee: '面议', // API中没有此字段，使用默认值
+                        category: item.categroy || '餐饮', // 招商类别
+                        area: item.floor_space || '面积待定', // 房屋面积
+                        region: item.district_name || '全国', // 招商区域
+                        image: item.image ? this.getImageUrl(item.image) : '' // 使用helper处理图片URL
+                    }));
+                    
+                    if (isRefresh) {
+                        this.cooperationList = list;
+                    } else {
+                        this.cooperationList = [...this.cooperationList, ...list];
+                    }
+                    
+                    params.finished = list.length < params.limit;
+                    
+                    if (!params.finished) {
+                        params.page++;
+                    }
+                } else {
+                    uni.showToast({
+                        title: res.msg || '加载失败',
+                        icon: 'none'
+                    });
+                }
+            }).catch(err => {
+                params.loading = false;
+                this.isLoading = false;
+                
+                console.error('加载招商合作失败:', err);
+                uni.showToast({
+                    title: '网络错误',
+                    icon: 'none'
+                });
+            });
+        },
+
+        // 加载便民服务列表
+        loadServiceList(isRefresh = false) {
+            const params = this.pageParams.service;
+            if (params.loading || params.finished) return;
+            
+            params.loading = true;
+            this.isLoading = true;
+            
+            getConvenientServiceList({
+                page: params.page,
+                limit: params.limit,
+                search: this.keyword,
+                category: this.selectedCategory
+            }).then(res => {
+                params.loading = false;
+                this.isLoading = false;
+                
+                if (res.status === 200 && res.data) {
+                    const list = res.data.list || [];
+                    
+                    if (isRefresh) {
+                        this.serviceList = list;
+                    } else {
+                        this.serviceList = [...this.serviceList, ...list];
+                    }
+                    
+                    params.finished = list.length < params.limit;
+                    
+                    if (!params.finished) {
+                        params.page++;
+                    }
+                } else {
+                    uni.showToast({
+                        title: res.msg || '加载失败',
+                        icon: 'none'
+                    });
+                }
+            }).catch(err => {
+                params.loading = false;
+                this.isLoading = false;
+                
+                console.error('加载便民服务失败:', err);
+                uni.showToast({
+                    title: '网络错误',
+                    icon: 'none'
+                });
+            });
+        },
+
+        // 处理滚动到底部加载更多
+        onScrollToLower() {
+            // 根据当前类型加载更多
+            if (this.currentType === 'franchise') {
+                this.loadFranchiseList();
+            } else if (this.currentType === 'cooperation') {
+                this.loadCooperationList();
+            } else if (this.currentType === 'service') {
+                this.loadServiceList();
+            }
+        }
     }
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 page {
     background: #F7F7F7;
 }
@@ -658,78 +947,67 @@ page {
     background: #FFFFFF;
 }
 
-/* header-section */
+/* 头部样式 */
 .header {
-    position: relative;
-    width: 750rpx; /* 375px * 2 */
-    height: 88rpx; /* 调整为标准头部导航高度 */
-    background: #FFFFFF;
     display: flex;
     align-items: center;
-    padding: 0;
-    box-sizing: border-box;
-    flex-shrink: 0;
-
+    padding: 20rpx 20rpx 20rpx 0;
+    background: #FFFFFF;
+    position: relative;
+    z-index: 50;
+    
     .back-btn {
-        /* back-icon */
-        position: absolute;
-        width: 64rpx; /* 32px * 2 */
-        height: 64rpx; /* 32px * 2 */
-        left: 10rpx; /* 5px * 2 */
-        top: 12rpx; /* 在88rpx高度中居中：(88-64)/2 = 12rpx */
+        width: 80rpx;
+        height: 80rpx;
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 10;
-
+        
         .back-icon {
-            width: 32rpx;
-            height: 32rpx;
-            /* 移除边框 */
+            width: 40rpx;
+            height: 40rpx;
         }
     }
+}
 
-    .search-container {
-        /* search-section */
-        position: absolute;
-        width: 574rpx; /* 287px * 2 */
-        height: 40rpx; /* 等比例缩小，适配新的头部高度 */
-        left: 116rpx; /* calc(50% - 287px/2 + 14px) * 2 = 58px * 2 */
-        top: 24rpx; /* 在88rpx高度中居中：(88-40)/2 = 24rpx */
-        display: flex;
-        align-items: center;
-    }
-
+/* 搜索框样式 */
+.search-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding-left: 30rpx;
+    
     .search-box {
-        /* Rectangle 44 */
-        width: 574rpx; /* 287px * 2 */
-        height: 60rpx; /* 等比例缩小，适配新的头部高度 */
-        background: #F8F8F8;
-        border-radius: 30rpx; /* 等比例缩小圆角 */
+        flex: 1;
+        height: 70rpx;
+        background-color: #F5F5F5;
+        border-radius: 35rpx;
         display: flex;
         align-items: center;
-        padding: 0 20rpx; /* 等比例缩小内边距 */
-
+        padding: 0 30rpx;
+        
         .search-icon {
-            /* search-icon */
-            width: 30rpx; /* 调整图标大小 */
-            height: 30rpx; /* 调整图标大小 */
-            margin-right: 16rpx; /* 保持间距 */
+            width: 40rpx;
+            height: 40rpx;
+            margin-right: 10rpx;
         }
-
-        .search-text {
-            /* Coffee text */
-            font-family: 'PingFang SC';
-            font-style: normal;
-            font-weight: 400;
-            font-size: 28rpx; /* 调整字体大小与图标匹配 */
-            line-height: 40rpx; /* 调整行高 */
-            color: #BABABA;
+        
+        .search-input {
+            flex: 1;
+            height: 70rpx;
+            font-size: 28rpx;
+            color: #333;
         }
     }
-
+    
     .search-btn {
-        display: none; /* 隐藏搜索按钮，因为原设计中没有 */
+        width: 120rpx;
+        height: 70rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333;
+        font-size: 28rpx;
     }
 }
 
@@ -967,6 +1245,20 @@ page {
         animation: slideInUp 0.5s ease-out;
     }
 
+    /* 加盟列表 */
+    .franchise-list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    /* 招商合作列表 */
+    .cooperation-list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
     .business-card {
         position: relative;
         display: flex;
@@ -1093,6 +1385,108 @@ page {
             justify-content: center;
         }
     }
+    
+    /* 加盟卡片样式 */
+    .franchise-card {
+        position: relative;
+        display: flex;
+        width: 702rpx; /* 351px * 2 */
+        height: 282rpx; /* 141px * 2 */
+        background: #FFFFFF;
+        border-radius: 16rpx; /* 8px * 2 */
+        margin-bottom: 30rpx;
+        box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+
+        .business-img-box {
+            width: 208rpx; /* 104px * 2 */
+            height: 208rpx; /* 104px * 2 */
+            border-radius: 8rpx; /* 4px * 2 */
+            overflow: hidden;
+            margin: 38rpx 0 0 36rpx; /* top: 19px, left: 18px */
+            flex-shrink: 0;
+
+            .business-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+
+        .business-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 0px;
+            gap: 20rpx; /* 10px * 2 */
+            width: 460rpx; /* 230px * 2 */
+            height: 220rpx; /* 110px * 2 */
+            margin: 32rpx 0 0 24rpx; /* top: 16px, left: 12px (130px - 104px - 18px + 4px) */
+
+            .business-title {
+                width: 460rpx; /* 230px * 2 */
+                height: 40rpx; /* 20px * 2 */
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 32rpx; /* 16px * 2 */
+                line-height: 44rpx; /* 22px * 2 */
+                color: #1A1A1A;
+                flex: none;
+                order: 0;
+                align-self: stretch;
+                flex-grow: 0;
+            }
+
+            .business-desc {
+                width: 460rpx; /* 230px * 2 */
+                height: 40rpx; /* 20px * 2 */
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 28rpx; /* 14px * 2 */
+                line-height: 40rpx; /* 20px * 2 */
+                color: #333333;
+                flex: none;
+                align-self: stretch;
+                flex-grow: 0;
+            }
+
+            .business-tag {
+                width: 460rpx; /* 230px * 2 */
+                height: 40rpx; /* 20px * 2 */
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 28rpx; /* 14px * 2 */
+                line-height: 40rpx; /* 20px * 2 */
+                color: #333333;
+                flex: none;
+                order: 3;
+                align-self: stretch;
+                flex-grow: 0;
+            }
+        }
+
+        .view-btn {
+            position: absolute;
+            right: 36rpx; /* 351px - 269px - 84px + 18px = 2px, 调整为18px */
+            bottom: 16rpx; /* 258px + 141px - 366px - 26px = 7px, 调整为8px */
+            width: 168rpx; /* 84px * 2 */
+            height: 52rpx; /* 26px * 2 */
+            background: linear-gradient(90deg, #FF7E00 0%, #FDA44D 100%);
+            border-radius: 44rpx; /* 22px * 2 */
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 400;
+            font-size: 36rpx; /* 18px * 2 */
+            line-height: 50rpx; /* 25px * 2 */
+            text-align: center;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
 }
 
 .safe-area-bottom {
@@ -1104,6 +1498,126 @@ page {
 
 /* 招商合作卡片样式 */
 .business-cooperation-card {
+    position: relative;
+    width: 702rpx; /* 351px * 2 */
+    height: 388rpx; /* 194px * 2 */
+    background: #FFFFFF;
+    border-radius: 8rpx; /* 4px * 2 */
+    margin-bottom: 24rpx; /* 12px * 2 */
+    padding: 20rpx 44rpx 30rpx 44rpx; /* 上10px 右22px 下15px 左22px */
+    display: flex;
+    flex-direction: column;
+
+    /* 项目标题 */
+    .cooperation-title {
+        font-family: 'PingFang SC';
+        font-style: normal;
+        font-weight: 500; /* 保持字重 */
+        font-size: 34rpx; /* 适中的标题大小 */
+        line-height: 48rpx; /* 调整行高 */
+        color: #000000;
+        margin-bottom: 20rpx; /* 10px * 2 */
+    }
+
+    /* 标签组 */
+    .cooperation-tag-group {
+        display: flex;
+        gap: 20rpx; /* 10px * 2 */
+        margin-bottom: 24rpx; /* 12px * 2 */
+
+        .cooperation-tag {
+            width: 168rpx; /* 84px * 2 */
+            height: 46rpx; /* 23px * 2 */
+            background: #FFC082;
+            border-radius: 8rpx; /* 4px * 2 */
+
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 400;
+            font-size: 26rpx; /* 适中的标签大小 */
+            line-height: 36rpx; /* 调整行高 */
+            color: #FF7E00;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    /* 信息区域 */
+    .info-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16rpx; /* 8px * 2 */
+
+        /* 信息行 */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12rpx; /* 增加行间距 */
+
+            .info-item {
+                font-family: 'PingFang SC';
+                font-style: normal;
+                font-weight: 400;
+                font-size: 30rpx; /* 适中的信息文字大小 */
+                line-height: 42rpx; /* 调整行高 */
+                color: #666666; /* 保持颜色，提高可读性 */
+                flex: 1;
+
+                &.contact-fee {
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
+                }
+
+                &.rent-fee {
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
+                    text-align: right;
+                }
+
+                &.category {
+                    max-width: 280rpx; /* 增加宽度，让文字一行显示 */
+                }
+
+                &.area {
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
+                    text-align: right;
+                }
+
+                &.region {
+                    max-width: 340rpx; /* 增加宽度，让文字一行显示 */
+                }
+            }
+        }
+    }
+
+    /* 查看按钮 */
+    .preview-button {
+        position: absolute;
+        right: 44rpx; /* 22px * 2 */
+        bottom: 30rpx; /* 15px * 2 */
+        width: 168rpx; /* 84px * 2 */
+        height: 52rpx; /* 26px * 2 */
+        background: linear-gradient(90deg, #FF7E00 0%, #FDA44D 100%);
+        border-radius: 44rpx; /* 22px * 2 */
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .preview-btn-text {
+            font-family: 'PingFang SC';
+            font-style: normal;
+            font-weight: 500; /* 保持字重 */
+            font-size: 32rpx; /* 适中的按钮文字大小 */
+            line-height: 44rpx; /* 调整行高 */
+            color: #FFFFFF;
+        }
+    }
+}
+
+/* 招商合作卡片样式 - 复制上面的样式 */
+.cooperation-card {
     position: relative;
     width: 702rpx; /* 351px * 2 */
     height: 388rpx; /* 194px * 2 */
@@ -1393,5 +1907,59 @@ page {
             }
         }
     }
+}
+
+/* 加载中、没有更多、空状态样式 */
+.loading-state, .no-more-state, .empty-state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30rpx 0;
+}
+
+.loading-state {
+    .loading-spinner {
+        width: 40rpx;
+        height: 40rpx;
+        border: 4rpx solid #f3f3f3;
+        border-top: 4rpx solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 10rpx;
+    }
+    
+    .loading-text {
+        font-size: 24rpx;
+        color: #999;
+    }
+}
+
+.no-more-state {
+    .no-more-text {
+        font-size: 24rpx;
+        color: #999;
+    }
+}
+
+.empty-state {
+    padding: 100rpx 0;
+    
+    .empty-icon {
+        width: 200rpx;
+        height: 200rpx;
+        margin-bottom: 20rpx;
+    }
+    
+    .empty-text {
+        font-size: 28rpx;
+        color: #999;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>

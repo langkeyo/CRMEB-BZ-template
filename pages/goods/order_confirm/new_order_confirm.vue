@@ -20,7 +20,8 @@
 				</view>
 				<view class="more-payment" @click="toggleMorePayment">
 					<text>更多支付方式</text>
-					<image :class="{ 'arrow-rotated': morePaymentExpanded }" src="/static/images/payment/arrow_down.png" mode="widthFix"></image>
+					<image :class="{ 'arrow-rotated': morePaymentExpanded }" src="/static/images/payment/arrow_down.png"
+						mode="widthFix"></image>
 				</view>
 				<view v-if="morePaymentExpanded" class="more-payment-list">
 					<view class="payment-option" @click="selectPayment('unionpay')">
@@ -37,6 +38,36 @@
 				<text>立即支付 ¥{{ goods.price }}</text>
 			</view>
 		</view>
+
+		<!-- 优惠券选择弹窗 -->
+		<view class="payment-mask" v-if="showCouponModal" @click.stop="closeCouponModal"></view>
+		<view class="coupon-modal" v-if="showCouponModal">
+			<view class="coupon-header">
+				<text>选择优惠券</text>
+				<text class="close-icon" @click="closeCouponModal">×</text>
+			</view>
+			<view class="coupon-list">
+				<view v-if="availableCoupons.length === 0" class="no-coupon">
+					<text>暂无可用优惠券</text>
+				</view>
+				<view v-for="(coupon, index) in availableCoupons" :key="index" class="coupon-item"
+					:class="{ active: selectedCoupons.includes(coupon.id) }" @click="toggleCoupon(coupon.id)">
+					<view class="coupon-left">
+						<text class="coupon-amount">¥{{ coupon.discount_amount }}</text>
+					</view>
+					<view class="coupon-right">
+						<text class="coupon-name">{{ coupon.name }}</text>
+						<text class="coupon-limit">满{{ coupon.min_amount }}元可用</text>
+						<text class="coupon-expire">有效期至{{ formatDate(coupon.expire_time) }}</text>
+					</view>
+					<view class="coupon-check" :class="{ active: selectedCoupons.includes(coupon.id) }"></view>
+				</view>
+			</view>
+			<view class="coupon-btn" @click="confirmCoupon">
+				<text>确认使用</text>
+			</view>
+		</view>
+
 		<!-- 导航栏 -->
 		<view class="nav-bar">
 			<view class="back-icon" @tap="goBack">
@@ -47,22 +78,25 @@
 
 		<!-- 收货地址区域 -->
 		<view class="address-box">
-			<view class="address-tag">站点自提</view>
+			<view class="address-tag">{{ siteInfo.type || '站点自提' }}</view>
 			<view class="address-content">
-				<view class="user-info"><text class="user-name">收货人：</text>Eetin</view>
-				<view class="address-detail"><text class="address-text">收货地址：</text>北京尚德井小区菜鸟驿站</view>
-				<view class="delivery-time"><text class="time-text">送货时间：</text>今日8：00前送达</view>
+				<view class="user-info"><text class="user-name">收货人：</text>{{ userInfo.nickname || '未登录' }}</view>
+				<view class="address-detail"><text class="address-text">收货地址：</text>{{ siteInfo.location ||
+					'北京尚德井小区菜鸟驿站' }}</view>
+				<view class="delivery-time"><text class="time-text">送货时间：</text>{{ siteInfo.deliveryTime || '今日8：00前送达'
+				}}</view>
 			</view>
 		</view>
 		<view class="goods-card">
 			<!-- 商品信息 -->
 			<view class="goods-box">
 				<view class="goods-image">
-					<image src="/static/images/today-group-buying/order_confirm/lemon.png" mode="aspectFill"></image>
+					<image :src="goods.image" mode="aspectFill"></image>
 				</view>
 				<view class="goods-info">
 					<view class="goods-name">{{ goods.name }}</view>
-					<view class="price-change">比加入时降价￥{{ goods.oldPrice - goods.price }}元</view>
+					<view class="price-change" v-if="goods.oldPrice > goods.price">比加入时降价￥{{ goods.oldPrice -
+						goods.price }}元</view>
 					<!-- 坏果包赔 -->
 					<view class="guarantee-tag">
 						<text>坏果包赔</text>
@@ -94,10 +128,11 @@
 					<text>配送费</text>
 					<text>￥0</text>
 				</view>
-				<view class="fee-item">
+				<view class="fee-item" @click="openCouponModal">
 					<text>商家代金券</text>
 					<view class="coupon-info">
-						<text>暂无可用</text>
+						<text v-if="selectedCoupons.length === 0">暂无可用</text>
+						<text v-else>已选择{{ selectedCoupons.length }}张券</text>
 						<text class="arrow">></text>
 					</view>
 				</view>
@@ -114,7 +149,8 @@
 				</view>
 			</view>
 			<scroll-view class="recommend-list" scroll-y>
-				<view class="recommend-item" v-for="item in recommendProducts" :key="item.id">
+				<view class="recommend-item" v-for="item in recommendProducts" :key="item.id"
+					@click="goToProductDetail(item.id)">
 					<image :src="item.image" mode="aspectFill" class="recommend-image"></image>
 					<view class="recommend-name">{{ item.name }}</view>
 					<view class="recommend-price">￥{{ item.price }}</view>
@@ -125,7 +161,7 @@
 		<view class="bottom-bar">
 			<view class="payment-info">
 				<text class="payment-label">待支付：</text>
-				<text class="payment-price">￥{{ (goods.price * goods.quantity).toFixed(2) }}</text>
+				<text class="payment-price">￥{{ calculateTotalPrice() }}</text>
 			</view>
 
 			<view class="payment-buttons">
@@ -148,12 +184,19 @@
 </template>
 
 <script>
+import { createGroupOrder, payOrder, getOrderCoupons, getCombinationDetail, setOrderCoupon, getRecommendCombinations } from '@/api/group'
+import { mapGetters } from 'vuex'
+
 export default {
 	data() {
 		return {
 			showPaymentModal: false, // 支付弹窗显示状态
 			selectedPayment: 'wechat', // 默认选择微信支付
 			showOrderConfirm: false, // 下单确认弹窗显示状态
+			showCouponModal: false, // 优惠券弹窗显示状态
+			availableCoupons: [], // 可用优惠券列表
+			selectedCoupons: [], // 已选优惠券ID数组
+			couponDiscount: 0, // 优惠券抵扣金额
 			goods: {
 				name: '香水柠檬50g/个',
 				price: 15,
@@ -161,57 +204,137 @@ export default {
 				quantity: 1,
 				image: '/static/images/today-group-buying/order_confirm/lemon.png'
 			},
-			address: {
-				name: 'Eetin',
-				location: '北京尚德井小区菜鸟驿站',
-				deliveryTime: '今日8：00前送达',
-				type: '站点自提'
-			},
-			recommendProducts: [
-				{
-					id: 1,
-					name: '刺小野新款菠萝口味果干',
-					price: 19.8,
-					image: '/static/images/today-group-buying/order_confirm/conveniently/goods1.png'
-				},
-				{
-					id: 2,
-					name: '双重软毛电动牙刷新款',
-					price: 29.8,
-					image: '/static/images/today-group-buying/order_confirm/conveniently/goods2.png'
-				},
-				{
-					id: 3,
-					name: '高级感时尚百搭单肩包',
-					price: 156,
-					image: '/static/images/today-group-buying/order_confirm/conveniently/goods3.png'
-				}
-			],
-			morePaymentExpanded: false
+			recommendProducts: [],
+			morePaymentExpanded: false,
+			combination_id: 0, // 拼团商品配置ID
+			orderData: null, // 订单数据
+			user_coupon_ids: [], // 用户优惠券ID数组
+			orderId: 0, // 创建的订单ID
+			remark: '', // 订单备注
+			loading: false, // 加载状态
+			loadingProduct: false // 商品加载状态
 		}
+	},
+	computed: {
+		...mapGetters(['userInfo', 'siteInfo'])
 	},
 	methods: {
 		goBack() {
 			console.log('hello')
 			if (getCurrentPages().length > 1) {
-				uni.navigateBack();
+				uni.navigateBack()
 			} else {
 				uni.switchTab({
 					url: '/pages/index/index' // 或你想要的首页路径
-				});
+				})
 			}
 		},
 		minusQuantity() {
-			if (this.goods.quantity > 1) {
+			if (this.goods.quantity > (this.goods.minBuyNum || 1)) {
 				this.goods.quantity--
+			} else {
+				uni.showToast({
+					title: `最少购买${this.goods.minBuyNum || 1}件`,
+					icon: 'none'
+				})
 			}
 		},
 		addQuantity() {
+			// 检查是否达到最大购买数量限制
+			if (this.goods.maxBuyNum > 0 && this.goods.quantity >= this.goods.maxBuyNum) {
+				uni.showToast({
+					title: `最多购买${this.goods.maxBuyNum}件`,
+					icon: 'none'
+				})
+				return
+			}
+
+			// 检查是否超过库存
+			if (this.goods.stock > 0 && this.goods.quantity >= this.goods.stock) {
+				uni.showToast({
+					title: '库存不足',
+					icon: 'none'
+				})
+				return
+			}
+
 			this.goods.quantity++
 		},
 		payNow() {
-			// 显示支付方式选择弹窗
-			this.showPaymentModal = true
+			// 创建订单
+			this.createOrder().then(() => {
+				// 显示支付方式选择弹窗
+				this.showPaymentModal = true
+			}).catch(err => {
+				uni.showToast({
+					title: err.message || '创建订单失败',
+					icon: 'none'
+				})
+			})
+		},
+		// 创建订单
+		async createOrder() {
+			if (this.loading) return
+
+			// 检查站点信息
+			if (!this.checkSiteInfo()) {
+				uni.showToast({
+					title: '请先绑定社区',
+					icon: 'none'
+				})
+				return
+			}
+
+			this.loading = true
+			uni.showLoading({ title: '创建订单中...' })
+
+			try {
+				// 构建订单数据
+				const orderData = {
+					combination_id: this.combination_id,
+					quantity: this.goods.quantity,
+					user_coupon_ids: this.selectedCoupons.join(','),
+					remark: this.remark
+				}
+
+				// 如果有社区信息，添加社区ID
+				if (this.siteInfo.community && this.siteInfo.community.id) {
+					orderData.community_id = this.siteInfo.community.id
+				}
+
+				// 调用创建订单API
+				const response = await createGroupOrder(orderData)
+
+				// 处理登录状态错误
+				if (response.status === 110002) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					})
+					// 延迟跳转到登录页
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/login/index'
+						})
+					}, 1500)
+					return
+				}
+
+				if (response.status === 200) {
+					this.orderId = response.data.order_id
+					this.orderData = response.data
+					uni.hideLoading()
+					return response.data
+				} else {
+					throw new Error(response.msg || '创建订单失败')
+				}
+			} catch (error) {
+				console.error('创建订单失败', error)
+				throw error
+			} finally {
+				this.loading = false
+				uni.hideLoading()
+			}
 		},
 		orderFirst() {
 			this.showOrderConfirm = true
@@ -233,14 +356,17 @@ export default {
 			// })
 		},
 		confirmOrderFirst() {
-			this.showOrderConfirm = false
-			uni.navigateTo({
-			    url: `/pages/goods/pending_payment/index`
+			this.createOrder().then(() => {
+				this.showOrderConfirm = false
+				uni.navigateTo({
+					url: `/pages/goods/pending_payment/index?order_id=${this.orderId}`
+				})
+			}).catch(err => {
+				uni.showToast({
+					title: err.message || '创建订单失败',
+					icon: 'none'
+				})
 			})
-			// uni.showToast({
-			// 	title: '创建订单成功',
-			// 	icon: 'success'
-			// })
 		},
 
 		// 选择支付方式
@@ -255,47 +381,386 @@ export default {
 
 		// 确认支付
 		confirmPayment() {
-			// 储存选择的支付方式
-			uni.setStorageSync('selectedPaymentMethod', this.selectedPayment)
+			if (!this.orderId) {
+				uni.showToast({
+					title: '订单信息无效',
+					icon: 'none'
+				})
+				return
+			}
 
-			// 根据选择的支付方式调用支付接口
+			// 调用支付接口
 			uni.showLoading({
 				title: '正在支付...'
 			})
 
-			// 模拟支付流程
-			setTimeout(() => {
-				uni.hideLoading()
-				uni.showToast({
-					title: '支付成功',
-					icon: 'success'
-				})
+			// 根据选择的支付方式设置pay_type
+			const payTypeMap = {
+				'wechat': 1,
+				'alipay': 2,
+				'unionpay': 3
+			}
 
-				// 跳转到支付成功页面
-				setTimeout(() => {
-					uni.redirectTo({
-						url: '/pages/goods/order_pay_status/index?status=success'
+			// 调用支付API
+			payOrder(this.orderId, { pay_type: payTypeMap[this.selectedPayment] || 1 })
+				.then(res => {
+					uni.hideLoading()
+
+					// 处理登录状态错误
+					if (res.status === 110002) {
+						uni.showToast({
+							title: '请先登录',
+							icon: 'none'
+						})
+						// 延迟跳转到登录页
+						setTimeout(() => {
+							uni.navigateTo({
+								url: '/pages/login/index'
+							})
+						}, 1500)
+						return
+					}
+
+					if (res.status === 200) {
+						uni.showToast({
+							title: '支付成功',
+							icon: 'success'
+						})
+
+						// 跳转到支付成功页面
+						setTimeout(() => {
+							uni.redirectTo({
+								url: '/pages/goods/payment_success/index?order_id=' + this.orderId
+							})
+						}, 1500)
+					} else {
+						throw new Error(res.msg || '支付失败')
+					}
+				})
+				.catch(err => {
+					uni.hideLoading()
+					uni.showToast({
+						title: err.message || '支付失败',
+						icon: 'none'
 					})
-				}, 1500)
-			}, 2000)
+				})
 
 			// 关闭弹窗
 			this.showPaymentModal = false
 		},
 		toggleMorePayment() {
 			this.morePaymentExpanded = !this.morePaymentExpanded
+		},
+		// 获取订单可用优惠券
+		async fetchAvailableCoupons() {
+			if (!this.orderId) return
+
+			uni.showLoading({ title: '加载中...' })
+			try {
+				const res = await getOrderCoupons({ order_id: this.orderId })
+				if (res.status === 200 && res.data.available_coupons) {
+					this.availableCoupons = res.data.available_coupons
+					return res.data.available_coupons
+				} else {
+					this.availableCoupons = []
+				}
+			} catch (error) {
+				console.error('获取可用优惠券失败', error)
+				this.availableCoupons = []
+				uni.showToast({
+					title: '获取优惠券失败',
+					icon: 'none'
+				})
+			} finally {
+				uni.hideLoading()
+			}
+		},
+		// 打开优惠券弹窗
+		openCouponModal() {
+			if (!this.orderId) {
+				// 如果没有订单ID，需要先创建订单
+				this.createOrder().then(() => {
+					this.fetchAvailableCoupons()
+					this.showCouponModal = true
+				}).catch(err => {
+					uni.showToast({
+						title: err.message || '请先创建订单',
+						icon: 'none'
+					})
+				})
+			} else {
+				this.fetchAvailableCoupons()
+				this.showCouponModal = true
+			}
+		},
+		// 关闭优惠券弹窗
+		closeCouponModal() {
+			this.showCouponModal = false
+		},
+		// 切换选择优惠券
+		toggleCoupon(couponId) {
+			const index = this.selectedCoupons.indexOf(couponId)
+			if (index > -1) {
+				// 已选中，取消选择
+				this.selectedCoupons.splice(index, 1)
+			} else {
+				// 未选中，添加选择
+				this.selectedCoupons.push(couponId)
+			}
+		},
+		// 确认使用优惠券
+		async confirmCoupon() {
+			if (!this.orderId || this.loading) return
+
+			this.loading = true
+			uni.showLoading({ title: '应用优惠券中...' })
+
+			try {
+				const res = await setOrderCoupon({
+					order_id: this.orderId,
+					user_coupon_ids: this.selectedCoupons.join(',')
+				})
+
+				if (res.status === 200) {
+					this.couponDiscount = res.data.total_discount || 0
+
+					uni.showToast({
+						title: '优惠券应用成功',
+						icon: 'success'
+					})
+
+					this.closeCouponModal()
+				} else {
+					throw new Error(res.msg || '应用优惠券失败')
+				}
+			} catch (error) {
+				console.error('应用优惠券失败', error)
+				uni.showToast({
+					title: error.message || '应用优惠券失败',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+				uni.hideLoading()
+			}
+		},
+		// 格式化日期
+		formatDate(timestamp) {
+			if (!timestamp) return ''
+			const date = new Date(timestamp * 1000)
+			return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+		},
+		// 计算总价
+		calculateTotalPrice() {
+			const goodsTotal = this.goods.price * this.goods.quantity
+			return (goodsTotal - this.couponDiscount).toFixed(2)
+		},
+		// 去更多商品页面
+		goToMore() {
+			uni.navigateTo({
+				url: '/pages/goods/goods_list/index'
+			})
+		},
+		// 加载商品详情
+		async loadProductDetails() {
+			if (!this.combination_id || this.loadingProduct) return
+
+			this.loadingProduct = true
+			uni.showLoading({ title: '加载中...' })
+
+			try {
+				const res = await getCombinationDetail(this.combination_id)
+
+				// 处理登录状态错误
+				if (res.status === 110002) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					})
+					// 延迟跳转到登录页
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/login/index'
+						})
+					}, 1500)
+					return
+				}
+
+				if (res.status === 200 && res.data) {
+					console.log(this)
+
+					const productData = res.data
+					// 更新商品信息
+					this.goods = {
+						name: productData.title || '商品名称',
+						price: parseFloat(productData.group_price) || 0,
+						oldPrice: parseFloat(productData.original_price) || 0,
+						quantity: 1,
+						image: productData.image ? (productData.image.startsWith('http') ? productData.image : this.$util.getImageUrl(productData.image)) : this.goods.image,
+						stock: productData.stock || 0,
+						description: productData.description || '',
+						minBuyNum: productData.min_buy_num || 1,
+						maxBuyNum: productData.max_buy_num || 0
+					}
+
+					// 如果有最小购买数量限制，设置初始数量
+					if (this.goods.minBuyNum > 1) {
+						this.goods.quantity = this.goods.minBuyNum
+					}
+
+					// 处理商品图片
+					if (productData.images && productData.images.length > 0) {
+						// 处理图片路径
+						const processedImages = productData.images.map(img =>
+							img.startsWith('http') ? img : this.$util.getImageUrl(img)
+						)
+
+						// 可以在这里存储商品的多张图片，如果需要展示的话
+						this.goods.imageList = processedImages
+					}
+
+					// 更新收货时间信息到全局站点信息
+					if (productData.receiving_time_text || productData.receiving_time) {
+						let deliveryTime = ''
+
+						// 优先使用已格式化的文本
+						if (productData.receiving_time_text) {
+							deliveryTime = productData.receiving_time_text + ' 前送达'
+						}
+						// 如果没有格式化文本但有时间戳，则格式化时间戳
+						else if (productData.receiving_time) {
+							const date = new Date(productData.receiving_time * 1000)
+							deliveryTime = this.formatDate(date) + ' 前送达'
+						}
+
+						if (deliveryTime) {
+							// 更新全局站点信息中的配送时间
+							const updatedSiteInfo = { ...this.siteInfo, deliveryTime }
+							this.$store.dispatch('SET_SITEINFO', updatedSiteInfo)
+						}
+					}
+				} else {
+					throw new Error(res.msg || '获取商品信息失败')
+				}
+			} catch (error) {
+				console.error('获取商品详情失败', error)
+				uni.showToast({
+					title: error.message || '获取商品信息失败',
+					icon: 'none'
+				})
+			} finally {
+				this.loadingProduct = false
+				uni.hideLoading()
+			}
+		},
+		// 获取推荐商品
+		async fetchRecommendProducts() {
+			if (this.loading) return
+
+			this.loading = true
+			uni.showLoading({ title: '加载中...' })
+
+			try {
+				const res = await getRecommendCombinations()
+
+				// 处理登录状态错误
+				if (res.status === 110002) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					})
+					// 延迟跳转到登录页
+					setTimeout(() => {
+						uni.navigateTo({
+							url: '/pages/login/index'
+						})
+					}, 1500)
+					return
+				}
+
+				if (res.status === 200 && res.data) {
+					this.recommendProducts = res.data.map(item => ({
+						id: item.id,
+						name: item.title || '商品名称',
+						price: parseFloat(item.group_price) || 0,
+						image: item.image ? (item.image.startsWith('http') ? item.image : this.$util.getImageUrl(item.image)) : '/static/images/today-group-buying/order_confirm/lemon.png'
+					}))
+				} else {
+					throw new Error(res.msg || '获取推荐商品失败')
+				}
+			} catch (error) {
+				console.error('获取推荐商品失败', error)
+				uni.showToast({
+					title: error.message || '获取推荐商品失败',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+				uni.hideLoading()
+			}
+		},
+		// 跳转到商品详情页
+		goToProductDetail(productId) {
+			uni.navigateTo({
+				url: `/pages/goods/order_confirm/new_order_confirm?id=${productId}`
+			})
+		},
+		// 初始化站点信息，如果全局没有则设置默认值
+		initSiteInfo() {
+			// 如果全局站点信息为空，则设置默认站点信息
+			if (!this.siteInfo.name || !this.siteInfo.location) {
+				const defaultSiteInfo = {
+					name: this.userInfo.nickname || 'Eetin',
+					location: '北京尚德井小区菜鸟驿站',
+					deliveryTime: '今日8：00前送达',
+					type: '站点自提'
+				}
+
+				// 存储到全局
+				this.$store.dispatch('SET_SITEINFO', defaultSiteInfo)
+			}
+		},
+
+		// 创建订单前检查站点信息
+		checkSiteInfo() {
+			// 检查是否有社区信息
+			if (this.siteInfo.community && this.siteInfo.community.id) {
+				console.log('使用社区信息创建订单:', this.siteInfo.community.id)
+				// 这里可以将社区ID添加到订单数据中
+				return true
+			} else {
+				// 如果没有社区信息，可以提示用户或使用默认值
+				console.log('未绑定社区，使用默认站点信息')
+				return true
+			}
 		}
+	},
+	onLoad(options) {
+		// 获取URL参数
+		if (options.id) {
+			this.combination_id = parseInt(options.id) || 0
+			// 加载商品详情
+			this.loadProductDetails()
+			// 获取推荐商品
+			this.fetchRecommendProducts()
+		}
+
+		// 初始化站点信息
+		this.initSiteInfo()
 	},
 	mounted() {
 		this.$nextTick(() => {
-			const contentEl = document.querySelector('.uni-scroll-view-content')
-			if (contentEl) {
-				console.log(contentEl)
-				contentEl.style.display = 'flex'
-				contentEl.style.justifyContent = 'space-evenly'
-			} else {
-				console.log('contentEl is null')
-			}
+			// 使用setTimeout确保DOM已完全渲染
+			setTimeout(() => {
+				const contentEl = document.querySelector('.uni-scroll-view-content')
+				if (contentEl) {
+					contentEl.style.display = 'flex'
+					contentEl.style.justifyContent = 'space-evenly'
+					contentEl.style.alignItems = 'flex-start'
+					contentEl.style.width = '100%'
+					contentEl.style.padding = '10rpx 0'
+				}
+			}, 500)
 		})
 	}
 }
@@ -569,21 +1034,28 @@ export default {
 	.recommend-list {
 		display: flex;
 
-		.uni-scroll-view-content::v-deep {
-			display: flex;
-			justify-content: space-evenly;
+		:deep(.uni-scroll-view-content) {
+			display: flex !important;
+			justify-content: space-evenly !important;
+			align-items: flex-start !important;
+			flex-wrap: nowrap !important;
+			width: 100% !important;
+			padding: 10rpx 0 !important;
 		}
 
 		.recommend-item {
 			width: 30%;
 			display: inline-block;
 			vertical-align: top;
+			// text-align: center;
+			margin: 0 10rpx;
 
 			.recommend-image {
 				width: 180rpx;
 				height: 180rpx;
 				border-radius: 8rpx;
 				background: #f5f5f5;
+				margin: 0 auto;
 			}
 
 			.recommend-name {
@@ -597,6 +1069,7 @@ export default {
 				-webkit-box-orient: vertical;
 				-webkit-line-clamp: 2; // 显示2行
 				overflow: hidden;
+				text-align: left;
 			}
 
 			.recommend-price {
@@ -604,6 +1077,7 @@ export default {
 				color: #1A1A1A;
 				margin-top: 10rpx;
 				font-weight: 550;
+				text-align: left;
 			}
 		}
 
@@ -874,20 +1348,164 @@ export default {
 }
 
 .more-payment {
-  cursor: pointer;
-  user-select: none;
-  image {
-    transition: transform 0.3s;
-  }
-  .arrow-rotated {
-    transform: rotate(180deg);
-    transition: transform 0.3s;
-  }
+	cursor: pointer;
+	user-select: none;
+
+	image {
+		transition: transform 0.3s;
+	}
+
+	.arrow-rotated {
+		transform: rotate(180deg);
+		transition: transform 0.3s;
+	}
 }
+
 .more-payment-list {
-  padding: 0 0 10px 0;
-  .payment-option {
-    // 可复用已有样式
-  }
+	padding: 0 0 10px 0;
+
+	.payment-option {
+		// 可复用已有样式
+	}
+}
+
+/* 优惠券弹窗样式 */
+.coupon-modal {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #FFFFFF;
+	border-radius: 16rpx 16rpx 0 0;
+	z-index: 1000;
+	overflow: hidden;
+
+	.coupon-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 30rpx;
+		border-bottom: 1rpx solid #EEEEEE;
+
+		text {
+			font-size: 32rpx;
+			color: #333;
+			font-weight: 500;
+		}
+
+		.close-icon {
+			font-size: 48rpx;
+			color: #999;
+			line-height: 1;
+		}
+	}
+
+	.coupon-list {
+		max-height: 60vh;
+		overflow-y: auto;
+		padding: 20rpx 0;
+
+		.no-coupon {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 200rpx;
+			color: #999;
+			font-size: 28rpx;
+		}
+
+		.coupon-item {
+			display: flex;
+			margin: 20rpx;
+			border-radius: 12rpx;
+			background: linear-gradient(to right, #F8F8F8, #FFFFFF);
+			position: relative;
+			border: 1rpx solid #EEEEEE;
+			overflow: hidden;
+
+			&.active {
+				border: 1rpx solid #FF7E00;
+				background: linear-gradient(to right, #FFF8F0, #FFFFFF);
+			}
+
+			.coupon-left {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 30%;
+				background-color: #F2F2F2;
+				padding: 20rpx;
+
+				.coupon-amount {
+					font-size: 44rpx;
+					color: #FF7E00;
+					font-weight: bold;
+				}
+			}
+
+			.coupon-right {
+				flex: 1;
+				padding: 20rpx;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+
+				.coupon-name {
+					font-size: 28rpx;
+					color: #333;
+					margin-bottom: 8rpx;
+				}
+
+				.coupon-limit,
+				.coupon-expire {
+					font-size: 24rpx;
+					color: #999;
+					margin-top: 8rpx;
+				}
+			}
+
+			.coupon-check {
+				position: absolute;
+				right: 20rpx;
+				top: 50%;
+				transform: translateY(-50%);
+				width: 40rpx;
+				height: 40rpx;
+				border-radius: 50%;
+				border: 1rpx solid #DDDDDD;
+
+				&.active {
+					border-color: #FF7E00;
+					background-color: #FF7E00;
+
+					&::after {
+						content: '';
+						position: absolute;
+						width: 20rpx;
+						height: 10rpx;
+						border-left: 3rpx solid #FFFFFF;
+						border-bottom: 3rpx solid #FFFFFF;
+						top: 40%;
+						left: 50%;
+						transform: translate(-50%, -50%) rotate(-45deg);
+					}
+				}
+			}
+		}
+	}
+
+	.coupon-btn {
+		height: 90rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(to right, #FF7E00, #FDA44D);
+
+		text {
+			color: #FFFFFF;
+			font-size: 32rpx;
+			font-weight: 500;
+		}
+	}
 }
 </style>

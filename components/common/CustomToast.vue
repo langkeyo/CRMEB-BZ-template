@@ -1,28 +1,28 @@
 <template>
   <view class="custom-toast-overlay" v-if="visible" @click="hide">
-    <view class="custom-toast" :class="{ 'show': visible }">
+    <view class="custom-toast" :class="{ 'show': visible, 'compact-mode': isCompactMode }">
       <!-- 图标区域 -->
-      <view class="toast-icon">
-        <view class="success-icon" v-if="type === 'success'">
+      <view class="toast-icon" :class="{ 'compact-icon': isCompactMode }">
+        <view class="success-icon" v-if="type === 'success'" :class="{ 'small-icon': isCompactMode }" :style="iconSizeStyle">
           <view class="checkmark">
             <view class="checkmark-stem"></view>
             <view class="checkmark-kick"></view>
           </view>
         </view>
-        <view class="error-icon" v-else-if="type === 'error'">
+        <view class="error-icon" v-else-if="type === 'error'" :class="{ 'small-icon': isCompactMode }" :style="iconSizeStyle">
           <view class="error-cross">
             <view class="error-line error-line-1"></view>
             <view class="error-line error-line-2"></view>
           </view>
         </view>
-        <view class="info-icon" v-else-if="type === 'info'">
+        <view class="info-icon" v-else-if="type === 'info'" :class="{ 'small-icon': isCompactMode }" :style="iconSizeStyle">
           <text class="info-text">i</text>
         </view>
       </view>
       
       <!-- 消息文本 -->
-      <view class="toast-message">
-        <text class="message-text">{{ message }}</text>
+      <view class="toast-message" :class="{ 'compact-message': isCompactMode }">
+        <text class="message-text" :class="{ 'small-text': isCompactMode }">{{ message }}</text>
       </view>
     </view>
   </view>
@@ -36,16 +36,34 @@ export default {
       visible: false,
       message: '',
       type: 'success', // success, error, info
-      timer: null
+      timer: null,
+      isCompactMode: false, // 紧凑模式标记
+      iconSize: null // 自定义图标大小
+    }
+  },
+  computed: {
+    // 计算图标大小样式
+    iconSizeStyle() {
+      if (this.iconSize) {
+        return {
+          width: this.iconSize,
+          height: this.iconSize
+        };
+      }
+      return {};
     }
   },
   methods: {
     show(options = {}) {
-      const { message = '操作成功', type = 'success', duration = 2000 } = options;
+      const { message = '操作成功', type = 'success', duration = 2000, style = {} } = options;
       
       this.message = message;
       this.type = type;
       this.visible = true;
+      // 检查是否应该使用紧凑模式
+      this.isCompactMode = style.compactMode === true;
+      // 设置自定义图标大小
+      this.iconSize = style.iconSize || null;
       
       // 清除之前的定时器
       if (this.timer) {
@@ -90,20 +108,19 @@ export default {
 }
 
 .custom-toast {
-  min-width: 240rpx;
-  max-width: 400rpx;
-  background: rgba(0, 0, 0, 0.85);
-  border-radius: 16rpx;
-  padding: 40rpx 50rpx;
+  min-width: 180rpx;
+  max-width: 280rpx;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 10rpx;
+  padding: 18rpx 20rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(10rpx);
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
   transform: scale(0.8);
   opacity: 0;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: all 0.2s ease-out;
   pointer-events: auto;
   
   &.show {
@@ -113,65 +130,53 @@ export default {
 }
 
 .toast-icon {
-  margin-bottom: 16rpx;
+  margin-bottom: 8rpx;
 }
 
 /* 成功图标 */
 .success-icon {
-  width: 60rpx;
-  height: 60rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: rgba(76, 175, 80, 0.2);
-    animation: pulse 1.5s infinite;
-  }
 }
 
 .checkmark {
-  width: 30rpx;
-  height: 30rpx;
+  width: 28rpx;
+  height: 28rpx;
   position: relative;
 }
 
 .checkmark-stem {
   position: absolute;
-  width: 4rpx;
+  width: 3rpx;
   height: 16rpx;
-  background: #fff;
-  left: 17rpx;
-  top: 12rpx;
-  border-radius: 2rpx;
+  background: #333333;
+  left: 16rpx;
+  top: 8rpx;
+  border-radius: 1rpx;
   transform: rotate(45deg);
-  animation: checkmark-stem 0.3s ease-in-out 0.1s both;
 }
 
 .checkmark-kick {
   position: absolute;
-  width: 10rpx;
-  height: 4rpx;
-  background: #fff;
+  width: 8rpx;
+  height: 3rpx;
+  background: #333333;
   left: 10rpx;
   top: 18rpx;
-  border-radius: 2rpx;
+  border-radius: 1rpx;
   transform: rotate(-45deg);
-  animation: checkmark-kick 0.3s ease-in-out both;
 }
 
 /* 错误图标 */
 .error-icon {
-  width: 60rpx;
-  height: 60rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
   background: #F44336;
   display: flex;
@@ -181,18 +186,18 @@ export default {
 }
 
 .error-cross {
-  width: 30rpx;
-  height: 30rpx;
+  width: 25rpx;
+  height: 25rpx;
   position: relative;
 }
 
 .error-line {
   position: absolute;
-  width: 24rpx;
+  width: 20rpx;
   height: 3rpx;
   background: #fff;
   border-radius: 2rpx;
-  top: 13rpx;
+  top: 11rpx;
   left: 3rpx;
 }
 
@@ -206,8 +211,8 @@ export default {
 
 /* 信息图标 */
 .info-icon {
-  width: 60rpx;
-  height: 60rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
   background: #2196F3;
   display: flex;
@@ -217,7 +222,7 @@ export default {
 
 .info-text {
   color: #fff;
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: bold;
   font-family: 'PingFang SC', sans-serif;
 }
@@ -228,43 +233,36 @@ export default {
 
 .message-text {
   color: #fff;
-  font-size: 24rpx;
-  line-height: 36rpx;
+  font-size: 22rpx;
+  line-height: 1.3;
   font-family: 'PingFang SC', sans-serif;
-  font-weight: 400;
+  font-weight: normal;
 }
 
-/* 动画 */
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
+// 紧凑模式样式
+.custom-toast.compact-mode {
+  flex-direction: column;
+  align-items: center;
+  padding: 18rpx 20rpx;
+  min-width: 160rpx;
+  max-width: 280rpx;
 }
 
-@keyframes checkmark-stem {
-  0% {
-    height: 0;
-  }
-  100% {
-    height: 20rpx;
-  }
+.compact-icon {
+  margin-bottom: 8rpx;
 }
 
-@keyframes checkmark-kick {
-  0% {
-    width: 0;
-  }
-  100% {
-    width: 12rpx;
-  }
+.small-icon {
+  width: 42rpx !important;
+  height: 42rpx !important;
+}
+
+.compact-message {
+  margin-top: 2rpx;
+}
+
+.small-text {
+  font-size: 22rpx;
+  line-height: 1.3;
 }
 </style>

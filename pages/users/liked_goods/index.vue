@@ -9,13 +9,19 @@
         <text class="iconfont icon-search search-icon"></text>
         <input
           class="search-input"
-          placeholder="搜索点赞订单"
+          placeholder="搜索点赞商品"
           v-model="searchKeyword"
           @input="onSearchInput"
           @confirm="searchGoods"
         />
         <text class="clear-btn" v-if="searchKeyword" @click="clearSearch">×</text>
       </view>
+    </view>
+    
+    <!-- 加载中状态 -->
+    <view class="loading-state" v-if="loading && page === 1">
+      <view class="spinner"></view>
+      <view class="loading-text">加载中...</view>
     </view>
     
     <!-- 商品列表 -->
@@ -25,21 +31,27 @@
         v-for="(item, index) in goodsList" 
         :key="index"
         @click="goToDetail(item)">
-        <image class="goods-image" :src="item.image" mode="aspectFill"></image>
+        <image class="goods-image" :src="setDomain(item.image)" mode="aspectFill"></image>
         <view class="goods-info">
           <view class="store-name">{{item.storeName}}</view>
           <view class="goods-name">{{item.name}}</view>
-          <view class="goods-desc">{{item.description}}</view>
-          <view class="goods-price">¥ {{item.price}}</view>
+          <view class="goods-price" v-if="item.price">¥ {{item.price}}</view>
+          <view class="goods-price-empty" v-else>暂无价格</view>
         </view>
         <view class="like-action" @click.stop="toggleLike(index)">
-          <text class="iconfont" :class="item.liked ? 'icon-yidianzan' : 'icon-dianzan1'"></text>
+          <text class="iconfont icon-yidianzan"></text>
         </view>
+      </view>
+      
+      <!-- 底部加载更多 - 只有当总数大于每页限制数时才显示 -->
+      <view class="load-more" v-if="totalCount > limit">
+        <view v-if="loading && page > 1" class="loading-more">加载中...</view>
+        <view v-else-if="finished" class="no-more">没有更多了</view>
       </view>
     </view>
     
     <!-- 空状态 -->
-    <view class="empty-state" v-else>
+    <view class="empty-state" v-else-if="!loading">
       <image class="empty-image" src="/static/images/empty-box.png" mode="aspectFit"></image>
       <view class="empty-text">暂无已赞商品</view>
       <view class="goto-shop-btn" @click="gotoShop">去逛逛</view>
@@ -49,6 +61,8 @@
 
 <script>
 import CommonHeader from '@/components/CommonHeader/index.vue';
+import { getMyGoodsLikeList, cancelGoodsLike } from '@/api/group.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
 
 export default {
   components: {
@@ -58,108 +72,167 @@ export default {
     return {
       searchKeyword: '',
       originalGoodsList: [], // 原始商品列表
-      goodsList: [
-        {
-          id: 1,
-          storeName: '卡卡甜品店（上地店）',
-          name: '酒心巧克力',
-          description: '单份酒心巧克力/40g',
-          price: '105',
-          image: '/static/images/liked/product_1.jpg',
-          liked: true,
-          likeCount: 156
-        },
-        {
-          id: 2,
-          storeName: '鲜果便利店（朝阳店）',
-          name: '新鲜水蜜桃',
-          description: '当季水蜜桃 5斤装 香甜多汁',
-          price: '39.90',
-          image: '/static/images/liked/product_2.jpg',
-          liked: true,
-          likeCount: 89
-        },
-        {
-          id: 3,
-          storeName: '小家电专营店',
-          name: '便携榨汁机',
-          description: '家用电动小型果汁机 USB充电',
-          price: '99.00',
-          image: '/static/images/liked/product_3.jpg',
-          liked: true,
-          likeCount: 212
-        },
-        {
-          id: 4,
-          storeName: '数码3C专卖店',
-          name: '无线蓝牙耳机',
-          description: '新款降噪长续航 高音质立体声',
-          price: '199.00',
-          image: '/static/images/liked/product_4.jpg',
-          liked: true,
-          likeCount: 176
-        },
-        {
-          id: 5,
-          storeName: '生活用品旗舰店',
-          name: '不锈钢保温杯',
-          description: '真空保温水杯 500ml 24小时保温',
-          price: '49.90',
-          image: '/static/images/liked/product_5.jpg',
-          liked: true,
-          likeCount: 98
-        },
-        {
-          id: 6,
-          name: '智能手环 防水运动计步器',
-          price: '129.00',
-          image: '/static/images/liked/product_6.jpg',
-          liked: true,
-          likeCount: 145
-        }
-      ]
+      goodsList: [],
+      page: 1,
+      limit: 10,
+      loading: false,
+      finished: false,
+      refreshing: false,
+      totalCount: 0
     }
   },
   onLoad() {
     // 页面加载时的逻辑
-    this.originalGoodsList = [...this.goodsList]; // 保存原始数据
+    this.getLikedGoods();
+  },
+  onPullDownRefresh() {
+    // 下拉刷新
+    this.page = 1;
+    this.getLikedGoods();
+    setTimeout(() => {
+      uni.stopPullDownRefresh();
+    }, 1000);
+  },
+  onReachBottom() {
+    // 上拉加载更多
+    if (!this.finished && !this.loading) {
+      this.page++;
+      this.getLikedGoods(true);
+    }
   },
   methods: {
+    // 处理图片URL，拼接域名
+    setDomain(url) {
+      if (!url) return '';
+      url = url.toString();
+      
+      // 如果是相对路径，拼接域名
+      if (url.indexOf('/') === 0) {
+        return HTTP_REQUEST_URL + url;
+      }
+      
+      // 如果已经是完整URL，直接返回
+      if (url.indexOf("http") === 0) {
+        return url;
+      }
+      
+      // 其他情况拼接域名
+      return HTTP_REQUEST_URL + '/' + url;
+    },
     goBack() {
       uni.navigateBack();
     },
-    toggleLike(index) {
+    async getLikedGoods(isLoadMore = false) {
+      if (this.loading) return;
+      
+      this.loading = true;
+      
+      try {
+        const params = {
+          type: 1, // 点赞类型：1点赞
+          page: this.page,
+          limit: this.limit
+        };
+        
+        const res = await getMyGoodsLikeList(params);
+        
+        if (res.data && res.status === 200) {
+          const { list, count } = res.data;
+          
+          // 处理商品数据
+          const formattedList = list.map(item => {
+            // 处理价格，如果为null则设为空字符串
+            let price = item.goods_price;
+            if (price === null || price === 'null' || price === undefined) {
+              price = '';
+            }
+            
+            return {
+              id: item.goods_id,
+              storeName: '店铺', // API中没有返回店铺名称
+              name: item.goods_title || '未知商品',
+              price: price,
+              image: item.goods_image || '/static/images/no-goods.png',
+              liked: true,
+              likeCount: 0,
+              likeId: item.id // 保存点赞记录ID
+            };
+          });
+          
+          if (isLoadMore) {
+            this.goodsList = [...this.goodsList, ...formattedList];
+          } else {
+            this.goodsList = formattedList;
+          }
+          
+          this.originalGoodsList = [...this.goodsList];
+          this.totalCount = count;
+          this.finished = this.goodsList.length >= count;
+        } else {
+          // 处理错误情况
+          if (res.status === 110002) {
+            uni.showToast({
+              title: '请先登录',
+              icon: 'none'
+            });
+            
+            // 跳转到登录页
+            setTimeout(() => {
+              uni.navigateTo({
+                url: '/pages/users/login/index'
+              });
+            }, 1500);
+          } else {
+            uni.showToast({
+              title: res.msg || '获取数据失败',
+              icon: 'none'
+            });
+          }
+        }
+      } catch (error) {
+        uni.showToast({
+          title: '获取点赞商品失败',
+          icon: 'none'
+        });
+        console.error('获取点赞商品失败', error);
+      } finally {
+        this.loading = false;
+        if (this.refreshing) this.refreshing = false;
+      }
+    },
+    async toggleLike(index) {
       // 切换点赞状态
       const item = this.goodsList[index];
-      item.liked = !item.liked;
       
-      if (item.liked) {
-        item.likeCount++;
-      } else {
-        item.likeCount--;
+      try {
+        // 取消点赞
+        await cancelGoodsLike({
+          goods_id: item.id
+        });
         
-        // 如果取消点赞，移除该商品
+        // 如果取消点赞成功，移除该商品
+        uni.showToast({
+          title: '已取消点赞',
+          icon: 'none'
+        });
+        
         setTimeout(() => {
           this.goodsList.splice(index, 1);
+          this.originalGoodsList = [...this.goodsList];
         }, 300);
+        
+      } catch (error) {
+        uni.showToast({
+          title: '操作失败，请稍后重试',
+          icon: 'none'
+        });
+        console.error('取消点赞失败', error);
       }
-      
-      // 调用API更新点赞状态
-      uni.showToast({
-        title: item.liked ? '已点赞' : '已取消点赞',
-        icon: 'none'
-      });
     },
     goToDetail(item) {
-      // 跳转到商品详情页
+      // 跳转到商品详情页，添加必要参数
       uni.navigateTo({
-        url: '/pages/goods_details/index?id=' + item.id
-      });
-    },
-    buyNow(item) {
-      // 立即购买商品
-      uni.navigateTo({
-        url: '/pages/order_addcart/order_addcart?goods_id=' + item.id + '&cartNum=1&type=buy'
+        url: `/pages/goods_details/index?id=${item.id}&type=combination&canBuy=true`
       });
     },
     gotoShop() {
@@ -276,6 +349,30 @@ export default {
       }
     }
   }
+  
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 200rpx;
+    padding-bottom: 200rpx;
+
+    .spinner {
+      width: 60rpx;
+      height: 60rpx;
+      border: 4rpx solid #f3f3f3;
+      border-top: 4rpx solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20rpx;
+    }
+
+    .loading-text {
+      font-size: 30rpx;
+      color: #999;
+    }
+  }
 
   .goods-list {
     padding: 20rpx;
@@ -288,6 +385,7 @@ export default {
       border-radius: 16rpx;
       overflow: hidden;
       padding: 30rpx 20rpx;
+      position: relative;
 
       .goods-image {
         width: 160rpx;
@@ -302,6 +400,7 @@ export default {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
+        padding-right: 60rpx; // 为点赞按钮留出空间
 
         .store-name {
           font-size: 28rpx;
@@ -329,29 +428,55 @@ export default {
           font-weight: 600;
           color: #333;
         }
+
+        .goods-price-empty {
+          font-size: 28rpx;
+          color: #999;
+          font-style: italic;
+          margin-top: 4rpx;
+        }
       }
 
       .like-action {
+        position: absolute;
+        right: 20rpx;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60rpx;
+        height: 60rpx;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 80rpx;
-        height: 80rpx;
-        margin-left: 20rpx;
-        flex-shrink: 0;
+        background: linear-gradient(135deg, #ffcb8b, #ff8d00);
+        border-radius: 50%;
+        box-shadow: 0 4rpx 12rpx rgba(255, 141, 0, 0.3);
+        transition: all 0.3s ease;
+        
+        &:active {
+          transform: translateY(-50%) scale(0.9);
+        }
 
         .iconfont {
-          font-size: 48rpx;
-          transition: color 0.3s ease;
-
-          &.icon-dianzan1 {
-            color: #ccc; // 未点赞状态
-          }
-
-          &.icon-yidianzan {
-            color: #ff8d00; // 已点赞状态
-          }
+          font-size: 36rpx;
+          color: #fff;
         }
+      }
+    }
+
+    .load-more {
+      display: flex;
+      justify-content: center;
+      padding-top: 20rpx;
+      padding-bottom: 20rpx;
+
+      .loading-more {
+        font-size: 28rpx;
+        color: #999;
+      }
+
+      .no-more {
+        font-size: 28rpx;
+        color: #999;
       }
     }
   }
@@ -387,5 +512,10 @@ export default {
       font-size: 30rpx;
     }
   }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style> 

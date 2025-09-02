@@ -18,7 +18,14 @@
 				<image class="goods-image" :src="goodsInfo.image" mode="aspectFill"></image>
 				<view class="goods-detail">
 					<text class="goods-title">{{ goodsInfo.title }}</text>
-					<text class="goods-price">¥{{ goodsInfo.price }}</text>
+					<view class="goods-price-row">
+						<text class="goods-price">¥{{ goodsInfo.price }}</text>
+						<text class="goods-sales" v-if="goodsInfo.sales">已售{{ goodsInfo.sales }}+</text>
+					</view>
+					<view class="goods-status" v-if="goodsInfo.status_text">
+						<text class="status-tag">{{ goodsInfo.status_text }}</text>
+						<text class="time-left" v-if="goodsInfo.time_left_text">剩余{{ goodsInfo.time_left_text }}</text>
+					</view>
 				</view>
 			</view>
 			
@@ -50,7 +57,9 @@
 </template>
 
 <script>
-import { getGoodsDetail, createGoodsQA } from '@/api/group.js';
+import { getGroupGoodsDetail, createGoodsQA } from '@/api/group.js';
+import { toLogin } from '@/libs/login.js';
+import { mapGetters } from "vuex";
 
 export default {
 	data() {
@@ -66,13 +75,27 @@ export default {
 			questionContent: ''
 		}
 	},
+	computed: mapGetters(['isLogin']),
 	onLoad(options) {
 		// 获取状态栏高度
 		this.statusBarHeight = uni.getSystemInfoSync().statusBarHeight;
 		
+		// 检查登录状态
+		if (!this.isLogin) {
+			uni.showToast({
+				title: '请先登录',
+				icon: 'none'
+			});
+			setTimeout(() => {
+				toLogin();
+			}, 1500);
+			return;
+		}
+		
 		// 获取商品ID
 		if (options.goodsId) {
 			this.goodsId = options.goodsId;
+			console.log('接收到的商品ID:', this.goodsId);
 			this.loadGoodsInfo();
 		} else {
 			uni.showToast({
@@ -93,28 +116,74 @@ export default {
 		// 加载商品信息
 		async loadGoodsInfo() {
 			try {
-				const response = await getGoodsDetail(this.goodsId);
+				uni.showLoading({
+					title: '加载中...'
+				});
+				
+				// 使用拼团商品详情API
+				const response = await getGroupGoodsDetail(this.goodsId);
+				
+				uni.hideLoading();
+				
+				console.log('拼团商品详情API响应:', response);
 				
 				if (response.status === 200 && response.data) {
 					const data = response.data;
 					this.goodsInfo = {
 						id: data.id,
-						title: data.title || data.name,
-						price: data.min_price || '0.00',
-						image: this.setDomain(data.image)
+						product_id: data.product_id, // 保存原始商品ID
+						title: data.title || '',
+						// 优先使用group_price（拼团价格），其次是original_price（原价）
+						price: data.group_price || data.original_price || '0.00',
+						image: this.setDomain(data.image),
+						// 保存其他可能需要的拼团信息
+						stock: data.stock,
+						sales: data.sales,
+						rule_desc: data.rule_desc,
+						status_text: data.status_text,
+						time_left_text: data.time_left_text
 					};
+				} else if (response.status === 110002) {
+					// 未登录状态处理
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					setTimeout(() => {
+						toLogin();
+					}, 1500);
 				} else {
 					uni.showToast({
 						title: response.msg || '加载商品信息失败',
 						icon: 'none'
 					});
+					setTimeout(() => {
+						uni.navigateBack();
+					}, 1500);
 				}
 			} catch (error) {
+				uni.hideLoading();
 				console.error('加载商品信息失败:', error);
+				
+				// 检查是否是未登录错误
+				if (error && error.status === 110002) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					setTimeout(() => {
+						toLogin();
+					}, 1500);
+					return;
+				}
+				
 				uni.showToast({
 					title: '加载商品信息失败',
 					icon: 'none'
 				});
+				setTimeout(() => {
+					uni.navigateBack();
+				}, 1500);
 			}
 		},
 		
@@ -149,13 +218,26 @@ export default {
 			}
 			
 			try {
+				uni.showLoading({
+					title: '提交中...'
+				});
+				
+				// 使用商品的product_id作为goods_id，如果不存在则使用拼团ID
+				const goodsId = this.goodsInfo.product_id || this.goodsId;
+				
 				const data = {
-					goods_id: this.goodsId,
+					goods_id: goodsId,
 					qid: "0", // 提问时qid为0
 					content: this.questionContent
 				};
 				
+				console.log('提交问题参数:', data);
+				
 				const response = await createGoodsQA(data);
+				
+				uni.hideLoading();
+				
+				console.log('提交问题响应:', response);
 				
 				if (response.status === 200) {
 					uni.showToast({
@@ -167,6 +249,15 @@ export default {
 					setTimeout(() => {
 						uni.navigateBack();
 					}, 1500);
+				} else if (response.status === 110002) {
+					// 未登录状态处理
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					setTimeout(() => {
+						toLogin();
+					}, 1500);
 				} else {
 					uni.showToast({
 						title: response.msg || '提问失败',
@@ -174,7 +265,21 @@ export default {
 					});
 				}
 			} catch (error) {
+				uni.hideLoading();
 				console.error('提交问题失败:', error);
+				
+				// 检查是否是未登录错误
+				if (error && error.status === 110002) {
+					uni.showToast({
+						title: '请先登录',
+						icon: 'none'
+					});
+					setTimeout(() => {
+						toLogin();
+					}, 1500);
+					return;
+				}
+				
 				uni.showToast({
 					title: '提问失败',
 					icon: 'none'
@@ -263,10 +368,42 @@ export default {
 	overflow: hidden;
 }
 
+.goods-price-row {
+	display: flex;
+	align-items: baseline;
+	margin-top: 4px;
+}
+
 .goods-price {
 	font-size: 16px;
 	color: #FF840B;
 	font-weight: 500;
+}
+
+.goods-sales {
+	font-size: 12px;
+	color: #999999;
+	margin-left: 8px;
+}
+
+.goods-status {
+	display: flex;
+	align-items: center;
+	margin-top: 4px;
+}
+
+.status-tag {
+	font-size: 12px;
+	color: #FF840B;
+	background-color: #FFF3E0;
+	padding: 2px 6px;
+	border-radius: 4px;
+	margin-right: 8px;
+}
+
+.time-left {
+	font-size: 12px;
+	color: #999999;
 }
 
 /* 问题输入框 */

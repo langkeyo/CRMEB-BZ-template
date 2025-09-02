@@ -500,6 +500,16 @@
 					"scrollIndicator": "none"
 				}
 			}
+		},
+		{
+			"path": "pages/publish/index",
+			"style": {
+				"navigationBarTitleText": "发布评价",
+				"navigationStyle": "custom",
+				"app-plus": {
+					"scrollIndicator": "none"
+				}
+			}
 		}
 	],
 	"subPackages": [
@@ -1672,6 +1682,16 @@
 					}
 				},
 				{
+					"path": "service_notice/index",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "通知",
+						"app-plus": {
+							"scrollIndicator": "none"
+						}
+					}
+				},
+				{
 					"path": "user_follow/index",
 					"style": {
 						"navigationStyle": "custom",
@@ -1686,6 +1706,7 @@
 					"style": {
 						"navigationStyle": "custom",
 						"navigationBarTitleText": "已赞商品",
+						"enablePullDownRefresh": true,
 						"app-plus": {
 							"scrollIndicator": "none"
 						}

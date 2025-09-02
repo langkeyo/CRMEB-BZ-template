@@ -1,19 +1,42 @@
 <template>
     <view class="recommend-section">
         <SectionTitle title="精选推荐" :showMore="false" />
-        <view class="recommend-list">
-            <view class="recommend-item" v-for="(item, index) in recommendGoods" :key="index" @click="navigateToDetail(item)">
-                <view class="item-container">
-                    <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
-                    <view class="recommend-info">
-                        <text class="recommend-name">{{item.name}}</text>
-                        <view class="price-box">
-                            <view class="price-info">
-                                <text class="price-symbol">￥</text>
-                                <text class="price">{{item.price}}</text>
-                                <text class="price-label">秒杀价</text>
+        <view class="recommend-container">
+            <!-- 左列 -->
+            <view class="recommend-column left-column">
+                <view class="recommend-item" v-for="(item, index) in leftColumnItems" :key="'left-'+index" @click="navigateToDetail(item)">
+                    <view class="item-container">
+                        <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
+                        <view class="recommend-info">
+                            <text class="recommend-name">{{item.name}}</text>
+                            <view class="price-box">
+                                <view class="price-info">
+                                    <text class="price-symbol">￥</text>
+                                    <text class="price">{{item.price}}</text>
+                                    <text class="price-label">秒杀价</text>
+                                </view>
+                                <text class="sold">已售{{item.sold}}单</text>
                             </view>
-                            <text class="sold">已售{{item.sold}}单</text>
+                        </view>
+                    </view>
+                </view>
+            </view>
+            
+            <!-- 右列 -->
+            <view class="recommend-column right-column">
+                <view class="recommend-item" v-for="(item, index) in rightColumnItems" :key="'right-'+index" @click="navigateToDetail(item)">
+                    <view class="item-container">
+                        <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
+                        <view class="recommend-info">
+                            <text class="recommend-name">{{item.name}}</text>
+                            <view class="price-box">
+                                <view class="price-info">
+                                    <text class="price-symbol">￥</text>
+                                    <text class="price">{{item.price}}</text>
+                                    <text class="price-label">秒杀价</text>
+                                </view>
+                                <text class="sold">已售{{item.sold}}单</text>
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -25,7 +48,8 @@
 <script>
 import SectionTitle from '@/components/SectionTitle/index.vue'
 import {
-    getRecommendCombinations
+    getRecommendCombinations,
+    getGoodsList
 } from '@/api/group.js'
 import {
     getProductHot
@@ -39,7 +63,9 @@ export default {
     },
     data() {
         return {
-            recommendGoods: []
+            recommendGoods: [],
+            leftColumnItems: [],
+            rightColumnItems: []
         }
     },
     created() {
@@ -83,25 +109,32 @@ export default {
         // 初始化推荐商品数据
         async initRecommendGoods() {
             try {
-                // 调用推荐商品API（普通商品，不是拼团商品）
-                const response = await getProductHot(1, 4);
+                // 调用推荐商品API，使用getGoodsList并传递is_recommend=1参数
+                const response = await getGoodsList({
+                    is_recommend: '1',
+                    limit: 4
+                });
 
                 if (response.status === 200 && response.data) {
-                    // 转换API数据格式
-                    const dataList = response.data.list || response.data;
+                    // 转换API数据格式，处理正确的数据结构
+                    const dataList = response.data.goodsList || [];
                     this.recommendGoods = dataList.map(item => ({
                         id: item.id,
                         name: item.title || item.store_name,
-                        price: item.price || item.min_price,
+                        price: item.min_price || item.price || '0.00',
                         image: item.image,
-                        sold: item.sales || item.fake_sales || 0
+                        sold: item.total_sales || item.sales || item.fake_sales || 0
                     }));
+                    
+                    // 分配数据到左右两列
+                    this.distributeItemsToColumns();
 
                 } else {
                     // API失败时使用默认数据
                     this.loadDefaultData();
                 }
             } catch (error) {
+                console.error('获取推荐商品失败:', error);
                 // API失败时使用默认数据
                 this.loadDefaultData();
             }
@@ -120,7 +153,25 @@ export default {
                 id: index + 1,
                 ...mockProduct
             }));
-
+            
+            // 分配数据到左右两列
+            this.distributeItemsToColumns();
+        },
+        
+        // 将数据分配到左右两列
+        distributeItemsToColumns() {
+            this.leftColumnItems = [];
+            this.rightColumnItems = [];
+            
+            this.recommendGoods.forEach((item, index) => {
+                if (index % 2 === 0) {
+                    // 奇数项放左列
+                    this.leftColumnItems.push(item);
+                } else {
+                    // 偶数项放右列
+                    this.rightColumnItems.push(item);
+                }
+            });
         },
 
         onMoreClick() {
@@ -144,110 +195,124 @@ export default {
     margin-top: 30rpx;
     padding: 0 20rpx;
     
-    // 使用SectionTitle组件替代
-    
-    .recommend-list {
+    .recommend-container {
         display: flex;
-        flex-wrap: wrap;
         justify-content: space-between;
         margin-top: 20rpx;
-
-        .recommend-item {
-            width: 350rpx;
-            margin-bottom: 20rpx;
-            border-radius: 12rpx;
-            overflow: hidden;
-            box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
-
-            /* 瀑布流错开效果 - 使用flex控制高度 */
-            &:nth-child(odd) {
-                height: 680rpx;  /* 奇数项总高度增加，让价格区域对齐到底部 */
-            }
-
-            &:nth-child(even) {
-                margin-top: 40rpx;  /* 偶数项向下偏移，创建错开效果 */
-                height: 640rpx;  /* 偶数项总高度 */
-            }
-
-            .item-container {
-                width: 100%;
-                height: 100%;  /* 占满父容器 */
-                border-radius: 12rpx;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                background-color: #FFFFFF;
-
-                .product-img {
-                    width: 100%;
-                    flex: 1;  /* 使用flex自动填充剩余空间 */
-                    border-radius: 12rpx 12rpx 0 0;
-                    object-fit: cover;
-                }
-            }
+        
+        .recommend-column {
+            width: 49%; // 两列各占49%宽度，中间留小间距
             
-            .recommend-info {
-                padding: 20rpx 16rpx;
-                background-color: #FFFFFF;
-                border-radius: 0 0 12rpx 12rpx;
-
-                .recommend-name {
-                    font-size: 32rpx;
-                    color: #1A1A1A;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    margin-bottom: 14rpx;
-                    font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                    font-weight: 400;
-                    line-height: 1.4;
-                }
-
-                .price-box {
+            .recommend-item {
+                width: 100%;
+                border-radius: 12rpx;
+                overflow: hidden;
+                box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+                margin-bottom: 10rpx;
+                
+                .item-container {
+                    width: 100%;
+                    border-radius: 12rpx;
+                    position: relative;
                     display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                    flex-direction: column;
+                    background-color: #FFFFFF;
 
-                    .price-info {
-                        display: flex;
-                        align-items: baseline;
-                        gap: 4rpx;
-
-                        .price-symbol {
-                            font-size: 28rpx;
-                            color: #333333;
-                            font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                            font-weight: 400;
-                            line-height: 1.4;
-                        }
-
-                        .price {
-                            font-size: 28rpx;
-                            color: #333333;
-                            font-weight: 400;
-                            font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                            line-height: 1.4;
-                        }
-
-                        .price-label {
-                            font-size: 24rpx;
-                            color: #333333;
-                            font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                            font-weight: 400;
-                            line-height: 1.4;
-                            margin-left: 8rpx;
-                        }
-                    }
-
-                    .sold {
-                        font-size: 24rpx;
-                        color: #B3B3B3;
-                        font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                        font-weight: 400;
-                        line-height: 1.4;
+                    .product-img {
+                        width: 100%;
+                        border-radius: 12rpx 12rpx 0 0;
+                        object-fit: cover;
                     }
                 }
             }
+        }
+        
+        .left-column {
+            .recommend-item {
+                height: 620rpx; // 保持卡片总高度
+                
+                .product-img {
+                    height: 490rpx; // 从520rpx减少到490rpx，给文字区域多留空间
+                }
+            }
+        }
+        
+        .right-column {
+            .recommend-item {
+                height: 580rpx; // 保持卡片总高度
+                
+                .product-img {
+                    height: 450rpx; // 从480rpx减少到450rpx，给文字区域多留空间
+                }
+            }
+        }
+    }
+}
+
+// 商品信息样式
+.recommend-info {
+    padding: 16rpx 14rpx;
+    background-color: #FFFFFF;
+    border-radius: 0 0 12rpx 12rpx;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 120rpx; // 更合理的高度
+
+    .recommend-name {
+        font-size: 28rpx;
+        color: #1A1A1A;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-bottom: 14rpx; // 更合理的间距
+        font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-weight: 550;
+        line-height: 1.2;
+    }
+
+    .price-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .price-info {
+            display: flex;
+            align-items: baseline;
+            gap: 2rpx; // 适当增加间距
+
+            .price-symbol {
+                font-size: 24rpx; // 增加字体大小
+                color: #333333;
+                font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                font-weight: 550;
+                line-height: 1.2; // 适当增加行高
+            }
+
+            .price {
+                font-size: 26rpx; // 增加字体大小
+                color: #333333;
+                font-weight: 550;
+                font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                line-height: 1.2; // 适当增加行高
+            }
+
+            .price-label {
+                font-size: 22rpx; // 增加字体大小
+                color: #333333;
+                font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                font-weight: 550;
+                line-height: 1.2; // 适当增加行高
+                margin-left: 8rpx; // 适当增加左边距
+            }
+        }
+
+        .sold {
+            font-size: 22rpx; // 增加字体大小
+            color: #B3B3B3;
+            font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 400;
+            line-height: 1.2; // 适当增加行高
         }
     }
 }

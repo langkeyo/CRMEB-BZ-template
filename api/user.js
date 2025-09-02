@@ -8,22 +8,23 @@
 // | Author: CRMEB Team <admin@crmeb.com>
 // +----------------------------------------------------------------------
 
-import request from "@/utils/request.js";
+import request from '@/utils/request.js'
 
 /**
  * 获取用户信息
- * 
+ *
  */
 export function getUserInfo() {
-	return request.get('user');
+  //   return request.get('user')
+  return request.get('user/profile')
 }
 
 /**
  * 设置用户分享
- * 
+ *
  */
 export function userShare() {
-	return request.post('user/share');
+  return request.post('user/share')
 }
 
 /**
@@ -31,9 +32,9 @@ export function userShare() {
  * @param data object 用户账号密码
  */
 export function loginH5(data) {
-	return request.post("login", data, {
-		noAuth: true
-	});
+  return request.post('login', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -41,18 +42,22 @@ export function loginH5(data) {
  * @param data object 用户手机号 也只能
  */
 export function loginMobile(data) {
-	return request.post("login/mobile", data, {
-		noAuth: true
-	});
+  return request.post('login/mobile', data, {
+    noAuth: true
+  })
 }
 
 /**
  * 验证码key
  */
 export function getCodeApi() {
-	return request.get("verify_code", {}, {
-		noAuth: true
-	});
+  return request.get(
+    'verify_code',
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -60,9 +65,9 @@ export function getCodeApi() {
  * @param data object 用户手机号
  */
 export function registerVerify(data) {
-	return request.post("register/verify", data, {
-		noAuth: true
-	});
+  return request.post('register/verify', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -70,9 +75,9 @@ export function registerVerify(data) {
  * @param data object 用户手机号 验证码 密码
  */
 export function register(data) {
-	return request.post("register", data, {
-		noAuth: true
-	});
+  return request.post('register', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -80,9 +85,9 @@ export function register(data) {
  * @param data object 用户手机号 验证码 密码
  */
 export function registerReset(data) {
-	return request.post("register/reset", data, {
-		noAuth: true
-	});
+  return request.post('register/reset', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -90,24 +95,28 @@ export function registerReset(data) {
  *
  */
 export function getMenuList() {
-	return request.get("menu/user", {}, {
-		noAuth: true
-	});
+  return request.get(
+    'menu/user',
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /*
  * 签到用户信息
  * */
 export function postSignUser(sign) {
-	return request.post("sign/user", sign);
+  return request.post('sign/user', sign)
 }
 
 /**
  * 获取签到配置
- * 
+ *
  */
 export function getSignConfig() {
-	return request.get('sign/config')
+  return request.get('sign/config')
 }
 
 /**
@@ -115,63 +124,62 @@ export function getSignConfig() {
  * @param object data
  */
 export function getSignList(data) {
-	return request.get('sign/list', data);
+  return request.get('sign/list', data)
 }
 
 /**
  * 用户签到
  */
 export function setSignIntegral() {
-	return request.post('sign/integral')
+  return request.post('sign/integral')
 }
 
 /**
  * 签到列表(年月)
  * @param object data
- * 
+ *
  */
 export function getSignMonthList(data) {
-	return request.get('sign/month', data)
+  return request.get('sign/month', data)
 }
 
 /**
  * 活动状态
- * 
+ *
  */
 export function userActivity() {
-	return request.get('user/activity');
+  return request.get('user/activity')
 }
 
 /*
  * 资金明细（types|0=全部,1=消费,2=充值,3=返佣,4=提现）
  * */
 export function getCommissionInfo(q, types) {
-	return request.get("spread/commission/" + types, q);
+  return request.get('spread/commission/' + types, q)
 }
 
 /*
  * 积分记录
  * */
 export function getIntegralList(q) {
-	return request.get("integral/list", q);
+  return request.get('integral/list', q)
 }
 
 /**
  * 获取分销海报图片
- * 
+ *
  */
 export function spreadBanner() {
-	//#ifdef H5 || APP-PLUS
-	return request.get('spread/banner', {
-		type: 2
-	});
-	//#endif
-	//#ifdef MP
-	return request.get('spread/banner', {
-		type: 1
-	});
-	//#endif
-
+  //#ifdef H5 || APP-PLUS
+  return request.get('spread/banner', {
+    type: 2
+  })
+  //#endif
+  //#ifdef MP
+  return request.get('spread/banner', {
+    type: 1
+  })
+  //#endif
 }
 
 /**
@@ -180,56 +188,55 @@ export function spreadBanner() {
  * @param object data
  */
 export function spreadPeople(data) {
-	return request.post('spread/people', data);
+  return request.post('spread/people', data)
 }
 
 /**
- * 
+ *
  * 推广佣金/提现总和
  * @param int type
  */
 export function spreadCount(type) {
-	return request.get('spread/count/' + type);
+  return request.get('spread/count/' + type)
 }
 
 /*
  * 推广数据
  * */
 export function getSpreadInfo() {
-	return request.get("commission");
+  return request.get('commission')
 }
 
-
 /**
- * 
+ *
  * 推广订单
  * @param object data
  */
 export function spreadOrder(data) {
-	return request.post('spread/order', data);
+  return request.post('spread/order', data)
 }
 
 /**
- * 
+ *
  * 事业部/推广订单
  * @param object data
  */
 export function divisionOrder(data) {
-	return request.post('division/order', data);
+  return request.post('division/order', data)
 }
 
 /*
  * 获取推广人排行
  * */
 export function getRankList(q) {
-	return request.get("rank", q);
+  return request.get('rank', q)
 }
 
 /*
  * 获取佣金排名
  * */
 export function getBrokerageRank(q) {
-	return request.get("brokerage_rank", q);
+  return request.get('brokerage_rank', q)
 }
 
 /**
@@ -237,23 +244,23 @@ export function getBrokerageRank(q) {
  * @param object data
  */
 export function extractCash(data) {
-	return request.post('extract/cash', data)
+  return request.post('extract/cash', data)
 }
 
 /**
  * 提现银行/提现最低金额
- * 
+ *
  */
 export function extractBank() {
-	return request.get('extract/bank');
+  return request.get('extract/bank')
 }
 
 /**
  * 会员等级列表
- * 
+ *
  */
 export function userLevelGrade() {
-	return request.get('user/level/grade');
+  return request.get('user/level/grade')
 }
 
 /**
@@ -261,25 +268,24 @@ export function userLevelGrade() {
  * @param int id 任务id
  */
 export function userLevelTask(id) {
-	return request.get('user/level/task/' + id);
+  return request.get('user/level/task/' + id)
 }
-
 
 /**
  * 检查用户是否可以成为会员
- * 
+ *
  */
 export function userLevelDetection() {
-	return request.get('user/level/detection');
+  return request.get('user/level/detection')
 }
 
 /**
- * 
+ *
  * 地址列表
  * @param object data
  */
 export function getAddressList(data) {
-	return request.get('address/list', data);
+  return request.get('address/list', data)
 }
 
 /**
@@ -287,9 +293,9 @@ export function getAddressList(data) {
  * @param int id
  */
 export function setAddressDefault(id) {
-	return request.post('address/default/set', {
-		id: id
-	})
+  return request.post('address/default/set', {
+    id: id
+  })
 }
 
 /**
@@ -297,26 +303,26 @@ export function setAddressDefault(id) {
  * @param object data
  */
 export function editAddress(data) {
-	return request.post('address/edit', data);
+  return request.post('address/edit', data)
 }
 
 /**
  * 删除地址
  * @param int id
- * 
+ *
  */
 export function delAddress(id) {
-	return request.post('address/del', {
-		id: id
-	})
+  return request.post('address/del', {
+    id: id
+  })
 }
 
 /**
  * 获取单个地址
- * @param int id 
+ * @param int id
  */
 export function getAddressDetail(id) {
-	return request.get('address/detail/' + id);
+  return request.get('address/detail/' + id)
 }
 
 /**
@@ -324,7 +330,7 @@ export function getAddressDetail(id) {
  * @param object
  */
 export function userEdit(data) {
-	return request.post('user/edit', data);
+  return request.post('user/edit', data)
 }
 
 /**
@@ -332,73 +338,77 @@ export function userEdit(data) {
  * @param object data {sex, birthday}
  */
 export function updateUserProfile(data) {
-	return request.post('user/profile/update', data);
+  return request.post('user/profile/update', data)
 }
 
 /*
  * 退出登录
  * */
 export function getLogout() {
-	return request.get("logout");
+  return request.get('logout')
 }
 /**
  * 小程序充值
- * 
+ *
  */
 export function rechargeRoutine(data) {
-	return request.post('recharge/routine', data)
+  return request.post('recharge/routine', data)
 }
 /*
  * 公众号充值
- * 
+ *
  */
 export function rechargeWechat(data) {
-	return request.post("recharge/wechat", data);
+  return request.post('recharge/wechat', data)
 }
 /*
  * 公众号充值
- * 
+ *
  */
 export function recharge(data) {
-	return request.post("recharge/recharge", data);
+  return request.post('recharge/recharge', data)
 }
 /**
  * 获取默认地址
- * 
+ *
  */
 export function getAddressDefault() {
-	return request.get('address/default');
+  return request.get('address/default')
 }
 
 /**
  * 充值金额选择
  */
 export function getRechargeApi() {
-	return request.get("recharge/index");
+  return request.get('recharge/index')
 }
 
 /**
  * 登陆记录
  */
 export function setVisit(data) {
-	return request.post('user/set_visit', {
-		...data
-	}, {
-		noAuth: true
-	});
+  return request.post(
+    'user/set_visit',
+    {
+      ...data
+    },
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
  * 客服列表
  */
 export function serviceList() {
-	return request.get("user/service/list");
+  return request.get('user/service/list')
 }
 /**
  * 客服详情
  */
 export function getChatRecord(data) {
-	return request.get("v2/user/service/record", data);
+  return request.get('v2/user/service/record', data)
 }
 
 /**
@@ -406,40 +416,39 @@ export function getChatRecord(data) {
  * @param {Object} puid
  */
 export function spread(puid) {
-	return request.post("user/spread", puid);
+  return request.post('user/spread', puid)
 }
 
 /**
  * 会员详情
  */
 export function getlevelInfo() {
-	return request.get("user/level/info");
+  return request.get('user/level/info')
 }
 
 /**
  * 会员经验列表
  */
 export function getlevelExpList(data) {
-	return request.get("user/level/expList", data);
+  return request.get('user/level/expList', data)
 }
-
 
 /**
  * 微信直接手机号登录
  */
 export function phoneWxSilenceAuth(data) {
-	return request.post('v2/phone_wx_silence_auth', data, {
-		noAuth: true
-	});
+  return request.post('v2/phone_wx_silence_auth', data, {
+    noAuth: true
+  })
 }
 
 /**
  * 小程序直接手机号登录
  */
 export function phoneSilenceAuth(data) {
-	return request.post('v2/phone_silence_auth', data, {
-		noAuth: true
-	});
+  return request.post('v2/phone_silence_auth', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -447,9 +456,9 @@ export function phoneSilenceAuth(data) {
  * @param {Object} data
  */
 export function invoiceList(data) {
-	return request.get('v2/invoice', data, {
-		noAuth: true
-	});
+  return request.get('v2/invoice', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -457,9 +466,9 @@ export function invoiceList(data) {
  * @param {Object} data
  */
 export function invoiceSave(data) {
-	return request.post('v2/invoice/save', data, {
-		noAuth: true
-	});
+  return request.post('v2/invoice/save', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -467,7 +476,7 @@ export function invoiceSave(data) {
  * @param {Object} data
  */
 export function invoiceDelete(id) {
-	return request.get('v2/invoice/del/' + id);
+  return request.get('v2/invoice/del/' + id)
 }
 
 /**
@@ -475,7 +484,7 @@ export function invoiceDelete(id) {
  * @param {Object} type
  */
 export function invoiceDefault(type) {
-	return request.get('v2/invoice/get_default/' + type);
+  return request.get('v2/invoice/get_default/' + type)
 }
 
 /**
@@ -483,7 +492,7 @@ export function invoiceDefault(type) {
  * @param {Object} id
  */
 export function invoiceDetail(id) {
-	return request.get('v2/invoice/detail/' + id);
+  return request.get('v2/invoice/detail/' + id)
 }
 
 /**
@@ -491,7 +500,7 @@ export function invoiceDetail(id) {
  * @param {Object} id
  */
 export function invoiceOrder(data) {
-	return request.post('v2/order/make_up_invoice', data);
+  return request.post('v2/order/make_up_invoice', data)
 }
 
 /**
@@ -499,14 +508,14 @@ export function invoiceOrder(data) {
  * @param {Object} id
  */
 export function makeUpinvoice(data) {
-	return request.post('v2/order/make_up_invoice', data);
+  return request.post('v2/order/make_up_invoice', data)
 }
 
 /**
  * 会员卡主界面
  */
 export function memberCard() {
-	return request.get('user/member/card/index');
+  return request.get('user/member/card/index')
 }
 
 /**
@@ -514,7 +523,7 @@ export function memberCard() {
  * @param {Object} data
  */
 export function memberCardDraw(data) {
-	return request.post('user/member/card/draw', data);
+  return request.post('user/member/card/draw', data)
 }
 
 /**
@@ -522,14 +531,14 @@ export function memberCardDraw(data) {
  * @param {Object} data
  */
 export function memberCardCreate(data) {
-	return request.post('user/member/card/create', data);
+  return request.post('user/member/card/create', data)
 }
 
 /**
  * 会员优惠券
  */
 export function memberCouponsList() {
-	return request.get('user/member/coupons/list');
+  return request.get('user/member/coupons/list')
 }
 
 /**
@@ -537,7 +546,7 @@ export function memberCouponsList() {
  * @param {Object} id
  */
 export function groomList(id, data) {
-	return request.get(`groom/list/${id}`, data);
+  return request.get(`groom/list/${id}`, data)
 }
 
 /**
@@ -545,60 +554,59 @@ export function groomList(id, data) {
  * @param {Object} data
  */
 export function memberOverdueTime(data) {
-	return request.get('user/member/overdue/time', data);
+  return request.get('user/member/overdue/time', data)
 }
 
 /**
  * 新版分享海报信息获取
- * 
+ *
  */
 export function spreadMsg() {
-	return request.get('user/spread_info');
+  return request.get('user/spread_info')
 }
-
 
 /**
  * 图片链接转base64
- * 
+ *
  */
 export function imgToBase(data) {
-	return request.post('image_base64', data);
+  return request.post('image_base64', data)
 }
 
 /**
  * 获取小程序二维码
- * 
+ *
  */
 export function routineCode(data) {
-	return request.get('user/routine_code', data);
+  return request.get('user/routine_code', data)
 }
 
 /**
  * 消息中心
  */
 export function serviceRecord(data) {
-	return request.get('user/record', data);
+  return request.get('user/record', data)
 }
 
 /**
  * 消息中心-站内信列表
  */
 export function messageSystem(data) {
-	return request.get('user/message_system/list', data);
+  return request.get('user/message_system/list', data)
 }
 
 /**
  * 消息中心-站内信列表详情
  */
 export function getMsgDetails(id) {
-	return request.get('user/message_system/detail/' + id);
+  return request.get('user/message_system/detail/' + id)
 }
 
 /**
  * 消息中心-消息已读/删除
  */
 export function msgLookDel(data) {
-	return request.get('user/message_system/edit_message', data);
+  return request.get('user/message_system/edit_message', data)
 }
 
 /**
@@ -606,18 +614,22 @@ export function msgLookDel(data) {
  * @param {Object} data
  */
 export function appleLogin(data) {
-	return request.post('apple_login', data, {
-		noAuth: true
-	});
+  return request.post('apple_login', data, {
+    noAuth: true
+  })
 }
 
 /*
  * 获取隐私协议
  * */
 export function getUserAgreement(type) {
-	return request.get(`get_agreement/${type}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `get_agreement/${type}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -625,7 +637,7 @@ export function getUserAgreement(type) {
  * @param int id 任务id
  */
 export function agentLevelList() {
-	return request.get('v2/agent/level_list');
+  return request.get('v2/agent/level_list')
 }
 
 /**
@@ -633,7 +645,7 @@ export function agentLevelList() {
  * @param int id 任务id
  */
 export function agentLevelTaskList(id) {
-	return request.get('v2/agent/level_task_list?id=' + id);
+  return request.get('v2/agent/level_task_list?id=' + id)
 }
 
 /**
@@ -641,52 +653,56 @@ export function agentLevelTaskList(id) {
  * @param int id 任务id
  */
 export function friendDetail(id) {
-	return request.get('order/friend_detail?order_id=' + id);
+  return request.get('order/friend_detail?order_id=' + id)
 }
 
 /**
  * 员工列表
  * @param object data
- * 
+ *
  */
 export function clerkPeople(data) {
-	return request.get('agent/get_staff_list', data)
+  return request.get('agent/get_staff_list', data)
 }
 
 /**
- * 
+ *
  * 员工比例
  * @param object data
  */
 export function setClerkPercent(data) {
-	return request.post('agent/set_staff_percent', data);
+  return request.post('agent/set_staff_percent', data)
 }
 
 /**
- * 
+ *
  * 删除员工
  * @param object data
  */
 export function delClerkPercent(id) {
-	return request.get(`agent/del_staff/${id}`);
+  return request.get(`agent/del_staff/${id}`)
 }
 
 /**
  * 注销用户
  * @param int id
- * 
+ *
  */
 export function cancelUser() {
-	return request.get('user_cancel');
+  return request.get('user_cancel')
 }
 /**
  * 获取多语言类型
  */
 
 export function getLangList() {
-	return request.get('get_lang_type_list', {}, {
-		noAuth: true
-	})
+  return request.get(
+    'get_lang_type_list',
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -694,9 +710,13 @@ export function getLangList() {
  */
 
 export function getLangJson() {
-	return request.get('get_lang_json', {}, {
-		noAuth: true
-	})
+  return request.get(
+    'get_lang_json',
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -704,18 +724,22 @@ export function getLangJson() {
  */
 
 export function getLangVersion() {
-	return request.get('lang_version', {}, {
-		noAuth: true
-	})
+  return request.get(
+    'lang_version',
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
- * 
+ *
  * 小程序绑定手机号
  * @param object data
  */
 export function mpBindingPhone(data) {
-	return request.post('v2/routine/binding_phone', data);
+  return request.post('v2/routine/binding_phone', data)
 }
 
 /**
@@ -723,21 +747,24 @@ export function mpBindingPhone(data) {
  */
 
 export function changeRemindStatus(status) {
-	return request.get(`sign/remind/${status}`, {}, {
-		noAuth: true
-	})
+  return request.get(
+    `sign/remind/${status}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
-
 
 /**
  * 绑定员工
- * 
+ *
  */
 export function spreadAgent(data) {
-	return request.post(`agent/spread`, data);
+  return request.post(`agent/spread`, data)
 }
 
 // 用户确认商家转账
 export function transferInfoApi(data) {
-	return request.get(`transfer/info`, data);
+  return request.get(`transfer/info`, data)
 }

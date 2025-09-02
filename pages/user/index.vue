@@ -2,7 +2,8 @@
 	<view class="user-profile-page">
 		<!-- 用户头部组件 -->
 		<user-header :user-info="userInfo" :stats="stats" @notification-click="onNotificationClick"
-			@settings-click="onSettingsClick" @edit-profile="onEditProfile" @stat-click="onStatClick" @login-click="onLoginClick" />
+			@settings-click="onSettingsClick" @edit-profile="onEditProfile" @stat-click="onStatClick"
+			@login-click="onLoginClick" />
 
 		<!-- 点赞+评论 Banner -->
 		<promo-banner title="点赞+评论" subtitle="点赞+评论可享更多优惠快去看看吧！" buttonText="立即评论" @button-click="onPromoButtonClick" />
@@ -39,6 +40,7 @@ import customTabbar from '@/components/customTabbar/index.vue'
 import { checkLogin, toLogin } from '@/libs/login.js'
 import UserManager, { userManagerMixin } from '@/utils/userManager'
 import { getGoodsList } from '@/api/group.js'
+import { getGroupOrderList } from '@/api/group.js' // 添加导入获取订单列表的API
 import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
@@ -52,7 +54,7 @@ export default {
 		customTabbar
 	},
 	mixins: [userManagerMixin],
-	data () {
+	data() {
 		return {
 			// 用户信息（默认未登录状态）
 			userInfo: {
@@ -84,40 +86,42 @@ export default {
 			isLoggedIn: false
 		}
 	},
-	onLoad () {
+	onLoad() {
 		// 检查登录状态并加载用户数据
 		this.initUserData()
 		// 加载推荐商品
 		this.loadFeaturedProducts()
 
 		// 监听用户信息更新事件
-		uni.$on('userInfoUpdated', this.onUserInfoUpdated);
-		uni.$on('userInfoCleared', this.onUserInfoCleared);
-		uni.$on('loginSuccess', this.onLoginSuccess);
+		uni.$on('userInfoUpdated', this.onUserInfoUpdated)
+		uni.$on('userInfoCleared', this.onUserInfoCleared)
+		uni.$on('loginSuccess', this.onLoginSuccess)
 	},
 
 	onUnload() {
 		// 移除事件监听
-		uni.$off('userInfoUpdated', this.onUserInfoUpdated);
-		uni.$off('userInfoCleared', this.onUserInfoCleared);
-		uni.$off('loginSuccess', this.onLoginSuccess);
+		uni.$off('userInfoUpdated', this.onUserInfoUpdated)
+		uni.$off('userInfoCleared', this.onUserInfoCleared)
+		uni.$off('loginSuccess', this.onLoginSuccess)
 	},
 	methods: {
 		// 初始化用户数据
 		async initUserData() {
-			this.isLoggedIn = UserManager.isLoggedIn();
+			this.isLoggedIn = UserManager.isLoggedIn()
 
 			if (this.isLoggedIn) {
 				try {
 					// 获取用户信息
-					const userInfo = await this.getCurrentUserInfo(true);
-					this.updateUserDisplay(userInfo);
+					const userInfo = await this.getCurrentUserInfo(true)
+					console.log(userInfo)
+
+					this.updateUserDisplay(userInfo)
 				} catch (error) {
-					console.error('获取用户信息失败:', error);
-					this.setDefaultUserData();
+					console.error('获取用户信息失败:', error)
+					this.setDefaultUserData()
 				}
 			} else {
-				this.setDefaultUserData();
+				this.setDefaultUserData()
 			}
 		},
 
@@ -126,13 +130,13 @@ export default {
 			this.userInfo = {
 				avatar: '', // 空值会触发默认头像
 				nickname: '登录/注册'
-			};
+			}
 			this.stats = {
 				order: 0,
 				coupon: 0,
 				follow: 0,
 				like: 0
-			};
+			}
 		},
 
 		// 更新用户显示数据
@@ -141,45 +145,45 @@ export default {
 				this.userInfo = {
 					avatar: userInfo.avatar || '/static/images/user/avatar.png',
 					nickname: userInfo.nickname || userInfo.real_name || '团购用户'
-				};
+				}
 
 				// 更新统计数据（从API获取的真实数据）
 				this.stats = {
 					order: userInfo.orderStatusNum?.unpaid_count || 0,
-					coupon: userInfo.couponCount || 0,
-					follow: userInfo.like || 0,
-					like: userInfo.like || 0
-				};
+					coupon: userInfo.statistics?.coupons_count || 0,
+					follow: userInfo.statistics?.collect_count || 0,
+					like: userInfo.statistics?.like_count || 0
+				}
 			} else {
-				this.setDefaultUserData();
+				this.setDefaultUserData()
 			}
 		},
 
 		// 用户信息更新事件处理
 		onUserInfoUpdated(userInfo) {
-			console.log('用户页面收到用户信息更新事件:', userInfo);
-			this.isLoggedIn = true;
-			this.updateUserDisplay(userInfo);
+			console.log('用户页面收到用户信息更新事件:', userInfo)
+			this.isLoggedIn = true
+			this.updateUserDisplay(userInfo)
 		},
 
 		// 用户信息清空事件处理
 		onUserInfoCleared() {
-			console.log('用户页面收到用户信息清空事件');
-			this.isLoggedIn = false;
-			this.setDefaultUserData();
+			console.log('用户页面收到用户信息清空事件')
+			this.isLoggedIn = false
+			this.setDefaultUserData()
 		},
 
 		// 登录成功事件处理
 		onLoginSuccess(result) {
-			console.log('用户页面收到登录成功事件:', result);
-			this.isLoggedIn = true;
+			console.log('用户页面收到登录成功事件:', result)
+			this.isLoggedIn = true
 			if (result.userInfo) {
-				this.updateUserDisplay(result.userInfo);
+				this.updateUserDisplay(result.userInfo)
 			}
 		},
 
 		// 加载推荐商品
-		loadFeaturedProducts () {
+		loadFeaturedProducts() {
 			// 从API获取推荐商品数据
 			getGoodsList({
 				is_recommend: '1',
@@ -193,11 +197,11 @@ export default {
 							title: item.title,
 							price: item.min_price,
 							image: this.formatImage(item.image)
-						};
-					}).slice(0, 2); // 只显示前2个商品
+						}
+					}).slice(0, 2) // 只显示前2个商品
 				}
 			}).catch(err => {
-				console.error('获取推荐商品失败:', err);
+				console.error('获取推荐商品失败:', err)
 				// 加载失败时使用默认数据
 				this.featuredProducts = [
 					{
@@ -212,45 +216,45 @@ export default {
 						price: '88',
 						image: '/static/images/user/featured_product2.png'
 					}
-				];
-			});
+				]
+			})
 		},
 
 		// 格式化图片URL
 		formatImage(url) {
-			if (!url) return '/static/images/user/featured_product1.png';
-			if (url.startsWith('http')) return url;
-			return HTTP_REQUEST_URL + url;
+			if (!url) return '/static/images/user/featured_product1.png'
+			if (url.startsWith('http')) return url
+			return HTTP_REQUEST_URL + url
 		},
 
 		// 通知点击
-		onNotificationClick () {
+		onNotificationClick() {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
 				return
 			}
-			
+
 			uni.navigateTo({
 				url: '/pages/users/message_private/index'
 			})
 		},
 
 		// 设置点击
-		onSettingsClick () {
+		onSettingsClick() {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
 				return
 			}
-			
+
 			uni.navigateTo({
 				url: '/pages/users/user_settings/index'
 			})
 		},
 
 		// 编辑资料
-		onEditProfile () {
+		onEditProfile() {
 			// 如果未登录，跳转到登录页面
 			if (!this.isLoggedIn) {
 				toLogin()
@@ -268,7 +272,7 @@ export default {
 		},
 
 		// 统计项点击
-		onStatClick (type) {
+		onStatClick(type) {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
@@ -289,20 +293,19 @@ export default {
 		},
 
 		// 促销横幅按钮点击
-		onPromoButtonClick () {
+		onPromoButtonClick() {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
 				return
 			}
-			
 			uni.navigateTo({
-				url: '/pages/goods_details/index'
+				url: '/pages/users/after_sales/evaluate'
 			})
 		},
 
 		// 订单操作点击
-		onOrderActionClick (type) {
+		onOrderActionClick(type) {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
@@ -325,7 +328,7 @@ export default {
 		},
 
 		// 团购足迹点击
-		onHistoryClick () {
+		onHistoryClick() {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
@@ -338,7 +341,7 @@ export default {
 		},
 
 		// 我的站点点击
-		onStationClick () {
+		onStationClick() {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
@@ -351,20 +354,28 @@ export default {
 		},
 
 		// 横幅点击
-		onBannerClick () {
+		onBannerClick(product) {
 			// 如果未登录，先跳转到登录页
 			if (!this.isLoggedIn) {
 				toLogin()
 				return
 			}
-			
-			uni.navigateTo({
-				url: '/pages/goods_details/index'
-			})
+
+			// 如果传入了商品参数，跳转到对应商品详情
+			if (product && product.id) {
+				uni.navigateTo({
+					url: `/pages/goods_details/index?id=${product.id}&type=category`
+				})
+			} else {
+				// 默认行为
+				uni.navigateTo({
+					url: '/pages/goods_details/index'
+				})
+			}
 		},
 
 		// 商品点击
-		onProductClick (product) {
+		onProductClick(product) {
 			// 商品详情页不需要登录检查，直接跳转
 			uni.navigateTo({
 				url: `/pages/goods_details/index?id=${product.id}`

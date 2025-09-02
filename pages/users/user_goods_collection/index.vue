@@ -537,8 +537,8 @@
 	}
 
 	.back-icon {
-		width: 40rpx;
-		height: 40rpx;
+		width: 28rpx;
+		height: 28rpx;
 		margin-right: 10rpx;
 	}
 

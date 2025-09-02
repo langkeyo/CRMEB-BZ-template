@@ -576,12 +576,6 @@
 	display: block;
 }
 
-.register .whiteBg .list .item input {
-	font-size: 32rpx;
-	flex: 1;
-	margin-left: 20rpx;
-}
-
 .register .whiteBg .list .item .placeholder {
 	color: #ccc;
 }
@@ -897,7 +891,28 @@ uni-checkbox:not([disabled]) .uni-checkbox-input:hover {
 	background-color: var(--view-theme);
 }
 uni-toast .uni-toast {
-	font-size: 30rpx;
+	font-size: 22rpx; /* 更小的字体 */
+	padding: 18rpx 20rpx; /* 调整内边距 */
+	max-width: 280rpx; /* 控制最大宽度 */
+	min-width: 160rpx;
+	background: rgba(0, 0, 0, 0.7); /* 半透明背景 */
+	border-radius: 10rpx; /* 增加圆角 */
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2); /* 添加阴影 */
+}
+
+uni-toast .uni-icon_toast {
+	font-size: 42rpx; /* 适当增大图标 */
+	margin-bottom: 8rpx; /* 调整图标与文字的间距 */
+	color: #ffffff; /* 确保图标颜色为白色 */
+}
+
+uni-toast .uni-toast__content {
+	font-size: 22rpx; /* 确保内容字体也是小号 */
+	line-height: 1.3;
+	margin: 0;
+	padding: 0;
+	color: #ffffff; /* 确保文字颜色为白色 */
+	font-weight: normal;
 }
 
 .status_bar {

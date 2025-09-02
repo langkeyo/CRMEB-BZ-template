@@ -15,22 +15,22 @@
       <view class="order-item" v-for="(item, index) in orderList" :key="index">
         <!-- 订单剩余时间和状态 -->
         <view class="order-top">
-          <text class="order-timer">剩余时间 {{formatCountdown(item)}}</text>
-          <text class="order-status">{{item.status_text || '待付款'}}</text>
+          <text class="order-timer">剩余时间 {{ formatCountdown(item) }}</text>
+          <text class="order-status">{{ item.status_text || '待付款' }}</text>
         </view>
         <!-- 商品信息 -->
         <view class="product-info" v-if="item.goods && item.goods.length > 0">
           <image class="product-img" :src="formatImage(item.goods[0].image)" mode="aspectFill"></image>
           <view class="product-detail">
-            <view class="product-title">{{item.goods[0].title}}</view>
-            <view class="product-spec" v-if="item.goods[0].spec">{{item.goods[0].spec}}</view>
-            <view class="product-price">￥{{item.goods[0].price}}</view>
+            <view class="product-title">{{ item.goods[0].title }}</view>
+            <view class="product-spec" v-if="item.goods[0].spec">{{ item.goods[0].spec }}</view>
+            <view class="product-price">￥{{ item.goods[0].price }}</view>
           </view>
-          <view class="product-count">×{{item.goods[0].quantity}}</view>
+          <view class="product-count">×{{ item.goods[0].quantity }}</view>
         </view>
         <!-- 需付款 -->
         <view class="order-bottom">
-          <view class="order-amount">需付款：<text class="amount">￥{{item.pay_price}}</text></view>
+          <view class="order-amount">需付款：<text class="amount">￥{{ item.pay_price }}</text></view>
           <view class="order-actions">
             <button class="cancel-btn" @click="cancelOrder(item)">取消订单</button>
             <button class="pay-btn" @click="goPay(item)">立即付款</button>
@@ -159,6 +159,7 @@ export default {
   background: #fff;
   min-height: 100vh;
 }
+
 .page-header {
   display: flex;
   align-items: center;
@@ -168,14 +169,17 @@ export default {
   background: #fff;
   border-bottom: 2rpx solid #F2F2F2;
   box-sizing: border-box;
+
   .header-left {
     display: flex;
     align-items: center;
+
     .back-icon {
-      width: 32rpx;
-      height: 32rpx;
+      width: 28rpx;
+      height: 28rpx;
       margin-right: 8rpx;
     }
+
     .back-text {
       font-size: 28rpx;
       color: #222;
@@ -183,6 +187,7 @@ export default {
       font-weight: 400;
     }
   }
+
   .header-title {
     font-size: 32rpx;
     font-weight: 400;
@@ -192,6 +197,7 @@ export default {
     flex: 1;
     margin-left: -32rpx; // 视觉居中
   }
+
   .header-right {
     font-size: 28rpx;
     color: #4D4D4D;
@@ -199,30 +205,35 @@ export default {
     font-weight: 400;
   }
 }
+
 .order-list {
   padding: 24rpx 12rpx 0 12rpx;
 }
+
 .order-item {
   background: #fff;
   border-radius: 8rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   margin-bottom: 24rpx;
   padding: 0 0 0 0;
   position: relative;
   width: 702rpx;
   min-height: 416rpx;
 }
+
 .order-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 18rpx 19rpx 0 19rpx;
+
   .order-timer {
     font-size: 26rpx;
     color: #B3B3B3;
     font-family: 'PingFang SC', sans-serif;
     font-weight: 400;
   }
+
   .order-status {
     font-size: 30rpx;
     color: #DA3232;
@@ -230,11 +241,13 @@ export default {
     font-weight: 400;
   }
 }
+
 .product-info {
   display: flex;
   align-items: center;
   padding: 0 0 0 19rpx;
   margin-top: 24rpx;
+
   .product-img {
     width: 108rpx;
     height: 108rpx;
@@ -242,12 +255,14 @@ export default {
     object-fit: cover;
     background: #eee;
   }
+
   .product-detail {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     margin-left: 20rpx;
+
     .product-title {
       font-size: 36rpx;
       color: #000;
@@ -255,6 +270,7 @@ export default {
       font-weight: 400;
       margin-bottom: 8rpx;
     }
+
     .product-spec {
       background: #F7F7F7;
       border-radius: 12rpx;
@@ -268,6 +284,7 @@ export default {
       height: 40rpx;
       line-height: 40rpx;
     }
+
     .product-price {
       font-size: 30rpx;
       color: #1A1A1A;
@@ -275,6 +292,7 @@ export default {
       font-weight: 400;
     }
   }
+
   .product-count {
     font-size: 30rpx;
     color: #999;
@@ -283,17 +301,20 @@ export default {
     margin-left: 12rpx;
   }
 }
+
 .order-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 32rpx;
   padding: 0 19rpx 24rpx 19rpx;
+
   .order-amount {
     font-size: 30rpx;
     color: #999;
     font-family: 'PingFang SC', sans-serif;
     font-weight: 400;
+
     .amount {
       color: #1A1A1A;
       font-weight: 400;
@@ -301,9 +322,11 @@ export default {
       margin-left: 8rpx;
     }
   }
+
   .order-actions {
     display: flex;
     align-items: center;
+
     .cancel-btn {
       background: #F0F0F0;
       color: #4D4D4D;
@@ -320,6 +343,7 @@ export default {
       align-items: center;
       justify-content: center;
     }
+
     .pay-btn {
       background: #FF840B;
       color: #fff;
@@ -337,20 +361,23 @@ export default {
     }
   }
 }
+
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 100rpx 0;
+
   .empty-image {
     width: 200rpx;
     height: 200rpx;
     margin-bottom: 20rpx;
   }
+
   .empty-text {
     font-size: 28rpx;
     color: #999;
   }
 }
-</style> 
+</style>

@@ -70,7 +70,14 @@
 				tagStyle: {
 					img: 'width:100%;display:block;',
 					table: 'width:100%',
-					video: 'width:100%'
+					video: 'width:100%',
+					p: 'font-size:28rpx;line-height:1.6;margin:16rpx 0;color:#8A8B8C;',
+					div: 'font-size:28rpx;line-height:1.6;color:#8A8B8C;',
+					h1: 'font-size:36rpx;font-weight:600;margin:24rpx 0 16rpx 0;color:#282828;',
+					h2: 'font-size:32rpx;font-weight:600;margin:20rpx 0 12rpx 0;color:#282828;',
+					h3: 'font-size:30rpx;font-weight:600;margin:16rpx 0 8rpx 0;color:#282828;',
+					li: 'font-size:28rpx;line-height:1.6;margin:8rpx 0;color:#8A8B8C;',
+					span: 'font-size:28rpx;color:#8A8B8C;'
 				}
 			};
 		},

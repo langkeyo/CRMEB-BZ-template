@@ -14,57 +14,46 @@
         <!-- 主容器 -->
         <view class="hot-group-container">
             <!-- 轮播背景图片 -->
-            <view class="banner-section">
-                <swiper
-                    class="background-swiper"
-                    :current="currentIndex"
-                    :autoplay="true"
-                    :interval="3000"
-                    :duration="500"
-                    @change="onSwiperChange"
-                    :circular="true"
-                    :vertical="false"
-                    :touchable="true"
-                    :disable-touch="false"
-                >
-                    <swiper-item v-for="(item, index) in groupProducts" :key="item.id">
-                        <image :src="setDomain(item.image)" class="background-img" mode="aspectFill"></image>
-                    </swiper-item>
-                </swiper>
-                
-                <!-- 橙色标签 -->
-                <view class="orange-tag">
-                    <text class="tag-text">{{ currentTitle }}</text>
-                </view>
-                
-                <!-- 进度指示器 -->
-                <view class="progress-indicator">
-                    <view class="progress-bg"></view>
-                    <view class="progress-active" :style="{ left: progressLeft + 'rpx' }"></view>
-                </view>
+            <swiper class="background-swiper" :current="currentIndex" :autoplay="true" :interval="3000" :duration="500"
+                @change="onSwiperChange" :circular="true" :vertical="false" :touchable="true" :disable-touch="false">
+                <swiper-item v-for="(item, index) in bannerList" :key="item.id">
+                    <image :src="item.backgroundImage" class="background-img" mode="aspectFill"></image>
+                </swiper-item>
+            </swiper>
+
+            <!-- 模糊遮罩层 -->
+            <view class="blur-overlay"></view>
+
+            <!-- 渐变遮罩层 -->
+            <view class="gradient-overlay"></view>
+
+            <!-- 橙色标签 -->
+            <view class="orange-tag">
+                <text class="tag-text">{{ currentTitle }}</text>
             </view>
 
             <!-- 商品列表容器 -->
-            <view class="products-section">
-                <view class="products-container">
-                    <view class="product-item" v-for="(item, index) in currentProducts" :key="`product-${index}`" @click="navigateToDetail(item)">
-                        <!-- 商品图片 -->
-                        <view class="product-img-wrapper">
-                            <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
-                        </view>
-                        <!-- 商品信息 -->
-                        <view class="product-info">
-                            <text class="product-name">{{item.title}}</text>
-                            <view class="price-container">
-                                <text class="price-text">¥{{item.group_price}}</text>
-                                <text class="original-price" v-if="item.original_price">原价¥{{item.original_price}}</text>
-                            </view>
-                            <view class="time-left" v-if="item.time_left_text">
-                                <text class="time-left-text">剩余{{item.time_left_text}}</text>
-                            </view>
+            <view class="products-container">
+                <view class="product-item" v-for="(item, index) in currentProducts" :key="`product-${index}`"
+                    @click="navigateToDetail(item)">
+                    <!-- 直接使用图片，去掉包装层 -->
+                    <image :src="setDomain(item.image)" class="product-img" mode="aspectFill"></image>
+                    <!-- 商品信息 -->
+                    <view class="product-info">
+                        <text class="product-name">{{ item.title }}</text>
+                        <view class="price-container">
+                            <text class="price-text">团购价{{ item.group_price }}元起</text>
+                            <image class="price-arrow" src="/static/images/index/icons/price_arrow_right.svg"
+                                mode="aspectFit"></image>
                         </view>
                     </view>
                 </view>
+            </view>
+
+            <!-- 进度指示器 -->
+            <view class="progress-indicator">
+                <view class="progress-bg"></view>
+                <view class="progress-active" :style="{ left: progressLeft + 'rpx' }"></view>
             </view>
         </view>
     </view>
@@ -73,7 +62,7 @@
 <script>
 import SectionTitle from '@/components/SectionTitle/index.vue';
 import { HTTP_REQUEST_URL } from '@/config/app.js';
-import { getRecommendCombinations } from '@/api/group.js';
+import { getRecommendCombinations } from "@/api/group.js";
 
 export default {
     name: 'HotGroup',
@@ -83,57 +72,65 @@ export default {
     data() {
         return {
             currentIndex: 0,
-            groupProducts: [],
-            loading: false,
-            // 基础数据模板（用作备用）
-            baseData: {
-                title: '精品挑选食用油',
-                backgroundImage: '/static/images/index/products/oil_banner.jpg',
-                products: [
-                    {
-                        name: '美味鲜酱油',
-                        price: '15',
-                        image: '/static/common/placeholders/products/sauce_oil.png'
-                    },
-                    {
-                        name: '薄盐生抽',
-                        price: '17',
-                        image: '/static/images/index/products/salt_oil.jpg'
-                    },
-                    {
-                        name: '得尔乐橄榄油',
-                        price: '20',
-                        image: '/static/images/index/products/olive_oil.jpg'
-                    }
-                ]
-            }
+            recommendProducts: [],
+            // 轮播数量
+            bannerCount: 3
         }
     },
     computed: {
-        // 轮播数量
-        bannerCount() {
-            return this.groupProducts.length > 0 ? this.groupProducts.length : 1;
+        // 生成轮播数据列表（基于推荐产品数据）
+        bannerList() {
+            // 确保至少有一个轮播项
+            if (this.recommendProducts.length === 0) {
+                return [{
+                    id: 0,
+                    backgroundImage: '/static/images/index/products/oil_banner.jpg',
+                    title: '精品挑选食用油'
+                }];
+            }
+
+            // 将推荐产品转换为轮播项
+            return this.recommendProducts.slice(0, this.bannerCount).map((product, index) => ({
+                id: index,
+                backgroundImage: this.setDomain(product.image),
+                title: product.title || '热门团购商品'
+            }));
         },
         currentProducts() {
-            // 如果有API数据，则使用API数据，否则使用备用数据
-            if (this.groupProducts.length > 0) {
-                // 取前3个推荐商品
-                return this.groupProducts.slice(0, 3);
+            // 如果没有数据则使用默认数据
+            if (this.recommendProducts.length === 0) {
+                return [
+                    {
+                        title: '美味鲜酱油',
+                        group_price: '15',
+                        image: '/static/common/placeholders/products/sauce_oil.png'
+                    },
+                    {
+                        title: '薄盐生抽',
+                        group_price: '17',
+                        image: '/static/images/index/products/salt_oil.jpg'
+                    },
+                    {
+                        title: '得尔乐橄榄油',
+                        group_price: '20',
+                        image: '/static/images/index/products/olive_oil.jpg'
+                    }
+                ];
             }
-            return this.baseData.products;
+
+            // 使用API获取的推荐产品数据，最多显示3个
+            return this.recommendProducts.slice(0, 3);
         },
         currentTitle() {
-            if (this.groupProducts.length > 0 && this.currentIndex < this.groupProducts.length) {
-                const currentProduct = this.groupProducts[this.currentIndex];
-                // 显示商品标题和状态，例如：榴莲 (进行中)
-                return `${currentProduct.title} (${currentProduct.status_text || '热卖中'})`;
+            if (this.bannerList.length > 0 && this.currentIndex < this.bannerList.length) {
+                return this.bannerList[this.currentIndex].title;
             }
-            return this.baseData.title;
+            return '热门团购商品';
         },
         progressLeft() {
-            // 适应新的进度条样式
-            const totalWidth = 200; // 进度条总宽度 200rpx
-            const indicatorWidth = 40; // 指示器宽度 40rpx
+            // 简单的一一对应：1个轮播页面 = 1段进度条宽度
+            const totalWidth = 390; // 进度条总宽度 390rpx
+            const indicatorWidth = 38; // 指示器宽度 38rpx
 
             if (this.bannerCount <= 1) return 0;
 
@@ -144,69 +141,27 @@ export default {
             return this.currentIndex * stepWidth;
         }
     },
-    created() {
-        // 组件创建时加载数据
-        this.loadRecommendProducts();
+    mounted() {
+        this.getRecommendProducts();
     },
     methods: {
-        // 加载推荐团购商品
-        async loadRecommendProducts() {
-            if (this.loading) return;
-            
-            this.loading = true;
-            try {
-                const res = await getRecommendCombinations();
-                if (res.status === 200 && res.data && res.data.length > 0) {
-                    this.groupProducts = res.data.map(item => ({
-                        ...item,
-                        id: item.id || 0,
-                        save_amount: item.save_price || '0.00' // 适配save_price字段
-                    }));
-                    console.log('获取推荐团购商品成功', this.groupProducts);
-                } else {
-                    console.log('获取推荐团购商品失败', res);
-                    // 使用备用数据
-                    this.useBackupData();
-                }
-            } catch (error) {
-                console.error('获取推荐团购商品失败', error);
-                // 使用备用数据
-                this.useBackupData();
-            } finally {
-                this.loading = false;
-            }
+        // 获取推荐团购产品
+        getRecommendProducts() {
+            getRecommendCombinations({})
+                .then(res => {
+                    if (res.data && Array.isArray(res.data)) {
+                        this.recommendProducts = res.data.slice(0, this.bannerCount);
+                        // 如果产品数量少于轮播数量，调整轮播数量
+                        if (this.recommendProducts.length < this.bannerCount) {
+                            this.bannerCount = Math.max(1, this.recommendProducts.length);
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('获取推荐团购产品失败:', err);
+                });
         },
-        
-        // 使用备用数据
-        useBackupData() {
-            this.groupProducts = [
-                {
-                    id: 1,
-                    title: '精品挑选食用油',
-                    image: '/static/images/index/products/oil_banner.jpg',
-                    group_price: '15.00',
-                    original_price: '20.00',
-                    save_amount: '5.00'
-                },
-                {
-                    id: 2,
-                    title: '新鲜水果',
-                    image: '/static/images/index/products/salt_oil.jpg',
-                    group_price: '17.00',
-                    original_price: '25.00',
-                    save_amount: '8.00'
-                },
-                {
-                    id: 3,
-                    title: '有机蔬菜',
-                    image: '/static/images/index/products/olive_oil.jpg',
-                    group_price: '20.00',
-                    original_price: '30.00',
-                    save_amount: '10.00'
-                }
-            ];
-        },
-        
+
         onSwiperChange(e) {
             this.currentIndex = e.detail.current;
         },
@@ -267,9 +222,12 @@ export default {
 
 .title-section {
     position: relative;
-    width: 710rpx; /* 355px * 2 */
-    height: 50rpx; /* 25px * 2 */
-    margin-bottom: 16rpx; /* 8px * 2 */
+    width: 710rpx;
+    /* 355px * 2 */
+    height: 50rpx;
+    /* 25px * 2 */
+    margin-bottom: 16rpx;
+    /* 8px * 2 */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -278,9 +236,11 @@ export default {
 .left {
     .title-text {
         font-family: 'PingFang SC', sans-serif;
-        font-size: 32rpx; /* 16px * 2 */
-        font-weight: 500;
-        line-height: 44rpx; /* 22px * 2 */
+        font-size: 32rpx;
+        /* 16px * 2 */
+        font-weight: 400;
+        line-height: 44rpx;
+        /* 22px * 2 */
         color: #000000;
         text-align: center;
     }
@@ -289,41 +249,41 @@ export default {
 .right {
     display: flex;
     align-items: center;
-    gap: 6rpx; /* 3px * 2 */
+    gap: 6rpx;
+    /* 3px * 2 */
 
     .more-text {
         font-family: 'PingFang SC', sans-serif;
-        font-size: 24rpx; /* 12px * 2 */
+        font-size: 24rpx;
+        /* 12px * 2 */
         font-weight: 400;
-        line-height: 34rpx; /* 17px * 2 */
+        line-height: 34rpx;
+        /* 17px * 2 */
         color: #999999;
     }
 
     .right-icon {
-        width: 10rpx; /* 5px * 2 */
-        height: 18rpx; /* 9px * 2 */
+        width: 10rpx;
+        /* 5px * 2 */
+        height: 18rpx;
+        /* 9px * 2 */
     }
 }
 
 .hot-group-container {
     position: relative;
-    width: 710rpx; /* 355px * 2 */
-    height: 500rpx; /* 调整高度，适应手机屏幕 */
-    border-radius: 12rpx;
-    overflow: hidden;
-    box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-}
-
-.banner-section {
-    position: relative;
-    width: 100%;
-    height: 300rpx; /* 轮播图区域高度 */
+    width: 712rpx;
+    /* 356px * 2 */
+    height: 572rpx;
+    /* 286px * 2 */
+    border-radius: 8rpx;
     overflow: hidden;
 }
 
 .background-swiper {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     z-index: 1;
@@ -332,100 +292,94 @@ export default {
 .background-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+}
+
+.blur-overlay {
+    position: absolute;
+    top: 260rpx;
+    /* 154px * 2 */
+    left: 8rpx;
+    /* 4px * 2 */
+    width: 696rpx;
+    /* 348px * 2 */
+    height: 300rpx;
+    /* 128px * 2 */
+    background: radial-gradient(ellipse at 51.69% -87.88%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.4) 100%);
+    backdrop-filter: blur(132.6rpx);
+    /* 66.3px * 2 */
+    border-radius: 8rpx;
+    z-index: 2;
+    pointer-events: none;
+    /* 允许触摸事件穿透 */
+}
+
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 3;
+    pointer-events: none;
+    /* 允许触摸事件穿透 */
 }
 
 .orange-tag {
     position: absolute;
     top: 0;
     left: 0;
-    min-width: 200rpx;
-    max-width: 360rpx;
-    height: 56rpx; /* 28px * 2 */
+    width: 244rpx;
+    /* 122px * 2 */
+    height: 56rpx;
+    /* 28px * 2 */
     background: linear-gradient(90deg, #EF803D 0%, #EB6431 100%);
-    border-radius: 12rpx 0 16rpx 0;
+    border-radius: 8rpx 0 16rpx 0;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 4;
-    padding: 0 20rpx;
 
     .tag-text {
         font-family: 'PingFang SC', sans-serif;
-        font-size: 28rpx; /* 14px * 2 */
-        font-weight: 500;
+        font-size: 28rpx;
+        /* 14px * 2 */
+        font-weight: 400;
         color: #FFFFFF;
         text-align: center;
         line-height: 1.4;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
-}
-
-.progress-indicator {
-    position: absolute;
-    bottom: 20rpx; /* 调整位置 */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200rpx; /* 调整宽度 */
-    height: 6rpx; /* 调整高度 */
-    z-index: 4;
-    pointer-events: none; /* 允许触摸事件穿透 */
-
-    .progress-bg {
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.5);
-        border-radius: 3rpx;
-    }
-
-    .progress-active {
-        position: absolute;
-        top: 0;
-        width: 40rpx; /* 调整宽度 */
-        height: 100%;
-        background-color: #FFFFFF;
-        border-radius: 3rpx;
-        transition: left 0.3s ease;
-    }
-}
-
-.products-section {
-    flex: 1;
-    width: 100%;
-    background-color: #FFFFFF;
-    position: relative;
-    z-index: 5;
 }
 
 .products-container {
+    position: absolute;
+    bottom: 24rpx;
+    /* 16px * 2 */
+    left: 72rpx;
+    /* 36px * 2 */
     display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 20rpx 30rpx;
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
+    align-items: flex-end;
+    gap: 70rpx;
+    /* 35px * 2 */
+    z-index: 5;
 }
 
 .product-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 30%; /* 平均分配空间 */
+    width: 142rpx;
+    /* 71px * 2 */
 
-    .product-img-wrapper {
-        width: 80rpx; /* 调整大小 */
-        height: 120rpx; /* 调整大小 */
-        margin-bottom: 10rpx;
-
-        .product-img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+    .product-img {
+        width: 140rpx;
+        height: 200rpx;
+        margin-bottom: 4rpx;
+        /* 确保图片填满容器且不变形 */
+        object-fit: cover;
+        border-radius: 6rpx;
     }
+
 
     .product-info {
         display: flex;
@@ -435,16 +389,21 @@ export default {
 
         .product-name {
             font-family: 'PingFang SC', sans-serif;
-            font-size: 24rpx; /* 12px * 2 */
-            font-weight: 500;
+            font-size: 24rpx;
+            /* 12px * 2 */
+            font-weight: 400;
             color: #333333;
             text-align: center;
             line-height: 1.4;
-            margin-bottom: 6rpx;
-            width: 100%;
+            margin-bottom: 8rpx;
             white-space: nowrap;
+            /* 防止文本换行 */
             overflow: hidden;
+            /* 超出部分隐藏 */
             text-overflow: ellipsis;
+            /* 超出部分显示省略号 */
+            width: 140rpx;
+            /* 固定宽度 */
         }
 
         .price-container {
@@ -452,44 +411,69 @@ export default {
             align-items: center;
             justify-content: center;
             width: 100%;
-            flex-wrap: wrap;
 
             .price-text {
                 font-family: 'PingFang SC', sans-serif;
-                font-size: 24rpx; /* 增大字体 */
-                font-weight: 600;
-                color: #FF5722;
-                text-align: center;
-                line-height: 1.4;
-            }
-
-            .original-price {
-                font-family: 'PingFang SC', sans-serif;
-                font-size: 20rpx; /* 增大字体 */
+                font-size: 20rpx;
+                /* 10px * 2 */
                 font-weight: 400;
-                color: #999999;
-                text-decoration: line-through;
-                margin-left: 10rpx; /* 5px * 2 */
-            }
-        }
-
-        .time-left {
-            margin-top: 6rpx;
-            width: 100%;
-            text-align: center;
-            
-            .time-left-text {
-                font-family: 'PingFang SC', sans-serif;
-                font-size: 20rpx; /* 增大字体 */
-                font-weight: 500;
-                color: #FF9800;
+                color: #FFFFFF;
                 text-align: center;
                 line-height: 1.4;
-                padding: 2rpx 8rpx;
-                background-color: rgba(255, 152, 0, 0.1);
-                border-radius: 10rpx;
+                white-space: nowrap;
+                /* 防止文本换行 */
+                overflow: hidden;
+                /* 超出部分隐藏 */
+                text-overflow: ellipsis;
+                /* 超出部分显示省略号 */
+                width: 120rpx;
+                /* 固定宽度 */
+            }
+
+            .price-arrow {
+                width: 8rpx;
+                /* 4px * 2 */
+                height: 16rpx;
+                /* 8px * 2 */
+                margin-left: 10rpx;
+                /* 5px * 2 */
             }
         }
+    }
+}
+
+.progress-indicator {
+    position: absolute;
+    top: 230rpx;
+    /* 144px * 2 */
+    left: 162rpx;
+    /* 81px * 2 */
+    width: 390rpx;
+    /* 195px * 2 */
+    height: 8rpx;
+    /* 4px * 2 */
+    z-index: 4;
+    pointer-events: none;
+    /* 允许触摸事件穿透 */
+
+    .progress-bg {
+        width: 100%;
+        height: 100%;
+        background-color: rgba(242, 242, 242, 0.7);
+        border-radius: 2rpx;
+        /* 1px * 2 */
+    }
+
+    .progress-active {
+        position: absolute;
+        top: 0;
+        width: 38rpx;
+        /* 19px * 2 */
+        height: 100%;
+        background-color: #FFFFFF;
+        border-radius: 2rpx;
+        /* 1px * 2 */
+        transition: left 0.3s ease;
     }
 }
 </style>

@@ -1,38 +1,30 @@
 {
-  "currentState": "service_discovery",
+  "currentState": "role_activated_with_memory",
   "stateHistory": [
     {
       "from": "initial",
       "command": "init",
-      "timestamp": "2025-08-02T05:42:17.885Z",
+      "timestamp": "2025-08-06T17:46:52.767Z",
       "args": [
         {
-          "workingDirectory": "/d:Programs/crmb/CRMEB-BZ v5.6.0(20250308)/template/uni-app"
+          "workingDirectory": "D:\\Programs\\crmb\\CRMEB-BZ v5.6.0(20250308)\\template\\uni-app"
         }
       ]
     },
     {
       "from": "initialized",
       "command": "welcome",
-      "timestamp": "2025-08-02T05:42:25.386Z",
+      "timestamp": "2025-08-06T17:47:00.454Z",
       "args": []
     },
     {
       "from": "service_discovery",
-      "command": "init",
-      "timestamp": "2025-08-02T05:42:33.644Z",
+      "command": "action",
+      "timestamp": "2025-08-06T17:47:56.833Z",
       "args": [
-        {
-          "workingDirectory": "D:/Programs/crmb/CRMEB-BZ v5.6.0(20250308)/template/uni-app"
-        }
+        "luban"
       ]
-    },
-    {
-      "from": "initialized",
-      "command": "welcome",
-      "timestamp": "2025-08-02T05:42:38.232Z",
-      "args": []
     }
   ],
-  "lastUpdated": "2025-08-02T05:42:38.236Z"
+  "lastUpdated": "2025-08-06T17:47:56.858Z"
 }

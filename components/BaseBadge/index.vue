@@ -100,14 +100,27 @@
 			},
 			positionStyle() {
 				if (!this.absolute) return {}
-				let w = this.width / 2,
-					h = 10
+				// 考虑px到rpx的转换比例(1px≈2rpx)
+				let w = this.width,
+					h = 20
 				if (this.isDot) {
-					w = 5
-					h = 5
+					w = 10
+					h = 10
 				}
-				const x = `${- w  + this.offset[0]}px`
-				const y = `${- h + this.offset[1]}px`
+				
+				// 购物车角标特殊处理
+				// 根据角标位置调整偏移量
+				let offsetX = this.offset[0] * 2; // px转rpx
+				let offsetY = this.offset[1] * 2; // px转rpx
+				
+				if (this.absolute === 'rightTop') {
+					// 购物车角标右上角位置优化
+					offsetX = 0; // 不需要额外的X轴偏移，由外层CSS控制
+					offsetY = -10; // -5px对应-10rpx
+				}
+				
+				const x = `${- w + offsetX}rpx`
+				const y = `${- h + offsetY}rpx`
 
 				const whiteList = {
 					rightTop: {

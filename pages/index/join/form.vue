@@ -1,32 +1,36 @@
 <template>
   <view class="form-page">
-    <!-- 使用通用头部导航组件 -->
-    <CommonHeader title="基本信息" @back="goBack"></CommonHeader>
+    <!-- 自定义头部 -->
+    <view class="custom-header">
+      <view class="header-cancel" @click="goBack">取消</view>
+      <view class="header-title">基本信息</view>
+      <view class="header-placeholder"></view>
+    </view>
     
     <!-- 表单内容 -->
     <view class="form-content">
       <!-- 姓名 -->
       <view class="form-item">
         <view class="form-label">姓名：</view>
-        <input type="text" class="form-input" v-model="formData.name" placeholder="许**" />
+        <input type="text" class="form-input" v-model="formData.name" placeholder="请输入您的姓名" />
       </view>
       
       <!-- 手机号码 -->
       <view class="form-item">
         <view class="form-label">手机号码：</view>
-        <input type="number" class="form-input" v-model="formData.phone" placeholder="1535****503" maxlength="11" />
+        <input type="number" class="form-input" v-model="formData.phone" placeholder="请输入您的手机号码" maxlength="11" />
       </view>
       
       <!-- 微信名 -->
       <view class="form-item">
         <view class="form-label">微信名：</view>
-        <input type="text" class="form-input" v-model="formData.wechat" placeholder="加载中..." />
+        <input type="text" class="form-input" v-model="formData.wechat" placeholder="请输入您的微信名" />
       </view>
       
       <!-- 社区位置 -->
       <view class="form-item">
         <view class="form-label">社区位置：</view>
-        <input type="text" class="form-input" v-model="formData.address" placeholder="北京朝阳区三里屯社区" />
+        <input type="text" class="form-input" v-model="formData.address" placeholder="请输入您所在的社区位置" />
       </view>
     </view>
     
@@ -37,7 +41,9 @@
     <view class="popup-mask" v-if="showConfirmPopup" @click="cancelSubmit"></view>
     <view class="popup-container" v-if="showConfirmPopup">
       <view class="popup-content">
-        <view class="popup-btn confirm-btn" @tap="confirmSubmit">确定提交</view>
+        <view class="popup-title">信息确认</view>
+        <view class="popup-desc">请确认您填写的信息无误</view>
+        <view class="popup-btn confirm-btn" @tap="confirmSubmit">下一步</view>
         <view class="popup-btn cancel-btn" @tap="cancelSubmit">取消</view>
       </view>
     </view>
@@ -46,8 +52,12 @@
 
 <script>
 import { applyLeader } from '@/api/group.js';
+import CommonHeader from '@/components/CommonHeader/index.vue';
 
 export default {
+  components: {
+    CommonHeader
+  },
   data() {
     return {
       statusBarHeight: 20, // 默认值，会在onLoad中获取真实值
@@ -112,33 +122,40 @@ export default {
     confirmSubmit() {
       // 关闭弹窗
       this.showConfirmPopup = false;
-      
-      // 提交表单
-      uni.showLoading({
-        title: '提交中...'
-      });
-      
-      applyLeader(this.formData).then(res => {
-        uni.hideLoading();
-        
-        if (res.status === 0) {
-          // 跳转到提交成功页面
-          uni.navigateTo({
-            url: '/pages/index/join/status?type=success'
-          });
-        } else {
+
+      // 跳转到状态页面，传递表单数据，但不提交
+      uni.navigateTo({
+        url: '/pages/index/join/status?type=success&formData=' + encodeURIComponent(JSON.stringify(this.formData)),
+        success: function() {
+          console.log('跳转成功');
+        },
+        fail: function(err) {
+          console.error('跳转失败', err);
           uni.showToast({
-            title: res.msg || '申请失败',
+            title: '跳转失败，请重试',
             icon: 'none'
           });
         }
-      }).catch(err => {
-        uni.hideLoading();
-        uni.showToast({
-          title: err || '申请失败',
-          icon: 'none'
-        });
       });
+    },
+    
+    // 跳转到状态页面的通用方法
+    navigateToStatus(type) {
+      setTimeout(() => {
+        uni.navigateTo({
+          url: '/pages/index/join/status?type=' + type,
+          success: function() {
+            console.log('跳转成功');
+          },
+          fail: function(err) {
+            console.error('跳转失败', err);
+            uni.showToast({
+              title: '跳转失败，请重试',
+              icon: 'none'
+            });
+          }
+        });
+      }, 300);
     },
     cancelSubmit() {
       this.showConfirmPopup = false;
@@ -161,47 +178,37 @@ export default {
   background-color: #FFFFFF;
 }
 
-/* 顶部导航 */
-.header {
+/* 自定义头部 */
+.custom-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   height: 44px;
   padding: 0 16px;
-  position: sticky;
-  top: 0;
-  background-color: #FFFFFF;
-  z-index: 10;
-  border-bottom: 1px solid #F2F2F2;
-  
-  .back-icon {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    .icon-image {
-      width: 20px;
-      height: 20px;
-    }
-  }
-  
-  .page-title {
-    font-size: 18px;
-    font-weight: 500;
-    color: #333333;
-  }
-  
-  .right-placeholder {
-    width: 28px;
-  }
+  background: #fff;
+  border-bottom: 1px solid #f2f2f2;
+}
+.header-cancel {
+  color: #888;
+  font-size: 17px;
+  width: 40px;
+}
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 500;
+  color: #222;
+}
+.header-placeholder {
+  width: 40px;
 }
 
 /* 表单内容 */
 .form-content {
   flex: 1;
   padding: 20px;
+  // padding-top: 88rpx; // 防止内容被头部遮挡
   
   .form-item {
     margin-bottom: 24px;
@@ -262,6 +269,21 @@ export default {
 .popup-content {
   display: flex;
   flex-direction: column;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333333;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.popup-desc {
+  font-size: 14px;
+  color: #666666;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .popup-btn {

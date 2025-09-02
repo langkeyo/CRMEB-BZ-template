@@ -54,6 +54,7 @@
 
 <script>
 import CommonHeader from '@/components/CommonHeader/index.vue';
+import { getMyCommunityInfo } from '@/api/group.js';
 
 export default {
   components: {
@@ -114,11 +115,41 @@ export default {
     addSite() {
       uni.navigateTo({ url: './add' });
     },
-    getSiteInfo() {
+    async getSiteInfo() {
+      // 首先尝试从API获取真实的社区信息
+      try {
+        const response = await getMyCommunityInfo();
+
+        if (response.status === 200 && response.data && response.data.is_bind && response.data.community) {
+          const community = response.data.community;
+
+          // 将社区信息转换为站点信息格式
+          this.currentSite = {
+            id: community.id,
+            fullAddress: community.full_address || community.address || '',
+            isDefault: true,
+            building: community.name || '',
+            contactName: '站点管理员',
+            contactPhone: '400-000-0000'
+          };
+
+          this.hasSite = true;
+
+          // 同步到本地存储
+          uni.setStorageSync('CURRENT_SITE_ID', this.currentSite.id);
+          uni.setStorageSync('CURRENT_SITE', JSON.stringify(this.currentSite));
+          return;
+        }
+      } catch (e) {
+        console.error('从API获取社区信息失败:', e);
+      }
+
+      // 如果API获取失败，回退到本地存储逻辑
       try {
         const currentSiteId = uni.getStorageSync('CURRENT_SITE_ID');
         let siteList = uni.getStorageSync('SITE_LIST') || '[]';
         siteList = JSON.parse(siteList);
+
         if (siteList.length > 0) {
           this.hasSite = true;
           if (currentSiteId) {
@@ -176,6 +207,7 @@ export default {
   cursor: pointer;
 }
 .radio-circle {
+transform: translate(-14rpx);
   width: 36rpx;
   height: 36rpx;
   border: 2rpx solid #FE8D00;

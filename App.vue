@@ -13,6 +13,9 @@ import Cache from '@/utils/cache'
 import themeList from '@/utils/theme'
 import { debug } from 'util'
 import UserManager from '@/utils/userManager'
+import { getMyCommunityInfo } from '@/api/group'
+import { SITE_INFO } from '@/config/cache'
+import { getGroupCartCount } from '@/api/groupCart.js'
 
 export default {
 	globalData: {
@@ -25,7 +28,14 @@ export default {
 		isIframe: false,
 		tabbarShow: true,
 		windowHeight: 0,
-		locale: ''
+		locale: '',
+		// 全局站点信息，可在任何页面通过 getApp().globalData.siteInfo 访问
+		siteInfo: {
+			name: '',
+			location: '',
+			deliveryTime: '',
+			type: ''
+		}
 	},
 	mixins: [colors],
 	computed: mapGetters(['isLogin', 'cartNum']),
@@ -34,29 +44,46 @@ export default {
 			deep: true, //深度监听设置为 true
 			handler: function (newV, oldV) {
 				if (newV) {
-					// this.getCartNum()
+					// 用户登录后获取购物车数量和社区信息
+					this.updateCartNum();
+					this.fetchCommunityInfo();
 				} else {
 					this.$store.commit('indexData/setCartNum', '')
 				}
 			}
 		},
-		cartNum (newCart, b) {
-			this.$store.commit('indexData/setCartNum', newCart + '')
-			if (newCart > 0) {
+		cartNum (newCart, oldCart) {
+			// 确保购物车数量是数字类型
+			const cartCount = parseInt(newCart) || 0;
+			
+			// 更新store中的购物车数量
+			this.$store.commit('indexData/setCartNum', cartCount + '');
+			
+			// 更新原生tabbar的角标
+			if (cartCount > 0) {
 				uni.setTabBarBadge({
 					index: Number(uni.getStorageSync('FOOTER_ADDCART')) || 2,
-					text: newCart + ''
-				})
+					text: cartCount + ''
+				}).catch(err => {
+					console.log('设置TabBar角标失败，可能是自定义TabBar已启用', err);
+				});
 			} else {
 				uni.hideTabBarRedDot({
 					index: Number(uni.getStorageSync('FOOTER_ADDCART')) || 2
-				})
+				}).catch(err => {
+					console.log('隐藏TabBar角标失败，可能是自定义TabBar已启用', err);
+				});
 			}
 		}
 	},
 	onShow () {
 		// 触发应用显示事件，用于用户管理器检查用户信息
 		uni.$emit('appShow');
+		
+		// 应用显示时更新购物车数量
+		if (this.isLogin) {
+			this.updateCartNum();
+		}
 
 		const queryData = uni.getEnterOptionsSync() // uni-app版本 3.5.1+ 支持
 		if (queryData.query.spread) {
@@ -113,6 +140,25 @@ export default {
 	async onLaunch (option) {
 		uni.hideTabBar()
 		let that = this
+		
+		// 初始化站点信息，从缓存读取或设置默认值
+		const siteInfoCache = Cache.get(SITE_INFO);
+		if (siteInfoCache) {
+			this.globalData.siteInfo = siteInfoCache;
+		} else {
+			// 设置默认站点信息
+			this.globalData.siteInfo = {
+				name: '',
+				location: '北京尚德井小区菜鸟驿站',
+				deliveryTime: '今日8：00前送达',
+				type: '站点自提'
+			};
+			// 存入Vuex和缓存
+			this.$store.dispatch('SET_SITEINFO', this.globalData.siteInfo);
+		}
+		
+		// 尝试从API获取社区信息
+		this.fetchCommunityInfo();
 		
 		// #ifdef H5
 		// 检查当前路径，如果是根路径，则重定向到首页
@@ -288,6 +334,19 @@ export default {
 	},
 	// #endif
 	methods: {
+		// 更新购物车数量
+		async updateCartNum() {
+			try {
+				const count = await getGroupCartCount();
+				if (count >= 0) {
+					this.$store.dispatch("indexData/setCartnumber", count);
+				}
+			} catch (error) {
+				console.error('获取购物车数量失败:', error);
+				// 静默失败，不显示错误提示
+			}
+		},
+		
 		remoteRegister (remote_token) {
 			remoteRegister({ remote_token }).then((res) => {
 				let data = res.data
@@ -302,6 +361,49 @@ export default {
 					location.reload()
 				}
 			})
+		},
+		
+		/**
+		 * 获取社区信息并更新到全局站点信息
+		 */
+		fetchCommunityInfo() {
+			// 只有登录状态才获取社区信息
+			if (!this.$store.getters.isLogin) return;
+			
+			getMyCommunityInfo()
+				.then(res => {
+					if (res.status === 200 && res.data && res.data.community) {
+						const community = res.data.community;
+						
+						// 保存当前的配送时间，如果有的话
+						const currentDeliveryTime = this.globalData.siteInfo.deliveryTime || '今日8：00前送达';
+						
+						// 更新站点信息
+						const siteInfo = {
+							name: community.name || '',
+							location: community.full_address || community.address || '',
+							deliveryTime: currentDeliveryTime, // 保留现有的配送时间
+							type: '站点自提',
+							// 保存完整的社区信息以便其他地方使用
+							community: community,
+							// 保存社区更新时间，用于判断数据新鲜度
+							lastUpdated: new Date().getTime()
+						};
+						
+						// 更新到Vuex和全局
+						this.$store.dispatch('SET_SITEINFO', siteInfo);
+						this.globalData.siteInfo = siteInfo;
+						
+						console.log('社区信息已更新:', siteInfo);
+					}
+				})
+				.catch(error => {
+					console.error('获取社区信息失败:', error);
+					// 如果是未登录错误，不做处理，使用默认站点信息
+					if (error && error.status === 110002) {
+						console.log('用户未登录，使用默认站点信息');
+					}
+				});
 		}
 		// 小程序静默授权
 		// silenceAuth(code) {

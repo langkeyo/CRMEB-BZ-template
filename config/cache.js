@@ -15,6 +15,8 @@ module.exports = {
 	UID:'UID',
 	//用户信息
 	USER_INFO: 'USER_INFO',
+	//站点信息
+	SITE_INFO: 'SITE_INFO',
 	//token过期时间
 	EXPIRES_TIME: 'EXPIRES_TIME',
 	//微信登录

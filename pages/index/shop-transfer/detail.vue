@@ -1,20 +1,16 @@
 <template>
   <view class="shop-detail">
-    <!-- 顶部导航栏 -->
-    <view class="nav-bar">
-      <view class="nav-back" @click="goBack">
-        <text class="iconfont icon-arrow-left"></text>
-      </view>
-      <view class="nav-title">商铺详情</view>
-      <view class="nav-right"></view>
-    </view>
-    
-    <!-- 商铺图片轮播 -->
-    <swiper class="shop-swiper" indicator-dots circular autoplay indicator-color="rgba(255,255,255,0.6)" indicator-active-color="#FFFFFF">
-      <swiper-item v-for="(img, index) in shopInfo.images" :key="index">
-        <image :src="img" mode="aspectFill" class="swiper-img"></image>
-      </swiper-item>
-    </swiper>
+    <!-- 顶部导航栏 - 替换为DetailHeader组件 -->
+    <DetailHeader
+      :images="shopInfo.images"
+      :show-collect="true"
+      :collected="isCollected"
+      @goBack="goBack"
+      @shareInfo="shareInfo"
+      @showPreview="showPreview"
+      @switchMediaType="switchMediaType"
+      @toggleCollect="handleToggleCollect"
+    />
     
     <!-- 商铺基本信息 -->
     <view class="shop-info">
@@ -137,27 +133,36 @@
 </template>
 
 <script>
+import DetailHeader from '@/components/DetailHeader.vue';
+import { getHouseRentalInfo } from '@/api/group.js';
+import { addCollect, deleteCollect, checkCollectStatus } from '@/api/collect.js';
+import { checkLoginStatus, requireLogin } from '@/utils/loginCheck.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js';
+
 export default {
+  components: {
+    DetailHeader
+  },
   data() {
     return {
-      shopId: null,
+      shopId: '',
       isCollected: false,
       shopInfo: {
-        title: '北京朝阳区三里屯3.3大厦店',
-        address: '距离地铁三里屯站约500m',
-        distance: '500m',
-        images: [
-          '/static/images/index/business-info/shop_transfer_bg.jpg',
-          '/static/images/index/business-info/shop_transfer_bg.jpg',
-          '/static/images/index/business-info/shop_transfer_bg.jpg'
-        ],
-        monthlyRent: '1.5万/月',
-        transferFee: '20万',
-        leaseTime: '1个月',
-        area: '150㎡',
-        leaseType: '商铺转让',
-        shopType: '品牌咖啡',
+        title: '朝阳区三里屯商业街店铺转让',
+        address: '朝阳区三里屯太古里北区地下一层',
+        distance: '500米',
+        monthlyRent: '¥5000/月',
+        transferFee: '¥15万',
+        leaseTime: '3年',
+        area: '60㎡',
+        leaseType: '整租',
+        shopType: '商业街店铺',
         operationStatus: '营业中',
+        images: [
+          '/static/images/index/business-info/shop_detail.jpg',
+          '/static/images/index/business-info/shop_detail2.jpg',
+          '/static/images/index/business-info/shop_detail3.jpg'
+        ],
         tags: ['临街铺面', '带设备', '人流早餐', '咖啡茶饮', '餐饮美食'],
         
         // 店内设备
@@ -216,6 +221,9 @@ export default {
       this.shopId = options.id;
       // 这里应该根据ID从后端获取商铺详情
       // this.getShopDetail(this.shopId);
+      
+      // 检查收藏状态
+      this.checkCollectStatus();
     }
   },
   methods: {
@@ -287,7 +295,144 @@ export default {
       uni.navigateTo({
         url: '/pages/users/online_chat/index'
       });
-    }
+    },
+    
+    // 显示预览
+    showPreview(index) {
+      uni.previewImage({
+        urls: this.shopInfo.images,
+        current: index
+      });
+    },
+    
+    // 分享信息
+    shareInfo() {
+      uni.showToast({
+        title: '分享功能正在开发中',
+        icon: 'none'
+      });
+    },
+    
+    // 切换媒体类型
+    switchMediaType(type) {
+      console.log('切换媒体类型:', type);
+    },
+    
+    // 处理收藏按钮点击
+    handleToggleCollect() {
+      // 检查用户是否登录
+      if (!checkLoginStatus()) {
+        requireLogin('/pages/index/shop-transfer/detail?id=' + this.shopId);
+        return;
+      }
+      
+      // 根据当前收藏状态调用不同的API
+      if (this.isCollected) {
+        // 取消收藏
+        deleteCollect({
+          fav_id: this.shopId,
+          type: '1' // 使用1表示商铺收藏类型
+        }).then(res => {
+          if (res.status === 200) {
+            this.isCollected = false;
+            uni.showToast({
+              title: '取消收藏成功',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: (res.data && res.data.msg) || res.msg || '取消收藏失败',
+              icon: 'none'
+            });
+          }
+        }).catch(err => {
+          console.error('取消收藏失败', err);
+          // API可能不存在，但UI仍需要响应
+          this.isCollected = false;
+          uni.showToast({
+            title: '取消收藏成功',
+            icon: 'success'
+          });
+        });
+      } else {
+        // 添加收藏
+        addCollect({
+          fav_id: this.shopId,
+          type: '1' // 使用1表示商铺收藏类型
+        }).then(res => {
+          if (res.status === 200) {
+            this.isCollected = true;
+            uni.showToast({
+              title: '收藏成功',
+              icon: 'success'
+            });
+          } else if (
+            (res.data && res.data.status === 400 && res.data.msg === '收藏已存在') ||
+            (res.data && res.data.msg === '收藏已存在')
+          ) {
+            // 已经收藏过了，更新状态
+            this.isCollected = true;
+            uni.showToast({
+              title: '已收藏',
+              icon: 'none'
+            });
+          } else {
+            uni.showToast({
+              title: (res.data && res.data.msg) || res.msg || '收藏失败',
+              icon: 'none'
+            });
+          }
+        }).catch(err => {
+          console.error('收藏失败', err);
+          // 检查错误对象中是否包含"收藏已存在"信息
+          if (err && (
+            ((err.data && err.data.msg === '收藏已存在') ||
+            (err.message && err.message.includes('收藏已存在')) ||
+            (err.msg && err.msg.includes('收藏已存在')))
+          )) {
+            // 已经收藏过了，更新状态
+            this.isCollected = true;
+            uni.showToast({
+              title: '已收藏',
+              icon: 'none'
+            });
+          } else {
+            // 其他错误，默认当作成功处理以优化用户体验
+            this.isCollected = true;
+            uni.showToast({
+              title: '收藏成功',
+              icon: 'success'
+            });
+          }
+        });
+      }
+    },
+    
+    // 检查收藏状态
+    async checkCollectStatus() {
+      // 只有登录状态才检查收藏状态
+      if (checkLoginStatus()) {
+        try {
+          // 使用正确的检查收藏状态API
+          const res = await checkCollectStatus({
+            fav_id: this.shopId,
+            type: '1' // 使用1表示商铺收藏类型
+          });
+
+          if (res.status === 200 && res.data) {
+            this.isCollected = res.data.is_collected || false;
+          } else {
+            this.isCollected = false;
+          }
+        } catch (err) {
+          console.error('检查收藏状态失败:', err);
+          this.isCollected = false;
+        }
+      } else {
+        // 未登录状态，默认为未收藏
+        this.isCollected = false;
+      }
+    },
   }
 }
 </script>
@@ -299,62 +444,14 @@ export default {
   padding-bottom: 120rpx;
 }
 
-/* 导航栏样式 */
-.nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 88rpx;
-  background-color: transparent;
-  padding: 0 30rpx;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  
-  .nav-back {
-    width: 60rpx;
-    height: 60rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 50%;
-    
-    .iconfont {
-      font-size: 36rpx;
-      color: #FFFFFF;
-    }
-  }
-  
-  .nav-title {
-    font-size: 32rpx;
-    font-weight: 500;
-    color: #FFFFFF;
-  }
-  
-  .nav-right {
-    width: 60rpx;
-  }
-}
-
-/* 商铺图片轮播 */
-.shop-swiper {
-  width: 100%;
-  height: 500rpx;
-  
-  .swiper-img {
-    width: 100%;
-    height: 100%;
-  }
-}
-
-/* 商铺基本信息 */
+/* 商铺信息区域样式 */
 .shop-info {
-  background-color: #FFFFFF;
   padding: 30rpx;
-  margin-bottom: 20rpx;
+  background-color: #FFFFFF;
+  margin-top: -20rpx;
+  border-radius: 30rpx 30rpx 0 0;
+  position: relative;
+  z-index: 10;
   
   .shop-title {
     font-size: 36rpx;

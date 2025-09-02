@@ -8,16 +8,16 @@
 // | Author: CRMEB Team <admin@crmeb.com>
 // +----------------------------------------------------------------------
 
-import request from "@/utils/request.js";
+import request from '@/utils/request.js'
 
 /**
  * 获取房屋租售列表
  * @param object data
  */
 export function getHouseRentalList(data) {
-  return request.get("group/house_rental/list", data, {
+  return request.get('group/house_rental/list', data, {
     noAuth: true
-  });
+  })
 }
 
 /**
@@ -25,9 +25,13 @@ export function getHouseRentalList(data) {
  * @param int id
  */
 export function getHouseRentalInfo(id) {
-  return request.get(`group/house_rental/info/${id}`, {}, {
-    noAuth: true
-  });
+  return request.get(
+    `group/house_rental/info/${id}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 // 重复声明已删除，使用后面完整参数的reserveHouseRental函数
@@ -37,7 +41,7 @@ export function getHouseRentalInfo(id) {
  * @param object data
  */
 export function applyIntermediary(data) {
-  return request.post("group/intermediary/apply", data);
+  return request.post('group/intermediary/apply', data)
 }
 
 /**
@@ -45,7 +49,14 @@ export function applyIntermediary(data) {
  * @param object data
  */
 export function applyLeader(data) {
-  return request.post("group/leader_apply", data);
+  return request.post('group/leader_apply', data)
+}
+
+/**
+ * 获取团长申请状态
+ */
+export function getLeaderApplyStatus() {
+  return request.get('group/leader_apply/status')
 }
 
 /**
@@ -53,7 +64,7 @@ export function applyLeader(data) {
  * @param object data
  */
 export function supplierApply(data) {
-  return request.post("group/supplier_apply", data);
+  return request.post('group/supplier_apply', data)
 }
 
 /**
@@ -67,7 +78,7 @@ export function supplierApply(data) {
  * @param {string} data.coupon_id 优惠券ID
  */
 export function createGroupOrder(data) {
-	return request.post("group/order/createOrder", data);
+  return request.post('group/order/createOrder', data)
 }
 
 /**
@@ -77,7 +88,7 @@ export function createGroupOrder(data) {
  * @param {string} data.coupon_id 优惠券ID
  */
 export function computeGroupOrder(data) {
-	return request.post("group/order/computedOrder", data);
+  return request.post('group/order/computedOrder', data)
 }
 
 /**
@@ -85,7 +96,7 @@ export function computeGroupOrder(data) {
  * @param {string} orderId 订单ID
  */
 export function getGroupOrderDetail(orderId) {
-	return request.get(`group/order/order_info/${orderId}`);
+  return request.get(`group/order/order_info/${orderId}`)
 }
 
 /**
@@ -94,7 +105,7 @@ export function getGroupOrderDetail(orderId) {
  * @param {string} data.status 订单状态
  */
 export function getGroupOrderList(data) {
-	return request.get("group/order/order_list", data);
+  return request.get('group/order/order_list', data)
 }
 
 /**
@@ -102,7 +113,7 @@ export function getGroupOrderList(data) {
  * @param {string} orderId 订单ID
  */
 export function payGroupOrder(orderId) {
-	return request.get(`group/order/payOrder/${orderId}`);
+  return request.get(`group/order/payOrder/${orderId}`)
 }
 
 /**
@@ -113,7 +124,7 @@ export function payGroupOrder(orderId) {
  * 获取团购购物车信息
  */
 export function getGroupCart() {
-	return request.get("group/cart/get");
+  return request.get('group/cart/get')
 }
 
 /**
@@ -122,7 +133,7 @@ export function getGroupCart() {
  * @param {string} data.goods_id 商品ID
  */
 export function removeGroupCartItem(data) {
-	return request.post("group/cart/remove", data);
+  return request.post('group/cart/remove', data)
 }
 
 /**
@@ -132,7 +143,7 @@ export function removeGroupCartItem(data) {
  * @param {string} data.quantity 商品数量(正数增加,负数减少)
  */
 export function updateGroupCart(data) {
-	return request.post("group/cart/update", data);
+  return request.post('group/cart/update', data)
 }
 
 /**
@@ -148,9 +159,9 @@ export function updateGroupCart(data) {
  * @param {number} data.limit 每页数量
  */
 export function getAvailableCoupons(data) {
-	return request.get("group/coupons/available/list", data, {
-		noAuth: true
-	});
+  return request.get('group/coupons/available/list', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -158,9 +169,13 @@ export function getAvailableCoupons(data) {
  * @param {number} id 优惠券ID
  */
 export function getCouponDetail(id) {
-	return request.get(`group/coupons/detail/${id}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `group/coupons/detail/${id}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -171,7 +186,7 @@ export function getCouponDetail(id) {
  * @param {number} data.limit 每页数量
  */
 export function getMyCoupons(data) {
-	return request.get("group/coupons/my/list", data);
+  return request.get('group/coupons/my/list', data)
 }
 
 /**
@@ -180,7 +195,7 @@ export function getMyCoupons(data) {
  * @param {number} data.order_amount 订单金额
  */
 export function getOrderAvailableCoupons(data) {
-	return request.get("group/coupons/order/available", data);
+  return request.get('group/coupons/order/available', data)
 }
 
 /**
@@ -189,21 +204,19 @@ export function getOrderAvailableCoupons(data) {
  * @param {number} data.coupon_id 优惠券ID
  */
 export function receiveCoupon(data) {
-	return request.post("group/coupons/receive", data);
+  return request.post('group/coupons/receive', data)
 }
-
-
-
-
-
-
 
 /**
  * 获取收藏列表
  * @param object data 参数对象，包含收藏类型
  */
-export function getCollectList(data) {
-  return request.get("group/collect/get", data);
+export function getCollectList(type = 1, subType = 0, searchQuery = '') {
+  return request.get('group/collect/get', {
+    keyword: searchQuery,
+    type,
+    subType
+  })
 }
 
 /**
@@ -211,7 +224,7 @@ export function getCollectList(data) {
  * @param object data 参数对象，包含收藏ID和类型
  */
 export function addCollect(data) {
-  return request.post("group/collect/add", data);
+  return request.post('group/collect/add', data, { showToast: false })
 }
 
 /**
@@ -219,7 +232,15 @@ export function addCollect(data) {
  * @param object data 参数对象，包含收藏ID和类型
  */
 export function deleteCollect(data) {
-  return request.post("group/collect/del", data);
+  return request.post('group/collect/del', data)
+}
+
+/**
+ * 获取收藏状态
+ * @param object data 参数对象，包含收藏ID和类型
+ */
+export function getCollectStatus(data) {
+  return request.get('group/collect/check', data)
 }
 
 /**
@@ -239,7 +260,7 @@ export function deleteCollect(data) {
  * @param {string} data.order 排序方式（sales_desc/price_asc/price_desc/time_desc）
  */
 export function getGroupGoodsList(data) {
-	return getCombinationList(data);
+  return getCombinationList(data)
 }
 
 /**
@@ -247,14 +268,14 @@ export function getGroupGoodsList(data) {
  * @param {number} id 拼团商品ID
  */
 export function getGroupGoodsDetail(id) {
-	return getCombinationDetail(id);
+  return getCombinationDetail(id)
 }
 
 /**
  * 获取推荐拼团商品
  */
 export function getRecommendGroupGoods() {
-	return getRecommendCombinations({});
+  return getRecommendCombinations({})
 }
 
 /**
@@ -270,25 +291,25 @@ export function getRecommendGroupGoods() {
  * @param {string} data.order 排序方式
  */
 export function getGroupGoodsPreview(data) {
-	return previewCombination(data);
+  return previewCombination(data)
 }
 
 /**
  * 获取团购商品分类
  */
 export function getGroupGoodsCategory() {
-	return request.get("group/goods/cate", {}, {
-		noAuth: true
-	});
+  return request.get(
+    'group/goods/cate',
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
  * 团购订单相关接口 - 基于API文档
  */
-
-
-
-
 
 /**
  * 用户登录接口 - 基于API文档
@@ -297,9 +318,9 @@ export function getGroupGoodsCategory() {
  * @param {string} data.password 密码
  */
 export function groupLogin(data) {
-	return request.post("login", data, {
-		noAuth: true
-	});
+  return request.post('login', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -309,9 +330,9 @@ export function groupLogin(data) {
  * @param {string} data.captcha 验证码
  */
 export function groupLoginMobile(data) {
-	return request.post("login/mobile", data, {
-		noAuth: true
-	});
+  return request.post('login/mobile', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -319,9 +340,9 @@ export function groupLoginMobile(data) {
  * @param {Object} data 注册数据
  */
 export function groupRegister(data) {
-	return request.post("register", data, {
-		noAuth: true
-	});
+  return request.post('register', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -331,9 +352,9 @@ export function groupRegister(data) {
  * @param {string} data.type 验证码类型
  */
 export function getGroupVerifyCode(data) {
-	return request.post("sms/send", data, {
-		noAuth: true
-	});
+  return request.post('sms/send', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -350,7 +371,7 @@ export function getGroupVerifyCode(data) {
  * @param {number} data.limit 每页数量
  */
 export function getAfterSalesList(data) {
-	return request.get("group/aftersales/list", data);
+  return request.get('group/aftersales/list', data)
 }
 
 /**
@@ -358,7 +379,7 @@ export function getAfterSalesList(data) {
  * @param {number} id 售后ID
  */
 export function getAfterSalesDetail(id) {
-	return request.get(`group/aftersales/detail/${id}`);
+  return request.get(`group/aftersales/detail/${id}`)
 }
 
 /**
@@ -366,7 +387,7 @@ export function getAfterSalesDetail(id) {
  * @param {Object} data 售后申请数据
  */
 export function createAfterSales(data) {
-	return request.post("group/aftersales/create", data);
+  return request.post('group/aftersales/create', data)
 }
 
 /**
@@ -375,7 +396,7 @@ export function createAfterSales(data) {
  * @param {Object} data 更新数据
  */
 export function updateAfterSales(id, data) {
-	return request.post(`group/aftersales/update/${id}`, data);
+  return request.post(`group/aftersales/update/${id}`, data)
 }
 
 /**
@@ -389,7 +410,7 @@ export function updateAfterSales(id, data) {
  * @param {number} id 房屋ID
  */
 export function getHouseRentalDetail(id) {
-	return getHouseRentalInfo(id);
+  return getHouseRentalInfo(id)
 }
 
 /**
@@ -398,7 +419,7 @@ export function getHouseRentalDetail(id) {
  * @param {Object} data 预约数据
  */
 export function reserveHouseRental(id, data) {
-	return request.post(`group/house_rental/reservation/${id}`, data);
+  return request.post(`group/house_rental/reservation/${id}`, data)
 }
 
 /**
@@ -407,9 +428,9 @@ export function reserveHouseRental(id, data) {
  * @param {Object} data 查询参数
  */
 export function getNearbyShops(id, data = {}) {
-	return request.get(`group/house_rental/nearby_shops/${id}`, data, {
-		noAuth: true
-	});
+  return request.get(`group/house_rental/nearby_shops/${id}`, data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -425,16 +446,16 @@ export function getNearbyShops(id, data = {}) {
  * @param {string} data.city 城市筛选
  */
 export function getCommunityList(data) {
-	return request.get("group/community/list", data, {
-		noAuth: true
-	});
+  return request.get('group/community/list', data, {
+    noAuth: true
+  })
 }
 
 /**
  * 获取我的社区信息
  */
 export function getMyCommunityInfo() {
-	return request.get("group/community/my_info");
+  return request.get('group/community/my_info')
 }
 
 /**
@@ -443,7 +464,7 @@ export function getMyCommunityInfo() {
  * @param {number} data.community_id 社区ID
  */
 export function bindCommunity(data) {
-	return request.post("group/community/bind", data);
+  return request.post('group/community/bind', data)
 }
 
 /**
@@ -454,9 +475,9 @@ export function bindCommunity(data) {
  * @param {number} data.limit 限制数量
  */
 export function getNearbyCommunities(data) {
-	return request.get("group/community/nearby", data, {
-		noAuth: true
-	});
+  return request.get('group/community/nearby', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -476,7 +497,7 @@ export function getNearbyCommunities(data) {
  * @param {string} data.order 排序方式
  */
 export function getUserCombinationList(data) {
-	return getCombinationList(data);
+  return getCombinationList(data)
 }
 
 /**
@@ -484,7 +505,7 @@ export function getUserCombinationList(data) {
  * @param {number} id 拼团商品ID
  */
 export function getUserCombinationDetail(id) {
-	return getCombinationDetail(id);
+  return getCombinationDetail(id)
 }
 
 /**
@@ -492,20 +513,66 @@ export function getUserCombinationDetail(id) {
  * @param {number} id 商品ID
  */
 export function getGoodsDetail(id) {
-	return request.get(`group/goods/detail/${id}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `group/goods/detail/${id}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
  * 商品点赞/取消点赞
  * @param {number} id 商品ID
  * @param {number} type 1=点赞, 0=取消点赞
+ * @deprecated 使用 addGoodsLike 和 cancelGoodsLike 代替
  */
 export function likeGoods(id, type = 1) {
-	return request.post(`group/goods/like/${id}`, { type }, {
-		noAuth: false
-	});
+  return request.post(
+    `group/goods/like/${id}`,
+    { type },
+    {
+      noAuth: false
+    }
+  )
+}
+
+/**
+ * 添加商品点赞
+ * @param {Object} data 点赞数据
+ * @param {number} data.goods_id 商品ID
+ * @param {number} data.community_id 社区ID
+ * @param {number} data.type 操作类型：0踩，1点赞
+ */
+export function addGoodsLike(data) {
+  return request.post('group/goods_like/add', data, {
+    noAuth: false
+  })
+}
+
+/**
+ * 取消商品点赞
+ * @param {Object} data 取消点赞数据
+ * @param {number} data.goods_id 商品ID
+ */
+export function cancelGoodsLike(data) {
+  return request.post('group/goods_like/cancel', data, {
+    noAuth: false
+  })
+}
+
+/**
+ * 获取我的商品点赞列表
+ * @param {Object} data 查询参数
+ * @param {number} data.type 点赞类型筛选：0踩，1点赞
+ * @param {number} data.page 页码
+ * @param {number} data.limit 每页数量
+ */
+export function getMyGoodsLikeList(data = {}) {
+  return request.get('group/goods_like/list', data, {
+    noAuth: false
+  })
 }
 
 /**
@@ -515,7 +582,7 @@ export function likeGoods(id, type = 1) {
  * @param {number} data.quantity 数量
  */
 export function joinCombination(data) {
-	return request.post("group/combination/join", data);
+  return request.post('group/combination/join', data)
 }
 
 /**
@@ -526,7 +593,7 @@ export function joinCombination(data) {
  * @param {string} data.status 状态筛选
  */
 export function getMyCombinationList(data) {
-	return request.get("group/combination/my_list", data);
+  return request.get('group/combination/my_list', data)
 }
 
 /**
@@ -534,9 +601,9 @@ export function getMyCombinationList(data) {
  * @param {Object} data 查询参数
  */
 export function getRecommendCombinations(data) {
-	return request.get("group/combination/recommend", data, {
-		noAuth: true
-	});
+  return request.get('group/combination/recommend', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -552,7 +619,7 @@ export function getRecommendCombinations(data) {
  * @param {string} data.order 排序方式
  */
 export function previewCombinations(data) {
-	return previewCombination(data);
+  return previewCombination(data)
 }
 
 /**
@@ -562,7 +629,7 @@ export function previewCombinations(data) {
  * @param {number} data.coupon_id 优惠券ID，0表示不使用
  */
 export function checkoutCart(data) {
-	return request.post("group/cart/checkout", data);
+  return request.post('group/cart/checkout', data)
 }
 
 /**
@@ -571,7 +638,7 @@ export function checkoutCart(data) {
  * @param {number} data.order_id 订单ID
  */
 export function getOrderCoupons(data) {
-	return request.post("group/order/getOrderCoupons", data);
+  return request.post('group/order/getOrderCoupons', data)
 }
 
 /**
@@ -581,7 +648,7 @@ export function getOrderCoupons(data) {
  * @param {number} data.user_coupon_id 用户优惠券ID，0表示取消优惠券
  */
 export function setOrderCoupon(data) {
-	return request.post("group/order/setOrderCoupon", data);
+  return request.post('group/order/setOrderCoupon', data)
 }
 
 /**
@@ -591,7 +658,7 @@ export function setOrderCoupon(data) {
  * @param {number} data.pay_type 支付类型
  */
 export function payOrder(orderId, data) {
-	return request.post(`group/order/payOrder/${orderId}`, data);
+  return request.post(`group/order/payOrder/${orderId}`, data)
 }
 
 /**
@@ -600,7 +667,7 @@ export function payOrder(orderId, data) {
  * @param {number} data.order_id 订单ID
  */
 export function confirmReceipt(data) {
-	return request.post("group/order/confirmReceipt", data);
+  return request.post('group/order/confirmReceipt', data)
 }
 
 /**
@@ -609,7 +676,7 @@ export function confirmReceipt(data) {
  * @param {number} data.order_id 订单ID
  */
 export function cancelOrder(data) {
-	return request.post("group/order/cancelOrder", data);
+  return request.post('group/order/cancelOrder', data)
 }
 
 /**
@@ -620,7 +687,7 @@ export function cancelOrder(data) {
  * @param {number} data.amount 退款金额，0表示全额退款
  */
 export function applyRefund(data) {
-	return request.post("group/order/applyRefund", data);
+  return request.post('group/order/applyRefund', data)
 }
 
 /**
@@ -628,7 +695,7 @@ export function applyRefund(data) {
  * @param {number} id 售后申请ID
  */
 export function cancelAfterSales(id) {
-	return request.post(`group/aftersales/cancel/${id}`);
+  return request.post(`group/aftersales/cancel/${id}`)
 }
 
 /**
@@ -638,7 +705,7 @@ export function cancelAfterSales(id) {
  * @param {string} data.type 收藏类型
  */
 export function checkCollectStatus(data) {
-	return request.get("group/collect/check", data);
+  return request.get('group/collect/check', data)
 }
 
 /**
@@ -648,7 +715,7 @@ export function checkCollectStatus(data) {
  * @param {Array} data.items 收藏项目列表
  */
 export function batchCollect(data) {
-	return request.post("group/collect/batch", data);
+  return request.post('group/collect/batch', data)
 }
 
 /**
@@ -663,21 +730,22 @@ export function batchCollect(data) {
  * @param {number} data.limit 每页数量
  */
 export function getGoodsCommentList(goodsId, data = {}) {
-	return request.get(`group/goods_comment/comment_list/${goodsId}`, data, {
-		noAuth: true
-	});
+  return request.get(`group/goods_comment/comment_list/${goodsId}`, data, {
+    noAuth: true
+  })
 }
 
 /**
  * 发表商品评论
  * @param {Object} data 评论数据
+ * @param {string} data.comment 评论内容
+ * @param {number} data.star_grade 评分
+ * @param {string} data.files 评论图片文件路径，多个用逗号分隔
  * @param {number} data.goods_id 商品ID
- * @param {string} data.content 评论内容
- * @param {number} data.rating 评分
- * @param {Array} data.images 评论图片
+ * @param {number} data.order_id 订单ID
  */
 export function createGoodsComment(data) {
-	return request.post("group/goods_comment/create", data);
+  return request.post('group/goods_comment/create', data)
 }
 
 /**
@@ -685,7 +753,7 @@ export function createGoodsComment(data) {
  * @param {number} commentId 评论ID
  */
 export function deleteGoodsComment(commentId) {
-	return request.get(`group/goods_comment/delete/${commentId}`);
+  return request.get(`group/goods_comment/delete/${commentId}`)
 }
 
 /**
@@ -700,7 +768,7 @@ export function deleteGoodsComment(commentId) {
  * @param {string} data.content 问答内容
  */
 export function createGoodsQA(data) {
-	return request.post("group/goods_qa/create", data);
+  return request.post('group/goods_qa/create', data)
 }
 
 /**
@@ -711,9 +779,9 @@ export function createGoodsQA(data) {
  * @param {number} data.limit 每页数量
  */
 export function getGoodsQuestionList(goodsId, data = {}) {
-	return request.get(`group/goods_qa/question_list/${goodsId}`, data, {
-		noAuth: true
-	});
+  return request.get(`group/goods_qa/question_list/${goodsId}`, data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -724,9 +792,9 @@ export function getGoodsQuestionList(goodsId, data = {}) {
  * @param {number} data.limit 每页数量
  */
 export function getGoodsAnswerList(questionId, data = {}) {
-	return request.get(`group/goods_qa/answer_list/${questionId}`, data, {
-		noAuth: true
-	});
+  return request.get(`group/goods_qa/answer_list/${questionId}`, data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -734,7 +802,7 @@ export function getGoodsAnswerList(questionId, data = {}) {
  * @param {number} qaId 问答ID
  */
 export function deleteGoodsQA(qaId) {
-	return request.get(`group/goods_qa/delete/${qaId}`);
+  return request.get(`group/goods_qa/delete/${qaId}`)
 }
 
 /**
@@ -749,9 +817,9 @@ export function deleteGoodsQA(qaId) {
  * @param {string} data.keyword 搜索关键词
  */
 export function getFranchiseList(data = {}) {
-	return request.get("group/franchise/list", data, {
-		noAuth: true
-	});
+  return request.get('group/franchise/list', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -759,9 +827,13 @@ export function getFranchiseList(data = {}) {
  * @param {number} franchiseId 加盟项目ID
  */
 export function getFranchiseInfo(franchiseId) {
-	return request.get(`group/franchise/info/${franchiseId}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `group/franchise/info/${franchiseId}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -772,7 +844,7 @@ export function getFranchiseInfo(franchiseId) {
  * @param {number} data.franchise_id 加盟项目ID
  */
 export function applyFranchise(data) {
-	return request.post("group/franchise/apply", data);
+  return request.post('group/franchise/apply', data)
 }
 
 /**
@@ -787,9 +859,9 @@ export function applyFranchise(data) {
  * @param {string} data.keyword 搜索关键词
  */
 export function getCooperationList(data = {}) {
-	return request.get("group/cooperation/list", data, {
-		noAuth: true
-	});
+  return request.get('group/cooperation/list', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -797,9 +869,13 @@ export function getCooperationList(data = {}) {
  * @param {number} cooperationId 合作项目ID
  */
 export function getCooperationInfo(cooperationId) {
-	return request.get(`group/cooperation/info/${cooperationId}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `group/cooperation/info/${cooperationId}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -810,7 +886,7 @@ export function getCooperationInfo(cooperationId) {
  * @param {number} data.cooperation_id 合作项目ID
  */
 export function applyCooperation(data) {
-	return request.post("group/cooperation/apply", data);
+  return request.post('group/cooperation/apply', data)
 }
 
 /**
@@ -826,9 +902,9 @@ export function applyCooperation(data) {
  * @param {string} data.category 服务分类
  */
 export function getConvenientServiceList(data = {}) {
-	return request.get("group/convenient_service/list", data, {
-		noAuth: true
-	});
+  return request.get('group/convenient_service/list', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -836,9 +912,13 @@ export function getConvenientServiceList(data = {}) {
  * @param {number} serviceId 服务ID
  */
 export function getConvenientServiceInfo(serviceId) {
-	return request.get(`group/convenient_service/info/${serviceId}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `group/convenient_service/info/${serviceId}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -851,7 +931,7 @@ export function getConvenientServiceInfo(serviceId) {
  * @param {string} data.remark 备注
  */
 export function reserveConvenientService(serviceId, data) {
-	return request.get(`group/convenient_service/reservation/${serviceId}`, data);
+  return request.get(`group/convenient_service/reservation/${serviceId}`, data)
 }
 
 /**
@@ -863,7 +943,7 @@ export function reserveConvenientService(serviceId, data) {
  * @param {Array} data.images 评论图片
  */
 export function createConvenientServiceComment(data) {
-	return request.post("group/convenient_service/comment", data);
+  return request.post('group/convenient_service/comment', data)
 }
 
 /**
@@ -874,9 +954,13 @@ export function createConvenientServiceComment(data) {
  * @param {number} data.limit 每页数量
  */
 export function getConvenientServiceCommentList(serviceId, data = {}) {
-	return request.get(`group/convenient_service/comment_list/${serviceId}`, data, {
-		noAuth: true
-	});
+  return request.get(
+    `group/convenient_service/comment_list/${serviceId}`,
+    data,
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -891,9 +975,9 @@ export function getConvenientServiceCommentList(serviceId, data = {}) {
  * @param {string} data.sort_order 排序方式（asc：升序，desc：降序）
  */
 export function getGoodsList(data) {
-	return request.get("group/goods/list", data, {
-		noAuth: true
-	});
+  return request.get('group/goods/list', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -901,9 +985,9 @@ export function getGoodsList(data) {
  * @param object data
  */
 export function getCombinationList(data) {
-	return request.get('group/combination/list', data, {
-		noAuth: true
-	});
+  return request.get('group/combination/list', data, {
+    noAuth: true
+  })
 }
 
 /**
@@ -911,9 +995,13 @@ export function getCombinationList(data) {
  * @param {Number} id 拼团商品ID
  */
 export function getCombinationDetail(id) {
-	return request.get(`group/combination/detail/${id}`, {}, {
-		noAuth: true
-	});
+  return request.get(
+    `group/combination/detail/${id}`,
+    {},
+    {
+      noAuth: true
+    }
+  )
 }
 
 /**
@@ -921,7 +1009,44 @@ export function getCombinationDetail(id) {
  * @param {Object} data
  */
 export function previewCombination(data) {
-	return request.get('group/combination/preview', data, {
-		noAuth: true
-	});
+  return request.get('group/combination/preview', data, {
+    noAuth: true
+  })
+}
+
+/**
+ * 点赞评论
+ * @param {Object} data 点赞数据
+ * @param {number} data.comment_id 评论ID
+ * @param {number} data.type 操作类型：1=点赞，0=踩
+ */
+export function addCommentLike(data) {
+  return request.post('group/goods_comment_like/add', data, {
+    noAuth: false
+  })
+}
+
+/**
+ * 取消评论点赞
+ * @param {Object} data 取消点赞数据
+ * @param {number} data.comment_id 评论ID
+ */
+export function cancelCommentLike(data) {
+  return request.post('group/goods_comment_like/cancel', data, {
+    noAuth: false
+  })
+}
+
+/**
+ * 获取评论点赞统计
+ * @param {string} comment_ids 评论ID列表，用逗号分隔
+ */
+export function getCommentLikeStats(comment_ids) {
+  return request.get(
+    'group/goods_comment_like/stats',
+    { comment_ids },
+    {
+      noAuth: false
+    }
+  )
 }

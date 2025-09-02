@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"] // 若根目录无 src，则保持此映射
+    },
+    "target": "ES6",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true, // 支持导入 json 文件
+    "isolatedModules": true, // 适配 Uni-app 编译
+    "types": ["@dcloudio/types", "vue"] // 声明依赖类型
+  },
+  "vueCompilerOptions": {
+    "globalTypesPath": "./node_modules/vue/dist/vue.d.ts"
+  },
+  "include": [
+    "pages/**/*",
+    "components/**/*",
+    "utils/**/*",
+    "store/**/*",
+    "App.vue",
+    "main.js",
+    "manifest.json",
+    "pages.json"
+  ],
+  "exclude": [
+    "node_modules",
+    "large_folder_you_dont_need",
+    "unpackage/**/*",
+    "dist/**/*",
+    "miniprogram_npm/**/*"
+  ]
+}

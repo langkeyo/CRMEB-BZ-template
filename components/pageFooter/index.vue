@@ -21,7 +21,14 @@
 							<image v-if="newData.navStyleConfig.tabVal != 1" :src="item.imgList[1]"></image>
 							<view v-if="newData.navStyleConfig.tabVal != 2" class="txt" :style="[txtColor]">{{ item.name }}</view>
 						</template>
-						<BaseBadge v-if="item.link === '/pages/order_addcart/order_addcart' && cartNum > 0" class="uni-badge-left-margin" :text="cartNum" absolute="rightTop"></BaseBadge>
+						<BaseBadge v-if="item.link === '/pages/order_addcart/order_addcart' && cartNum > 0" 
+							class="uni-badge-left-margin" 
+							:text="cartNum" 
+							absolute="rightTop"
+							:offset="[0, 0]"
+							type="error"
+							size="small">
+						</BaseBadge>
 					</view>
 				</view>
 			</view>
@@ -37,6 +44,8 @@ import { getNavigation } from '@/api/public.js';
 // import {getCartCounts} from '@/api/order.js';
 import { getDiyVersion } from '@/api/api.js';
 import BaseBadge from '@/components/BaseBadge/index.vue';
+import { GroupCartManager, getGroupCartCount } from '@/api/groupCart.js';
+
 export default {
 	name: 'pageFooter',
 	components: { BaseBadge },
@@ -118,6 +127,17 @@ export default {
 				this.newData = configData;
 				this.showTabBar = configData.effectConfig.tabVal;
 			}
+		},
+		isLogin: {
+			handler(newVal) {
+				if (newVal) {
+					// 用户登录后更新购物车数量
+					this.updateCartNum();
+				} else {
+					this.$store.commit('indexData/setCartNum', '');
+				}
+			},
+			immediate: true
 		}
 	},
 	created() {
@@ -130,9 +150,10 @@ export default {
 		uni.removeStorageSync('footerNavigation');
 		uni.removeStorageSync('diyVersionNav');
 		this.navigationInfo();
-		// if (this.isLogin) {
-		// 	this.getCartNum()
-		// }
+		// 组件挂载时获取购物车数量
+		if (this.isLogin) {
+			this.updateCartNum();
+		}
 	},
 	data() {
 		return {
@@ -231,7 +252,21 @@ export default {
 					});
 				}
 			});
-		}
+		},
+		// 更新购物车数量
+		async updateCartNum() {
+			try {
+				// 使用团购购物车API获取数量
+				const count = await getGroupCartCount();
+				if (count > 0) {
+					this.$store.dispatch("indexData/setCartnumber", count);
+				}
+			} catch (error) {
+				console.error('获取购物车数量失败:', error);
+				// 静默失败，不显示错误提示
+			}
+		},
+		
 		// getCartNum: function() {
 		// 	getCartCounts().then(res => {
 		// 		this.$store.commit('indexData/setCartNum', res.data.count + '')
@@ -296,14 +331,25 @@ export default {
 .page-footer .uni-badge-left-margin{
 	position: absolute;
 	/* #ifdef MP */
-	margin-left: 40rpx;
-	top: -10rpx;
+	margin-left: 0;
+	top: -16rpx;
+	right: 60rpx;
+	/* #endif */
+	/* #ifndef MP */
+	top: -16rpx;
+	right: 60rpx;
 	/* #endif */
 }
 .page-footer /deep/ .uni-badge-left-margin .uni-badge--error {
 	color: #fff !important;
 	background-color: var(--view-theme) !important;
 	z-index: 8;
+	font-size: 20rpx;
+	transform: scale(0.8);
+	padding: 0 6rpx;
+	min-width: 32rpx;
+	height: 32rpx;
+	line-height: 32rpx;
 }
 .page-footer /deep/ .uni-badge {
 	right: unset !important;

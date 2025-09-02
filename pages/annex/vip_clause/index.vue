@@ -54,9 +54,32 @@
 
 	.cont {
 		padding: 50rpx 30rpx;
+		font-size: 28rpx;
+		line-height: 1.6;
+		color: #333333;
 
 		/deep/ img {
 			max-width: 100% !important;
+		}
+
+		/deep/ p {
+			font-size: 28rpx !important;
+			line-height: 1.6 !important;
+			margin: 16rpx 0 !important;
+			color: #333333 !important;
+		}
+
+		/deep/ div {
+			font-size: 28rpx !important;
+			line-height: 1.6 !important;
+			color: #333333 !important;
+		}
+
+		/deep/ h1, /deep/ h2, /deep/ h3, /deep/ h4, /deep/ h5, /deep/ h6 {
+			font-size: 32rpx !important;
+			font-weight: 600 !important;
+			margin: 24rpx 0 12rpx 0 !important;
+			color: #222222 !important;
 		}
 	}
 </style>

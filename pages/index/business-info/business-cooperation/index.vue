@@ -32,14 +32,17 @@
             <!-- controller-section 媒体控制器 -->
             <view class="controller-section">
                 <view class="controller-background">
-                    <view class="controller-active-bg" :style="{ transform: `translateX(${getActiveTabPosition()}rpx)` }"></view>
+                    <view class="controller-active-bg"
+                        :style="{ transform: `translateX(${getActiveTabPosition()}rpx)` }"></view>
                     <view class="media-tab" :class="{ 'active': mediaType === 'vr' }" @click="switchMediaType('vr')">
                         <text class="tab-text">VR</text>
                     </view>
-                    <view class="media-tab" :class="{ 'active': mediaType === 'photo' }" @click="switchMediaType('photo')">
+                    <view class="media-tab" :class="{ 'active': mediaType === 'photo' }"
+                        @click="switchMediaType('photo')">
                         <text class="tab-text">照片</text>
                     </view>
-                    <view class="media-tab" :class="{ 'active': mediaType === 'video' }" @click="switchMediaType('video')">
+                    <view class="media-tab" :class="{ 'active': mediaType === 'video' }"
+                        @click="switchMediaType('video')">
                         <text class="tab-text">视频</text>
                     </view>
                 </view>
@@ -66,7 +69,7 @@
             <!-- 联系人信息 -->
             <view class="contact-info">
                 <view class="contact-avatar">
-                    <image :src="detail.contactAvatar" mode="aspectFill"></image>
+                    <image :src="detail.image" mode="aspectFill"></image>
                 </view>
                 <view class="contact-details">
                     <view class="contact-name">{{ detail.contactName }}</view>
@@ -87,14 +90,17 @@
             <view class="project-intro">
                 <view class="intro-title">项目介绍</view>
                 <view class="intro-content" :class="{ 'expanded': isExpanded }">
-                    <text class="intro-text">一、项目概况\n{{ detail.projectSituation }}\n\n二、区位价值优势\n\n1. 黄金区位辐射\n{{ detail.locationAdvantages.join('\n') }}\n\n2. 立体消费场景\n{{ detail.consumptionScenarios.join('\n') }}</text>
+                    <text class="intro-text">一、项目概况\n{{ detail.projectSituation }}\n\n二、区位价值优势\n\n1. 黄金区位辐射\n{{
+                        detail.locationAdvantages.join('\n') }}\n\n2. 立体消费场景\n{{ detail.consumptionScenarios.join('\n')
+                        }}</text>
                 </view>
             </view>
 
             <!-- 展开控制器 -->
             <view class="expand-controller-section" @click="toggleExpand">
                 <view class="expand-text">{{ isExpanded ? '收起全部' : '展开全部' }}</view>
-                <image class="expand-arrow" :class="{ 'arrow-up': isExpanded }" src="/static/images/index/business-info/arrow_down.svg" mode="aspectFit" />
+                <image class="expand-arrow" :class="{ 'arrow-up': isExpanded }"
+                    src="/static/images/index/business-info/arrow_down.svg" mode="aspectFit" />
             </view>
         </view>
 
@@ -107,7 +113,7 @@
 </template>
 
 <script>
-import { getCooperationInfo } from '@/api/group.js'
+import { addCollect, deleteCollect, getCollectStatus, getCooperationInfo } from '@/api/group.js'
 
 export default {
     name: 'BusinessCooperationDetailPage',
@@ -142,31 +148,32 @@ export default {
                     '/static/images/index/business-info/cooperation_banner.jpg'
                 ]
             }
-        };
+        }
     },
     onLoad(options) {
         // 获取传递的参数
         if (options.id) {
-            this.id = parseInt(options.id);
+            this.id = parseInt(options.id)
             // 根据ID获取详情数据
-            this.getDetailById(this.id);
+            this.getDetailById(this.id)
+            this.checkFollowedStatus(this.id)
         }
     },
     methods: {
         // 返回上一页
         goBack() {
-            uni.navigateBack();
+            uni.navigateBack()
         },
 
         // 根据ID获取详情数据
         async getDetailById(id) {
             try {
-                console.log('获取ID为', id, '的招商合作详情');
+                const response = await getCooperationInfo(id)
+                console.log(response)
 
-                const response = await getCooperationInfo(id);
 
                 if (response.status === 200 && response.data) {
-                    const data = response.data;
+                    const data = response.data
 
                     // 映射API数据到页面数据结构
                     this.detail = {
@@ -182,29 +189,30 @@ export default {
                         images: data.images ? data.images.split(',') : this.detail.images,
                         projectSituation: data.intro || this.detail.projectSituation,
                         video: data.video || this.detail.video,
-                        vr: data.vr || this.detail.vr
-                    };
+                        vr: data.vr || this.detail.vr,
+                        image: data.image
+                    }
 
-                    console.log('招商合作详情加载成功:', this.detail);
+                    console.log('招商合作详情加载成功:', this.detail)
                 } else {
-                    console.error('获取招商合作详情失败:', response.msg);
+                    console.error('获取招商合作详情失败:', response.msg)
                     uni.showToast({
                         title: response.msg || '获取详情失败',
                         icon: 'none'
-                    });
+                    })
                 }
             } catch (error) {
-                console.error('获取招商合作详情异常:', error);
+                console.error('获取招商合作详情异常:', error)
                 uni.showToast({
                     title: '网络错误，请稍后重试',
                     icon: 'none'
-                });
+                })
             }
         },
 
         // 切换媒体类型
         switchMediaType(type) {
-            this.mediaType = type;
+            this.mediaType = type
         },
 
         // 分享信息
@@ -215,9 +223,9 @@ export default {
                     uni.showToast({
                         title: '已选择' + (res.tapIndex + 1) + '分享方式',
                         icon: 'none'
-                    });
+                    })
                 }
-            });
+            })
         },
 
         // 显示更多选项
@@ -225,23 +233,50 @@ export default {
             uni.showActionSheet({
                 itemList: ['举报', '不感兴趣'],
                 success: function (res) {
-                    console.log('选择了第' + (res.tapIndex + 1) + '个选项');
+                    console.log('选择了第' + (res.tapIndex + 1) + '个选项')
                 }
-            });
+            })
         },
 
         // 切换关注状态
-        toggleFollow() {
-            this.isFollowed = !this.isFollowed;
-            uni.showToast({
-                title: this.isFollowed ? '已关注' : '已取消关注',
-                icon: 'none'
-            });
+        async toggleFollow() {
+            this.isFollowed = !this.isFollowed
+            if (!this.isFollowed) {
+                // 取消关注
+                await deleteCollect({
+                    type: 2,
+                    sub_type: 2,
+                    fav_id: this.id
+                })
+                uni.showToast({
+                    title: '已取消关注',
+                    icon: 'none'
+                })
+            } else {
+                // 添加关注
+                await addCollect({
+                    type: 2,
+                    sub_type: 2,
+                    fav_id: this.id
+                })
+                uni.showToast({
+                    title: this.isFollowed ? '已关注' : '已取消关注',
+                    icon: 'none'
+                })
+            }
+        },
+        async checkFollowedStatus(id) {
+            const res = await getCollectStatus({
+                type: 2,
+                sub_type: 2,
+                fav_id: id
+            })
+            this.isFollowed = !!res.data.is_collected
         },
 
         // 切换展开/收起状态
         toggleExpand() {
-            this.isExpanded = !this.isExpanded;
+            this.isExpanded = !this.isExpanded
         },
 
         // 预约咨询
@@ -254,10 +289,10 @@ export default {
                         uni.showToast({
                             title: '预约成功，我们会尽快联系您',
                             icon: 'none'
-                        });
+                        })
                     }
                 }
-            });
+            })
         },
 
         // 显示预览
@@ -265,7 +300,7 @@ export default {
             uni.showToast({
                 title: '预览功能开发中',
                 icon: 'none'
-            });
+            })
         },
 
         // 获取活动标签位置
@@ -273,13 +308,13 @@ export default {
             // controller-section总宽度：336rpx
             // 每个tab宽度：336rpx / 3 = 112rpx
             // controller-active-bg宽度：112rpx
-            if (this.mediaType === 'vr') return 0;
-            if (this.mediaType === 'photo') return 112; // 第二个位置
-            if (this.mediaType === 'video') return 224; // 第三个位置 112 * 2
-            return 0;
+            if (this.mediaType === 'vr') return 0
+            if (this.mediaType === 'photo') return 112 // 第二个位置
+            if (this.mediaType === 'video') return 224 // 第三个位置 112 * 2
+            return 0
         }
     }
-};
+}
 </script>
 
 <style lang="scss">
@@ -289,8 +324,10 @@ export default {
 
     /* header-section */
     .header-section {
-        width: 750rpx; /* 375px * 2 */
-        height: 500rpx; /* 去掉状态栏高度 */
+        width: 750rpx;
+        /* 375px * 2 */
+        height: 500rpx;
+        /* 去掉状态栏高度 */
         position: relative;
         background: #D9D9D9;
         overflow: hidden;
@@ -316,46 +353,60 @@ export default {
     /* 顶部导航栏 */
     .header-navbar {
         position: absolute;
-        top: 44rpx; /* 状态栏高度 */
+        top: 20rpx;
+        /* 状态栏高度 */
         left: 0;
         right: 0;
-        height: 96rpx; /* 48px * 2 */
+        height: 96rpx;
+        /* 48px * 2 */
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 24rpx; /* 12px * 2 */
+        padding: 0 24rpx;
+        /* 12px * 2 */
         z-index: 15;
 
         .back-btn {
-            width: 42rpx; /* 21px * 2 */
-            height: 42rpx; /* 21px * 2 */
+            width: 42rpx;
+            /* 21px * 2 */
+            height: 42rpx;
+            /* 21px * 2 */
             display: flex;
             align-items: center;
             justify-content: center;
 
             .back-icon {
-                width: 22.6rpx; /* 11.3px * 2 */
-                height: 42rpx; /* 21px * 2 */
-                filter: brightness(0) invert(1); /* 将图标变为白色 */
+                width: 22.6rpx;
+                /* 11.3px * 2 */
+                height: 42rpx;
+                /* 21px * 2 */
+                filter: brightness(0) invert(1);
+                /* 将图标变为白色 */
             }
         }
 
         .action-btns {
             display: flex;
             align-items: center;
-            gap: 24rpx; /* 12px * 2 */
+            gap: 24rpx;
+            /* 12px * 2 */
 
             .share-btn {
-                width: 42rpx; /* 21px * 2 */
-                height: 42rpx; /* 21px * 2 */
+                width: 42rpx;
+                /* 21px * 2 */
+                height: 42rpx;
+                /* 21px * 2 */
                 display: flex;
                 align-items: center;
                 justify-content: center;
 
                 .share-icon {
-                    width: 42rpx; /* 21px * 2 */
-                    height: 42rpx; /* 21px * 2 */
-                    filter: brightness(0) invert(1); /* 将图标变为白色 */
+                    width: 42rpx;
+                    /* 21px * 2 */
+                    height: 42rpx;
+                    /* 21px * 2 */
+                    filter: brightness(0) invert(1);
+                    /* 将图标变为白色 */
                 }
             }
         }
@@ -367,15 +418,19 @@ export default {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 78rpx; /* 39px * 2 */
-        height: 78rpx; /* 39px * 2 */
+        width: 78rpx;
+        /* 39px * 2 */
+        height: 78rpx;
+        /* 39px * 2 */
         z-index: 5;
         cursor: pointer;
     }
 
     .controller-outer-circle {
-        width: 78rpx; /* 39px * 2 */
-        height: 78rpx; /* 39px * 2 */
+        width: 78rpx;
+        /* 39px * 2 */
+        height: 78rpx;
+        /* 39px * 2 */
         background: rgba(0, 0, 0, 0.5);
         border-radius: 50%;
         display: flex;
@@ -384,9 +439,12 @@ export default {
     }
 
     .controller-inner-circle {
-        width: 38rpx; /* 19px * 2 */
-        height: 38rpx; /* 19px * 2 */
-        border: 2rpx solid #FFFFFF; /* 1px * 2 */
+        width: 38rpx;
+        /* 19px * 2 */
+        height: 38rpx;
+        /* 19px * 2 */
+        border: 2rpx solid #FFFFFF;
+        /* 1px * 2 */
         border-radius: 50%;
         box-sizing: border-box;
     }
@@ -394,11 +452,14 @@ export default {
     /* controller-section */
     .controller-section {
         position: absolute;
-        bottom: 46rpx; /* 23px * 2 */
+        bottom: 46rpx;
+        /* 23px * 2 */
         left: 50%;
         transform: translateX(-50%);
-        width: 336rpx; /* 168px * 2 */
-        height: 42rpx; /* 21px * 2 */
+        width: 336rpx;
+        /* 168px * 2 */
+        height: 42rpx;
+        /* 21px * 2 */
         z-index: 10;
     }
 
@@ -407,17 +468,21 @@ export default {
         width: 100%;
         height: 100%;
         background: rgba(255, 255, 255, 0.85);
-        border-radius: 21rpx; /* 10.5px * 2 */
+        border-radius: 21rpx;
+        /* 10.5px * 2 */
         display: flex;
         align-items: center;
     }
 
     .controller-active-bg {
         position: absolute;
-        width: 112rpx; /* 56px * 2 */
-        height: 42rpx; /* 21px * 2 */
+        width: 112rpx;
+        /* 56px * 2 */
+        height: 42rpx;
+        /* 21px * 2 */
         background: #FE9227;
-        border-radius: 21rpx; /* 10.5px * 2 */
+        border-radius: 21rpx;
+        /* 10.5px * 2 */
         transition: transform 0.3s ease;
         z-index: 1;
     }
@@ -436,8 +501,10 @@ export default {
             font-family: 'PingFang SC';
             font-style: normal;
             font-weight: 400;
-            font-size: 20rpx; /* 10px * 2 */
-            line-height: 28rpx; /* 14px * 2 */
+            font-size: 20rpx;
+            /* 10px * 2 */
+            line-height: 28rpx;
+            /* 14px * 2 */
             color: #666666;
             transition: color 0.3s ease;
         }
@@ -450,38 +517,49 @@ export default {
     /* project-info-section */
     .project-info-section {
         background: #FFFFFF;
-        border-radius: 8rpx; /* 4px * 2 */
-        margin: 24rpx; /* 12px * 2 */
-        padding: 40rpx 44rpx; /* 20px * 2, 22px * 2 */
+        border-radius: 8rpx;
+        /* 4px * 2 */
+        margin: 24rpx;
+        /* 12px * 2 */
+        padding: 40rpx 44rpx;
+        /* 20px * 2, 22px * 2 */
 
         /* 标题行 */
         .title-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30rpx; /* 15px * 2 */
+            margin-bottom: 30rpx;
+            /* 15px * 2 */
 
             .project-title {
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 36rpx; /* 18px * 2 */
-                line-height: 50rpx; /* 25px * 2 */
+                font-size: 36rpx;
+                /* 18px * 2 */
+                line-height: 50rpx;
+                /* 25px * 2 */
                 color: #000000;
                 flex: 1;
             }
 
             .follow-btn {
-                width: 136rpx; /* 68px * 2 */
-                height: 52rpx; /* 26px * 2 */
+                width: 136rpx;
+                /* 68px * 2 */
+                height: 52rpx;
+                /* 26px * 2 */
                 background: linear-gradient(90deg, #FF7E00 0%, #FDA44D 100%);
-                border-radius: 44rpx; /* 22px * 2 */
+                border-radius: 44rpx;
+                /* 22px * 2 */
 
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 36rpx; /* 18px * 2 */
-                line-height: 50rpx; /* 25px * 2 */
+                font-size: 36rpx;
+                /* 18px * 2 */
+                line-height: 50rpx;
+                /* 25px * 2 */
                 text-align: center;
                 color: #FFFFFF;
 
@@ -499,16 +577,20 @@ export default {
 
         /* 基本信息 */
         .basic-info {
-            margin-bottom: 30rpx; /* 15px * 2 */
+            margin-bottom: 30rpx;
+            /* 15px * 2 */
 
             .info-item {
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 32rpx; /* 16px * 2 */
-                line-height: 44rpx; /* 22px * 2 */
+                font-size: 32rpx;
+                /* 16px * 2 */
+                line-height: 44rpx;
+                /* 22px * 2 */
                 color: #AAAAAA;
-                margin-bottom: 16rpx; /* 8px * 2 */
+                margin-bottom: 16rpx;
+                /* 8px * 2 */
 
                 &:last-child {
                     margin-bottom: 0;
@@ -522,11 +604,14 @@ export default {
             align-items: center;
 
             .contact-avatar {
-                width: 66rpx; /* 33px * 2 */
-                height: 66rpx; /* 33px * 2 */
+                width: 66rpx;
+                /* 33px * 2 */
+                height: 66rpx;
+                /* 33px * 2 */
                 border-radius: 50%;
                 overflow: hidden;
-                margin-right: 26rpx; /* 13px * 2 */
+                margin-right: 26rpx;
+                /* 13px * 2 */
 
                 image {
                     width: 100%;
@@ -539,28 +624,36 @@ export default {
                 flex: 1;
                 display: flex;
                 align-items: center;
-                gap: 30rpx; /* 15px * 2 */
+                gap: 30rpx;
+                /* 15px * 2 */
 
                 .contact-name {
                     font-family: 'PingFang SC';
                     font-style: normal;
                     font-weight: 400;
-                    font-size: 24rpx; /* 12px * 2 */
-                    line-height: 34rpx; /* 17px * 2 */
+                    font-size: 24rpx;
+                    /* 12px * 2 */
+                    line-height: 34rpx;
+                    /* 17px * 2 */
                     color: #000000;
                 }
 
                 .contact-tag {
                     display: inline-block;
-                    padding: 6rpx 14rpx; /* 3px * 2, 7px * 2 */
-                    border: 2rpx solid #FF840B; /* 1px * 2 */
-                    border-radius: 8rpx; /* 4px * 2 */
+                    padding: 6rpx 14rpx;
+                    /* 3px * 2, 7px * 2 */
+                    border: 2rpx solid #FF840B;
+                    /* 1px * 2 */
+                    border-radius: 8rpx;
+                    /* 4px * 2 */
 
                     font-family: 'PingFang SC';
                     font-style: normal;
                     font-weight: 400;
-                    font-size: 24rpx; /* 12px * 2 */
-                    line-height: 22rpx; /* 11px * 2 */
+                    font-size: 24rpx;
+                    /* 12px * 2 */
+                    line-height: 22rpx;
+                    /* 11px * 2 */
                     color: #FF7E00;
                     text-align: center;
                 }
@@ -570,66 +663,88 @@ export default {
 
     /* project-intro-section */
     .project-intro-section {
-        width: 750rpx; /* 375px * 2 */
+        width: 750rpx;
+        /* 375px * 2 */
         background: #FFFFFF;
         position: relative;
-        padding: 44rpx; /* 22px * 2 */
+        padding: 44rpx;
+        /* 22px * 2 */
 
         /* investment-promotion 招商区域 */
         .investment-promotion {
-            width: 112rpx; /* 56px * 2 */
-            height: 94rpx; /* 47px * 2 */
-            margin-bottom: 30rpx; /* 15px * 2 */
+            width: 112rpx;
+            /* 56px * 2 */
+            height: 94rpx;
+            /* 47px * 2 */
+            margin-bottom: 30rpx;
+            /* 15px * 2 */
 
             .region-title {
                 /* 招商区域 */
-                width: 112rpx; /* 56px * 2 */
-                height: 40rpx; /* 20px * 2 */
+                width: 112rpx;
+                /* 56px * 2 */
+                height: 40rpx;
+                /* 20px * 2 */
 
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 28rpx; /* 14px * 2 */
-                line-height: 40rpx; /* 20px * 2 */
+                font-size: 28rpx;
+                /* 14px * 2 */
+                line-height: 40rpx;
+                /* 20px * 2 */
                 color: #FF830B;
-                margin-bottom: 14rpx; /* 7px * 2 */
+                margin-bottom: 14rpx;
+                /* 7px * 2 */
             }
 
             .region-value {
                 /* 海淀区 */
-                width: 84rpx; /* 42px * 2 */
-                height: 40rpx; /* 20px * 2 */
+                width: 84rpx;
+                /* 42px * 2 */
+                height: 40rpx;
+                /* 20px * 2 */
 
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 28rpx; /* 14px * 2 */
-                line-height: 40rpx; /* 20px * 2 */
+                font-size: 28rpx;
+                /* 14px * 2 */
+                line-height: 40rpx;
+                /* 20px * 2 */
                 color: #333333;
             }
         }
 
         /* project-intro 项目介绍 */
         .project-intro {
-            margin-bottom: 60rpx; /* 30px * 2 */
+            margin-bottom: 60rpx;
+            /* 30px * 2 */
 
             .intro-title {
                 /* 项目介绍 */
-                width: 112rpx; /* 56px * 2 */
-                height: 40rpx; /* 20px * 2 */
+                width: 112rpx;
+                /* 56px * 2 */
+                height: 40rpx;
+                /* 20px * 2 */
 
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 28rpx; /* 14px * 2 */
-                line-height: 40rpx; /* 20px * 2 */
+                font-size: 28rpx;
+                /* 14px * 2 */
+                line-height: 40rpx;
+                /* 20px * 2 */
                 color: #FF830B;
-                margin-bottom: 20rpx; /* 10px * 2 */
+                margin-bottom: 20rpx;
+                /* 10px * 2 */
             }
 
             .intro-content {
-                width: 686rpx; /* 343px * 2 */
-                max-height: 740rpx; /* 370px * 2 */
+                width: 686rpx;
+                /* 343px * 2 */
+                max-height: 740rpx;
+                /* 370px * 2 */
                 overflow: hidden;
                 transition: max-height 0.3s ease;
 
@@ -638,13 +753,16 @@ export default {
                 }
 
                 .intro-text {
-                    width: 682rpx; /* 341px * 2 */
+                    width: 682rpx;
+                    /* 341px * 2 */
 
                     font-family: 'PingFang SC';
                     font-style: normal;
                     font-weight: 400;
-                    font-size: 28rpx; /* 14px * 2 */
-                    line-height: 40rpx; /* 20px * 2 */
+                    font-size: 28rpx;
+                    /* 14px * 2 */
+                    line-height: 40rpx;
+                    /* 20px * 2 */
                     color: #333333;
                 }
             }
@@ -653,30 +771,37 @@ export default {
         /* expand-controller-section */
         .expand-controller-section {
             width: 100%;
-            height: 136rpx; /* 68px * 2 */
+            height: 136rpx;
+            /* 68px * 2 */
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, #FFFFFF 44.36%);
-            border-radius: 8rpx; /* 4px * 2 */
+            border-radius: 8rpx;
+            /* 4px * 2 */
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            margin-top: -60rpx; /* 向上重叠一部分 */
+            margin-top: -60rpx;
+            /* 向上重叠一部分 */
 
             .expand-text {
                 /* 展开全部 */
                 font-family: 'PingFang SC';
                 font-style: normal;
                 font-weight: 400;
-                font-size: 24rpx; /* 12px * 2 */
-                line-height: 34rpx; /* 17px * 2 */
+                font-size: 24rpx;
+                /* 12px * 2 */
+                line-height: 34rpx;
+                /* 17px * 2 */
                 color: #999999;
                 text-align: center;
             }
 
             .expand-arrow {
                 /* expand-icon */
-                width: 32rpx; /* 16px * 2 */
-                height: 32rpx; /* 16px * 2 */
+                width: 32rpx;
+                /* 16px * 2 */
+                height: 32rpx;
+                /* 16px * 2 */
                 margin-left: 10rpx;
                 transition: transform 0.3s ease;
 
@@ -690,9 +815,12 @@ export default {
     /* appointment-btn */
     .bottom-btn {
         position: fixed;
-        width: 752rpx; /* 376px * 2 */
-        height: 92rpx; /* 46px * 2 */
-        left: -2rpx; /* -1px * 2 */
+        width: 752rpx;
+        /* 376px * 2 */
+        height: 92rpx;
+        /* 46px * 2 */
+        left: -2rpx;
+        /* -1px * 2 */
         bottom: 0;
 
         /* Rectangle 1381 */
@@ -706,8 +834,10 @@ export default {
         font-family: 'PingFang SC';
         font-style: normal;
         font-weight: 400;
-        font-size: 32rpx; /* 16px * 2 */
-        line-height: 44rpx; /* 22px * 2 */
+        font-size: 32rpx;
+        /* 16px * 2 */
+        line-height: 44rpx;
+        /* 22px * 2 */
         color: #FFFFFF;
     }
 
