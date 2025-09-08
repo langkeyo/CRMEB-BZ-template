@@ -28,7 +28,9 @@
         <view class="icon-notification" @click="onNotificationClick">
           <!-- 通知图标 -->
           <image class="icon-bell" src="/static/images/user/bell_icon.svg" />
-          <view class="notification-badge">2</view>
+          <view class="notification-badge" v-if="unreadCount > 0">
+            <text>{{ unreadCount > 99 ? '99+' : unreadCount }}</text>
+          </view>
         </view>
         <view class="icon-settings" @click="onSettingsClick">
           <!-- 设置图标 -->
@@ -56,6 +58,8 @@
 </template>
 
 <script>
+import { messageSystem } from '@/api/user'
+
 export default {
   name: 'UserHeader',
   props: {
@@ -73,6 +77,11 @@ export default {
         follow: 10,
         like: 10
       })
+    }
+  },
+  data() {
+    return {
+      unreadCount: 0 // 未读消息数
     }
   },
   computed: {
@@ -106,7 +115,28 @@ export default {
     },
     onStatClick(type) {
       this.$emit('stat-click', type);
+    },
+    
+    // 获取未读消息数
+    async getUnreadCount() {
+      try {
+        // 获取消息列表，然后统计未读消息数
+        const res = await messageSystem({ page: 1, limit: 20 });
+        if (res && res.data && res.data.list) {
+          // 统计未读消息数量（look为0的项）
+          const unreadCount = res.data.list.filter(item => item.look === 0).length;
+          this.unreadCount = unreadCount;
+        }
+      } catch (error) {
+        console.error('获取未读消息数失败:', error);
+        // 出错时设为0
+        this.unreadCount = 0;
+      }
     }
+  },
+  mounted() {
+    // 页面加载时获取未读消息数
+    this.getUnreadCount();
   }
 }
 </script>

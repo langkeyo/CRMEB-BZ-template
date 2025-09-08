@@ -87,11 +87,14 @@ export default {
 		}
 	},
 	onLoad() {
-		// 检查登录状态并加载用户数据
-		this.initUserData()
+
 		// 加载推荐商品
 		this.loadFeaturedProducts()
 
+
+	},
+	onShow() {
+		this.initUserData()
 		// 监听用户信息更新事件
 		uni.$on('userInfoUpdated', this.onUserInfoUpdated)
 		uni.$on('userInfoCleared', this.onUserInfoCleared)
@@ -112,7 +115,7 @@ export default {
 			if (this.isLoggedIn) {
 				try {
 					// 获取用户信息
-					const userInfo = await this.getCurrentUserInfo(true)
+					const userInfo = await this.$store.getters.userInfo
 					console.log(userInfo)
 
 					this.updateUserDisplay(userInfo)

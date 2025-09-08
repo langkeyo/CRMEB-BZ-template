@@ -235,6 +235,7 @@ export default {
             isFollowed: false, // 是否已关注
             isFavorited: false, // 是否已收藏
             canvasContext: null, // Canvas 上下文
+            showJoinModal: false, // 是否显示加盟申请表单弹窗
             detail: {
                 name: '瑞幸咖啡',
                 logo: '/static/images/index/business-info/luckin_coffee.png',
@@ -546,6 +547,7 @@ export default {
                     sub_type: 1,
                     fav_id: this.id
                 })
+                await this.$store.dispatch('REFRESH_USERINFO')
                 uni.showToast({
                     title: '已取消关注',
                     icon: 'none'
@@ -557,6 +559,9 @@ export default {
                     sub_type: 1,
                     fav_id: this.id
                 })
+                console.log(this.$store)
+
+                await this.$store.dispatch('REFRESH_USERINFO')
                 uni.showToast({
                     title: this.isFollowed ? '已关注' : '已取消关注',
                     icon: 'none'

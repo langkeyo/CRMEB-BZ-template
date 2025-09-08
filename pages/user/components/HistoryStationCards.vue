@@ -11,7 +11,7 @@
           </view>
         </view>
       </view>
-      <view class="card-content">
+      <view class="card-content" @click="onHistoryClick">
         <image class="history-item-image" :src="historyItem.image" />
         <view class="history-item-details">
           <text class="history-item-title">{{ historyItem.title }}</text>
@@ -19,7 +19,7 @@
         </view>
       </view>
     </view>
-    
+
     <!-- 我的站点卡片 -->
     <view class="station-card">
       <view class="card-header">
@@ -65,44 +65,44 @@ export default {
   },
   methods: {
     onHistoryClick() {
-      this.$emit('history-click');
+      this.$emit('history-click')
     },
     onStationClick() {
-      this.$emit('station-click');
+      this.$emit('station-click')
     },
     goToTodayGroupBuying() {
       uni.navigateTo({
         url: '/pages/index/today-group-buying/index'
-      });
+      })
     },
     goToMapLocation() {
       // 提取站点名称和距离
-      let siteName = this.stationItem.subtitle || '未知站点';
-      let siteAddress = this.stationItem.address || siteName;
+      let siteName = this.stationItem.subtitle || '未知站点'
+      let siteAddress = this.stationItem.address || siteName
 
       // 清理字符串，移除换行符和其他特殊字符
-      siteName = siteName.replace(/[\r\n\t]/g, '').trim();
-      siteAddress = siteAddress.replace(/[\r\n\t]/g, '').trim();
+      siteName = siteName.replace(/[\r\n\t]/g, '').trim()
+      siteAddress = siteAddress.replace(/[\r\n\t]/g, '').trim()
 
-      const distanceText = this.stationItem.title.match(/\d+/);
-      const distance = distanceText ? distanceText[0] : 100;
+      const distanceText = this.stationItem.title.match(/\d+/)
+      const distance = distanceText ? distanceText[0] : 100
       // 这里可根据实际数据结构补充经纬度参数
-      const latitude = this.stationItem.latitude || 40.032866;
-      const longitude = this.stationItem.longitude || 116.385768;
+      const latitude = this.stationItem.latitude || 40.032866
+      const longitude = this.stationItem.longitude || 116.385768
 
       uni.navigateTo({
         url: '/pages/my_site/map_location',
-        success: function() {
-          console.log('跳转成功');
+        success: function () {
+          console.log('跳转成功')
         },
-        fail: function(err) {
-          console.error('跳转失败', err);
+        fail: function (err) {
+          console.error('跳转失败', err)
           uni.showToast({
             title: '页面跳转失败',
             icon: 'none'
-          });
+          })
         }
-      });
+      })
     }
   }
 }
@@ -138,7 +138,8 @@ export default {
 
 .header-left {
   display: flex;
-  align-items: flex-end; /* 底部对齐 */
+  align-items: flex-end;
+  /* 底部对齐 */
 }
 
 .card-title {

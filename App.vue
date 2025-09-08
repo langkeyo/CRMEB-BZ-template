@@ -128,7 +128,7 @@ export default {
 			silenceBindingSpread(this.globalData)
 		}
 		// #endif
-		
+
 		// 确保页面加载组件能被正确关闭
 		setTimeout(() => {
 			// 触发loadClose事件，强制关闭页面加载组件
@@ -137,14 +137,14 @@ export default {
 			this.$Cache.set('loadStatus', false)
 		}, 1000)
 	},
-	async onLaunch (option) {
+	async onLaunch(option) {
 		uni.hideTabBar()
 		let that = this
-		
+
 		// 初始化站点信息，从缓存读取或设置默认值
-		const siteInfoCache = Cache.get(SITE_INFO);
+		const siteInfoCache = Cache.get(SITE_INFO)
 		if (siteInfoCache) {
-			this.globalData.siteInfo = siteInfoCache;
+			this.globalData.siteInfo = siteInfoCache
 		} else {
 			// 设置默认站点信息
 			this.globalData.siteInfo = {
@@ -152,26 +152,26 @@ export default {
 				location: '北京尚德井小区菜鸟驿站',
 				deliveryTime: '今日8：00前送达',
 				type: '站点自提'
-			};
+			}
 			// 存入Vuex和缓存
-			this.$store.dispatch('SET_SITEINFO', this.globalData.siteInfo);
+			this.$store.dispatch('SET_SITEINFO', this.globalData.siteInfo)
 		}
-		
+
 		// 尝试从API获取社区信息
-		this.fetchCommunityInfo();
-		
+		this.fetchCommunityInfo()
+
 		// #ifdef H5
 		// 检查当前路径，如果是根路径，则重定向到首页
 		if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
 			// 强制清除loadStatus
 			this.$Cache.set('loadStatus', false)
-			
+
 			setTimeout(() => {
 				uni.reLaunch({
 					url: '/pages/index/index',
-					success: function() {
+					success: function () {
 					},
-					fail: function(err) {
+					fail: function (err) {
 						console.error('App.vue重定向失败:', err)
 						// 如果uni-app API失败，尝试使用传统方法
 						window.location.href = '/pages/index/index'
@@ -180,9 +180,9 @@ export default {
 			}, 300)
 		}
 		// #endif
-		
+
 		// 初始化用户管理器
-		UserManager.init();
+		UserManager.init()
 
 		basicConfig().then((res) => {
 			uni.setStorageSync('BASIC_CONFIG', res.data)
@@ -268,7 +268,7 @@ export default {
 						wx.showModal({
 							title: '更新提示',
 							content: '新版本已经下载好，是否重启当前应用？',
-							success (res) {
+							success(res) {
 								if (res.confirm) {
 									updateManager.applyUpdate()
 								}
@@ -346,8 +346,8 @@ export default {
 				// 静默失败，不显示错误提示
 			}
 		},
-		
-		remoteRegister (remote_token) {
+
+		remoteRegister(remote_token) {
 			remoteRegister({ remote_token }).then((res) => {
 				let data = res.data
 				if (data.get_remote_login_url) {
@@ -362,22 +362,22 @@ export default {
 				}
 			})
 		},
-		
+
 		/**
 		 * 获取社区信息并更新到全局站点信息
 		 */
 		fetchCommunityInfo() {
 			// 只有登录状态才获取社区信息
-			if (!this.$store.getters.isLogin) return;
-			
+			if (!this.$store.getters.isLogin) return
+
 			getMyCommunityInfo()
 				.then(res => {
 					if (res.status === 200 && res.data && res.data.community) {
-						const community = res.data.community;
-						
+						const community = res.data.community
+
 						// 保存当前的配送时间，如果有的话
-						const currentDeliveryTime = this.globalData.siteInfo.deliveryTime || '今日8：00前送达';
-						
+						const currentDeliveryTime = this.globalData.siteInfo.deliveryTime || '今日8：00前送达'
+
 						// 更新站点信息
 						const siteInfo = {
 							name: community.name || '',
@@ -388,22 +388,22 @@ export default {
 							community: community,
 							// 保存社区更新时间，用于判断数据新鲜度
 							lastUpdated: new Date().getTime()
-						};
-						
+						}
+
 						// 更新到Vuex和全局
-						this.$store.dispatch('SET_SITEINFO', siteInfo);
-						this.globalData.siteInfo = siteInfo;
-						
-						console.log('社区信息已更新:', siteInfo);
+						this.$store.dispatch('SET_SITEINFO', siteInfo)
+						this.globalData.siteInfo = siteInfo
+
+						console.log('社区信息已更新:', siteInfo)
 					}
 				})
 				.catch(error => {
-					console.error('获取社区信息失败:', error);
+					console.error('获取社区信息失败:', error)
 					// 如果是未登录错误，不做处理，使用默认站点信息
 					if (error && error.status === 110002) {
-						console.log('用户未登录，使用默认站点信息');
+						console.log('用户未登录，使用默认站点信息')
 					}
-				});
+				})
 		}
 		// 小程序静默授权
 		// silenceAuth(code) {
@@ -441,6 +441,19 @@ export default {
 @import 'static/css/style.scss';
 @import 'static/css/unocss.css';
 @import 'static/fonts/font.scss';
+
+@font-face {
+	font-family: 'PingFang SC';
+	src: url('/static/fonts/PingFang.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+
+html,
+body {
+	font-family: PingFang SC, sans-serif;
+}
 
 view {
 	box-sizing: border-box;
@@ -483,7 +496,8 @@ page {
 }
 
 /* 确保页面可以滚动 */
-html, body {
+html,
+body {
 	overflow: auto !important;
 	-webkit-overflow-scrolling: touch;
 }

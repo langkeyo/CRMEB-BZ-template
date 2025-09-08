@@ -15,6 +15,10 @@
 				<image src="/static/common/icons/navigation/back_arrow.svg" class="back-icon-img"></image>
 			</view>
 
+			<!-- 收藏按钮 -->
+			<view class="collect-icon" @tap="collectGoods">
+				<image src="/static/icons//star.svg" mode="scaleToFill" />
+			</view>
 			<!-- 分享按钮 - 保持现有资源 -->
 			<view class="share-button" @tap="shareGoods">
 				<image src="/static/images/goods_details/share_icon.svg" class="share-icon-img"></image>
@@ -37,7 +41,8 @@
 				<text class="price-text">￥{{ goodsInfo.price }}</text>
 				<!-- 客户要求不显示原价 -->
 				<!-- <text class="original-price-text" v-if="goodsInfo.original_price && goodsInfo.original_price != goodsInfo.price">￥{{ goodsInfo.original_price }}</text> -->
-				<text class="save-price-text" v-if="goodsInfo.save_price && goodsInfo.save_price != '0.00'">省￥{{ goodsInfo.save_price }}</text>
+				<text class="save-price-text" v-if="goodsInfo.save_price && goodsInfo.save_price != '0.00'">省￥{{
+					goodsInfo.save_price }}</text>
 			</view>
 
 			<!-- 销量信息 -->
@@ -60,9 +65,9 @@
 		</view>
 
 		<!-- 团购用户区域 - 不可购买时显示（分类/热门团购） -->
-		<view v-if="!canBuy" class="goods-group-buyers-section">
+		<view v-if="!canBuy && goodsInfo.buy_list && goodsInfo.buy_list.length > 0" class="goods-group-buyers-section">
 			<!-- 标题 -->
-			<text class="group-buyers-title">共{{ groupBuyersData.length }}人团购了此商品</text>
+			<text class="group-buyers-title">共{{ goodsInfo.buy_list.length }}人团购了此商品</text>
 
 			<!-- 轮播容器 -->
 			<view class="buyers-carousel-container">
@@ -133,15 +138,9 @@
 
 			<!-- 评价卡片 - 动态显示 -->
 			<view v-if="commentList.length > 0">
-				<view
-					v-for="(comment, index) in commentList.slice(0, 2)"
-					:key="comment.id"
-					:class="index === 0 ? 'review-card1' : 'review-card2'"
-				>
-					<image
-						class="review-avatar"
-						:src="comment.avatar || '/static/images/avatar.png'"
-					></image>
+				<view v-for="(comment, index) in commentList.slice(0, 2)" :key="comment.id"
+					:class="index === 0 ? 'review-card1' : 'review-card2'">
+					<image class="review-avatar" :src="comment.avatar || '/static/images/avatar.png'"></image>
 					<view class="review-content">
 						<text class="reviewer-name">{{ comment.nickname || '匿名买家' }}</text>
 						<text class="review-text">{{ comment.comment || comment.content }}</text>
@@ -164,12 +163,8 @@
 		<view class="goods-buyer-show-section" v-if="buyerShowImages.length > 0">
 			<!-- 买家秀图片 -->
 			<view :class="['buyer-show-images', `image-count-${buyerShowImages.length}`]">
-				<view 
-					v-for="(image, index) in buyerShowImages" 
-					:key="index" 
-					:class="['buyer-show-image-wrapper', `image-${index+1}`]"
-					@tap="previewBuyerShowImage(index)"
-				>
+				<view v-for="(image, index) in buyerShowImages" :key="index"
+					:class="['buyer-show-image-wrapper', `image-${index + 1}`]" @tap="previewBuyerShowImage(index)">
 					<image class="buyer-show-image" :src="image" mode="aspectFill"></image>
 				</view>
 			</view>
@@ -189,7 +184,8 @@
 					<image src="/static/icons/arrow-right.svg" style="width: 6px; height: 9px; margin-left: 4px;" />
 				</view>
 			</view>
-			<view v-for="(item, idx) in qaList" :key="idx" style="display: flex; align-items: center; margin-bottom: 6px;" @tap="showQaPopup">
+			<view v-for="(item, idx) in qaList" :key="idx"
+				style="display: flex; align-items: center; margin-bottom: 6px;" @tap="showQaPopup">
 				<text style="color: #222; font-size: 15px;">{{ item.question }}</text>
 				<text style="color: #bbb; font-size: 13px; margin-left: 12px;">{{ item.answerCount }}个回答</text>
 			</view>
@@ -235,42 +231,41 @@
 			</view>
 		</view>
 
-		<ReviewPopup 
-			:visible="showReviewPopup" 
-			:buyer-content-count="mockBuyerComments.length" 
-			:qa-content-count="mockQaQuestions.length"
-			@close="closeReviewPopup" 
-			@search-change="handleSearchChange" 
-			@ask-question="askQuestion"
-			ref="reviewPopup"
-		>
+		<ReviewPopup :visible="showReviewPopup" :buyer-content-count="mockBuyerComments.length"
+			:qa-content-count="mockQaQuestions.length" @close="closeReviewPopup" @search-change="handleSearchChange"
+			@ask-question="askQuestion" ref="reviewPopup">
 			<template #buyer>
 				<view v-if="mockBuyerComments.length > 0">
 					<view v-for="item in mockBuyerComments" :key="item.nickname" class="buyer-comment">
 						<view style="display:flex;align-items:center;margin-bottom:8rpx;">
-							<image :src="item.avatar" style="width:48rpx;height:48rpx;border-radius:50%;margin-right:12rpx;" />
+							<image :src="item.avatar"
+								style="width:48rpx;height:48rpx;border-radius:50%;margin-right:12rpx;" />
 							<view>
 								<text style="font-weight:500;">{{ item.nickname || '匿名买家' }}</text>
 								<text style="display:block;font-size:22rpx;color:#999;">{{ item.add_time }}</text>
 							</view>
 						</view>
-						<view style="font-size:28rpx;color:#333;line-height:1.6;margin-bottom:8rpx;">{{ item.comment }}</view>
-						<image v-if="item.pics && item.pics[0]" :src="item.pics[0]" style="width:100%;border-radius:8rpx;" />
+						<view style="font-size:28rpx;color:#333;line-height:1.6;margin-bottom:8rpx;">{{ item.comment }}
+						</view>
+						<image v-if="item.pics && item.pics[0]" :src="item.pics[0]"
+							style="width:100%;border-radius:8rpx;" />
 						<view style="display:flex;justify-content:space-between;margin-top:12rpx;">
 							<view style="display:flex;align-items:center;">
-								<image src="/static/icons/share.svg" style="width:32rpx;height:32rpx;margin-right:8rpx;" />
+								<image src="/static/icons/share.svg"
+									style="width:32rpx;height:32rpx;margin-right:8rpx;" />
 								<text style="color:#999;font-size:24rpx;">分享</text>
 							</view>
 							<view style="display:flex;align-items:center;" @tap="openCommentInput">
-								<image src="/static/icons/first-to-comment-icon.svg" style="width:32rpx;height:32rpx;margin-right:8rpx;" />
+								<image src="/static/icons/first-to-comment-icon.svg"
+									style="width:32rpx;height:32rpx;margin-right:8rpx;" />
 								<text style="color:#999;font-size:24rpx;">抢沙发</text>
 							</view>
 							<view style="display:flex;align-items:center;" @tap="toggleCommentLike(item)">
-								<image 
-									:src="item.user_like_status === 1 ? '/static/icons/like-filled.svg' : '/static/icons/like.svg'" 
-									style="width:32rpx;height:32rpx;margin-right:8rpx;" 
-								/>
-								<text :style="{ color: item.user_like_status === 1 ? '#FF840B' : '#999', fontSize: '24rpx' }">
+								<image
+									:src="item.user_like_status === 1 ? '/static/icons/like-filled.svg' : '/static/icons/like.svg'"
+									style="width:32rpx;height:32rpx;margin-right:8rpx;" />
+								<text
+									:style="{ color: item.user_like_status === 1 ? '#FF840B' : '#999', fontSize: '24rpx' }">
 									{{ item.like_count > 0 ? item.like_count : '' }}点赞
 								</text>
 							</view>
@@ -283,17 +278,17 @@
 					<view v-for="qa in mockQaQuestions" :key="qa.id" class="qa-item">
 						<!-- 问题内容 -->
 						<view class="qa-question">{{ qa.content }}</view>
-						
+
 						<!-- 提问者信息 -->
 						<view class="qa-user">
 							<image class="qa-avatar" :src="qa.avatar" />
 							<text class="qa-username">{{ qa.nickname }}</text>
 							<text class="qa-time">{{ qa.add_time }}</text>
 						</view>
-						
+
 						<!-- 提问者分割线 -->
 						<view class="qa-divider"></view>
-						
+
 						<view class="qa-answers" v-if="qa.answers && qa.answers.length">
 							<view v-for="(answer, index) in qa.answers" :key="index" class="qa-answer">
 								<image class="answer-avatar" src="/static/images/avatar.png"></image>
@@ -305,11 +300,7 @@
 			</template>
 		</ReviewPopup>
 
-		<CommentInput 
-			:visible="showCommentInput" 
-			@close="closeCommentInput" 
-			@submit="handleCommentSubmit" 
-		/>
+		<CommentInput :visible="showCommentInput" @close="closeCommentInput" @submit="handleCommentSubmit" />
 
 		<!-- 分享弹框 -->
 		<view v-if="showSharePopup" class="share-popup-mask" @tap="closeSharePopup">
@@ -351,22 +342,25 @@ import {
 	createGoodsComment,
 	addCommentLike,
 	cancelCommentLike,
-	getCommentLikeStats
-} from '@/api/group.js';
+	getCommentLikeStats,
+	getGoodsLikeStats,
+	addFootprint,
+	addCollect
+} from '@/api/group.js'
 import {
 	getAddressDefault
-} from '@/api/user.js';
+} from '@/api/user.js'
 import {
 	storeListApi
-} from '@/api/store.js';
+} from '@/api/store.js'
 import {
 	GroupCartManager
-} from '@/api/groupCart.js';
-import { handleActionApi } from '@/utils/apiHelper.js';
-import { HTTP_REQUEST_URL } from '@/config/app.js';
-import ReviewPopup from './components/ReviewPopup.vue';
-import CommentInput from './components/CommentInput.vue';
-import request from '@/utils/request.js';
+} from '@/api/groupCart.js'
+import { handleActionApi } from '@/utils/apiHelper.js'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
+import ReviewPopup from './components/ReviewPopup.vue'
+import CommentInput from './components/CommentInput.vue'
+import request from '@/utils/request.js'
 
 export default {
 	components: {
@@ -380,50 +374,34 @@ export default {
 			canBuy: false, // 是否可以购买，默认false确保安全
 			currentIndex: 0,
 			// 购买意向计数
-			wantCount: 66, // 想买的人数
-			noWantCount: 2, // 不想买的人数
+			wantCount: 0, // 想买的人数
+			noWantCount: 0, // 不想买的人数
 			userWantStatus: null, // 用户的选择状态：'want', 'noWant', null
 			// 轮播相关数据
 			carouselOffset: 0,
 			centerIndex: 1, // 中间显示的用户索引
 			carouselTimer: null,
 			// 团购用户数据
-			groupBuyersData: [
-				{ name: '开心鸭', avatar: '/static/images/avatar.png', status: '已购买此商品' },
-				{ name: '加载中...', avatar: '/static/images/avatar.png', status: '已购买此商品' },
-				{ name: 'Raychan', avatar: '/static/images/avatar.png', status: '已购买此商品' },
-				{ name: '小明', avatar: '/static/images/avatar.png', status: '已购买此商品' },
-				{ name: '小红', avatar: '/static/images/avatar.png', status: '已购买此商品' },
-				{ name: '小李', avatar: '/static/images/avatar.png', status: '已购买此商品' }
-			],
+			groupBuyersData: [],
 
 			// 问答数据
 			qaQuestions: [],
 			qaLoading: false,
 			goodsInfo: {
-				id: 1,
-				price: '45',
-				sales: '200',
-				title: '山东青苹果/一盒300g-450g',
-				origin: '山东',
-				pickupLocation: '北京尚德井小区菜鸟驿站',
-				deliveryTime: '16：30前',
-				deliveryAddress: '北京尚德井小区菜鸟驿站',
-				guarantee: '品质保证，无忧售后',
-				evaluationCount: '99',
-				goodRate: '99.8%',
-				// 轮播图片数组 - 使用同一张图片重复，方便以后对接API
-				images: [
-					'/static/images/goods_details/banner.png',
-					'/static/images/goods_details/banner.png',
-					'/static/images/goods_details/banner.png',
-					'/static/images/goods_details/banner.png',
-					'/static/images/goods_details/banner.png'
-				],
-				content: `
-				<p>【果园直供·脆甜青苹果】新鲜采摘的青苹果来啦！果皮翠绿透亮，果肉脆爽多汁，酸甜比例完美融合，入口先尝到清新酸意，细品回甘绵长，夏日冰镇更添凉爽！每颗苹果坚持自然成熟，富含维生素C和膳食纤维，低热量高营养，无论是直接鲜食、制作果切沙拉、还是榨汁烘焙都风味俱佳！</p>
-				<p>✓ 现摘现发，严选包装，坏果包赔，点击切沙拉单，让这份天然酸甜点亮你的味蕾，解锁健康轻生活！</p>
-				`
+				id: null,
+				price: '0',
+				sales: '0',
+				title: '',
+				origin: '',
+				pickupLocation: '',
+				deliveryTime: '',
+				deliveryAddress: '',
+				guarantee: '',
+				evaluationCount: '0',
+				goodRate: '0%',
+				// 轮播图片数组
+				images: [],
+				content: ''
 			},
 			// 评论相关数据
 			commentList: [], // 评论列表
@@ -432,24 +410,15 @@ export default {
 				goodRate: 0 // 好评率
 			},
 			commentLoading: false, // 评论加载状态
-			qaList: [
-				{
-					question: '口感咋样啊?',
-					answerCount: 5
-				},
-				{
-					question: '会不会很酸啊?',
-					answerCount: 10
-				}
-			],
+			qaList: [],
 			// 地址和自提点信息
 			userDefaultAddress: null, // 用户默认地址
 			storeList: [], // 自提点列表
 			communityInfo: null, // 社区信息
 			deliveryInfo: {
-				pickupLocation: '北京尚德井小区菜鸟驿站', // 默认自提点
-				deliveryTime: '预计明日16：30前送达',
-				deliveryAddress: '北京尚德井小区菜鸟驿站'
+				pickupLocation: '', // 默认自提点
+				deliveryTime: '',
+				deliveryAddress: ''
 			},
 			showReviewPopup: false,
 			showCommentInput: false,
@@ -466,13 +435,13 @@ export default {
 	computed: {
 		// 扩展用户数据以实现无缝轮播
 		extendedBuyersData() {
-			const data = this.groupBuyersData;
+			const data = this.groupBuyersData
 			// 前后各添加一份数据实现无缝轮播
-			return [...data, ...data, ...data];
+			return [...data, ...data, ...data]
 		},
 		// 用户登录状态
 		isLogin() {
-			return this.$store.getters.isLogin;
+			return this.$store.getters.isLogin
 		}
 	},
 	methods: {
@@ -480,30 +449,30 @@ export default {
 		async getGoodsDetails(id) {
 			try {
 				// 根据页面类型调用不同的API
-				let res;
-				let isCombination = false;
-				
+				let res
+				let isCombination = false
+
 				if (this.pageType === 'group') {
 					// 拼团商品详情
-					res = await getUserCombinationDetail(id);
+					res = await getUserCombinationDetail(id)
 				} else {
 					// URL中type=combination但pageType已被设置为category的情况
-					const pages = getCurrentPages();
-					const currentPage = pages[pages.length - 1];
-					const query = currentPage.options || {};
-					
+					const pages = getCurrentPages()
+					const currentPage = pages[pages.length - 1]
+					const query = currentPage.options || {}
+
 					if (query.type === 'combination') {
 						// 标记为combination类型，但使用普通商品API
-						isCombination = true;
-						res = await getGoodsDetail(id);
+						isCombination = true
+						res = await getGoodsDetail(id)
 					} else {
 						// 普通商品详情
-						res = await getGoodsDetail(id);
+						res = await getGoodsDetail(id)
 					}
 				}
-				
+
 				if ((res.code === 200 || res.status === 200) && res.data) {
-					const data = res.data;
+					const data = res.data
 
 					// 根据页面类型处理不同的数据结构
 					if (this.pageType === 'group') {
@@ -541,14 +510,14 @@ export default {
 							receiving_time: data.receiving_time,
 							receiving_time_text: data.receiving_time_text,
 							is_host: data.is_host
-						};
+						}
 					} else {
 						// 普通商品数据结构
 						this.goodsInfo = {
 							...this.goodsInfo,
 							id: data.id,
 							title: data.title || data.name,
-							price: data.min_price || '0',
+							price: `${this.formatPrice(data.min_price)}~${this.formatPrice(data.max_price)}`,
 							sales: data.sales || '0',
 							origin: data.origin || '未知', // 尝试获取产地信息
 							images: data.images ? data.images.split(',').map(img => this.setDomain(img.trim())) : [this.setDomain(data.image)],
@@ -559,109 +528,114 @@ export default {
 							dislike: data.dislike || 0,
 							is_like: data.is_like !== undefined ? data.is_like : 0,
 							buy_list: data.buy_list || []
-						};
+						}
 
 						// 保存社区ID用于点赞接口
-						this.communityId = data.community_id || 0;
+						this.communityId = data.community_id || 0
 
 						// 更新购买意向数据（使用API返回的真实数据）
-						this.wantCount = data.like || 0;
-						this.noWantCount = data.dislike || 0;
-						
+						this.wantCount = data.like || 0
+						this.noWantCount = data.dislike || 0
+
 						// 如果是combination类型但使用普通商品API，确保product_id字段存在
 						if (isCombination && data.product_id) {
-							this.goodsInfo.product_id = data.product_id;
+							this.goodsInfo.product_id = data.product_id
 						}
 					}
 
 					// 加载商品评论（不论拼团商品还是普通商品，评论接口都一致）
-					this.loadGoodsComments(this.goodsInfo.product_id || this.goodsInfo.id);
+					this.loadGoodsComments(this.goodsInfo.product_id || this.goodsInfo.id)
 
 					// 加载配送信息
-					this.loadDeliveryInfo();
+					this.loadDeliveryInfo()
 
 					// 加载问答列表
-					this.loadQAQuestions(this.goodsInfo.product_id || this.goodsInfo.id);
+					this.loadQAQuestions(this.goodsInfo.product_id || this.goodsInfo.id)
+
+					// 加载商品点赞统计
+					this.loadGoodsLikeStats(this.goodsInfo.product_id || this.goodsInfo.id)
 				} else {
 					// 特殊处理：商品不存在或不在社区范围内的情况
 					if ((res.status === 400 || res.code === 400) && res.msg && res.msg.includes('拼团商品不存在或不在您的社区范围内')) {
-						this.handleProductNotAvailable(res.msg);
+						this.handleProductNotAvailable(res.msg)
 					} else if (res.msg && res.msg.includes('拼团商品不存在或不在您的社区范围内')) {
-						this.handleProductNotAvailable(res.msg);
+						this.handleProductNotAvailable(res.msg)
 					} else {
 						uni.showToast({
 							title: res.msg || '获取商品详情失败',
 							icon: 'none'
-						});
+						})
 					}
 				}
 			} catch (err) {
-				console.error('获取商品详情失败:', err);
+				console.error('获取商品详情失败:', err)
 
 				// 检查是否是业务逻辑错误（400状态码）
 				if (err && (err.status === 400 || err.code === 400)) {
 					// 检查是否是商品不存在或不在社区范围内的错误
-					const errorMessage = err.msg || err.message || '';
+					const errorMessage = err.msg || err.message || ''
 					if (errorMessage.includes('拼团商品不存在或不在您的社区范围内')) {
-						this.handleProductNotAvailable(errorMessage);
-						return;
+						this.handleProductNotAvailable(errorMessage)
+						return
 					}
 
 					// 其他400错误，显示具体错误信息
 					uni.showToast({
 						title: errorMessage || '商品信息获取失败',
 						icon: 'none'
-					});
-					return;
+					})
+					return
 				}
 
 				// 检查是否是登录相关错误
 				if (err && err.isLoginError) {
 					// 登录相关错误已经由request.js自动处理
-					console.log('商品详情获取失败：用户未登录');
-					return;
+					console.log('商品详情获取失败：用户未登录')
+					return
 				}
 
 				// 检查错误信息是否包含商品不存在的提示（兼容处理）
-				const errorMessage = err.message || err.msg || '';
+				const errorMessage = err.message || err.msg || ''
 				if (errorMessage.includes('拼团商品不存在或不在您的社区范围内')) {
-					this.handleProductNotAvailable(errorMessage);
+					this.handleProductNotAvailable(errorMessage)
 				} else {
 					// 网络错误或其他未知错误
 					uni.showToast({
 						title: '网络错误，请稍后重试',
 						icon: 'none'
-					});
+					})
 				}
 			}
 		},
 
-		// 处理商品不可用的情况
-		handleProductNotAvailable(message) {
-			console.log('商品不可用:', message);
-
-			uni.showModal({
-				title: '商品不可用',
-				content: '很抱歉，该商品不存在或不在您的社区范围内。\n\n您可以：\n• 查看其他商品\n• 切换到您的社区范围内\n• 联系客服了解详情',
-				showCancel: true,
-				cancelText: '查看其他',
-				confirmText: '返回上页',
-				success: (res) => {
-					if (res.confirm) {
-						// 用户选择返回上页
-						this.goBackToList();
-					} else if (res.cancel) {
-						// 用户选择查看其他商品，跳转到今日团购页面
-						uni.redirectTo({
-							url: '/pages/index/today-group-buying/index'
-						});
-					}
-				},
-				fail: () => {
-					// 如果弹窗失败，直接返回
-					this.goBackToList();
+		// 加载商品点赞统计
+		async loadGoodsLikeStats(goodsId) {
+			try {
+				const response = await getGoodsLikeStats(goodsId)
+				if (response.status === 200 && response.data) {
+					const stats = response.data
+					// Store the statistics in the goodsInfo object
+					this.goodsInfo.like_count = stats.like_count || 0
+					this.goodsInfo.dislike_count = stats.dislike_count || 0
+					this.goodsInfo.total_count = stats.total_count || 0
+					this.goodsInfo.user_like_status = stats.user_like_status
 				}
-			});
+			} catch (error) {
+				console.error('加载商品点赞统计失败:', error)
+			}
+		}, formatPrice(price) {
+			// 处理空值或非数字情况
+			if (!price && price !== 0) return '0'
+
+			// 将价格转为数字（兼容字符串类型的价格，如"9.90"）
+			const num = Number(price)
+
+			// 若转换失败，返回原始值
+			if (isNaN(num)) return price
+
+			// 关键：使用 Number.EPSILON 处理浮点数精度问题，然后转为字符串
+			// 例如：9.90 → 9.9；10.00 → 10；29.9 → 29.9
+			return num.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
 		},
 
 		// 返回到商品列表
@@ -673,29 +647,29 @@ export default {
 						// 如果返回失败，跳转到今日团购页面
 						uni.redirectTo({
 							url: '/pages/index/today-group-buying/index'
-						});
+						})
 					}
-				});
-			}, 300);
+				})
+			}, 300)
 		},
 
 		// 处理图片URL
 		setDomain(url) {
-			if (!url) return '';
-			url = url.toString();
+			if (!url) return ''
+			url = url.toString()
 
 			// 如果是相对路径，拼接域名
 			if (url.indexOf('/') === 0) {
-				return HTTP_REQUEST_URL + url;
+				return HTTP_REQUEST_URL + url
 			}
 
 			// 如果已经是完整URL，直接返回
 			if (url.indexOf("http") === 0) {
-				return url;
+				return url
 			}
 
 			// 其他情况拼接域名
-			return HTTP_REQUEST_URL + '/' + url;
+			return HTTP_REQUEST_URL + '/' + url
 		},
 
 		// 返回上一页
@@ -705,7 +679,7 @@ export default {
 
 		// 分享商品
 		shareGoods() {
-			this.showSharePopup = true;
+			this.showSharePopup = true
 		},
 
 		// 滑动轮播图
@@ -718,15 +692,15 @@ export default {
 			// 显示加载提示
 			uni.showLoading({
 				title: '加载中...'
-			});
-			
+			})
+
 			// 先加载评论数据
-			await this.loadMoreComments();
-			
-			uni.hideLoading();
-			
+			await this.loadMoreComments()
+
+			uni.hideLoading()
+
 			// 数据加载完成后再显示弹窗
-			this.showReviewPopup = true;
+			this.showReviewPopup = true
 		},
 
 		// 新增方法：加载更多评论数据
@@ -735,16 +709,16 @@ export default {
 				// 显示加载提示
 				uni.showLoading({
 					title: '加载中...'
-				});
-				
-				const goodsId = this.goodsInfo.product_id || this.goodsInfo.id;
+				})
+
+				const goodsId = this.goodsInfo.product_id || this.goodsInfo.id
 				const response = await getGoodsCommentList(goodsId, {
 					page: 1,
 					limit: 10
-				});
-				
-				uni.hideLoading();
-				
+				})
+
+				uni.hideLoading()
+
 				if (response.status === 200 && response.data) {
 					// 更新买家秀评论数据
 					this.mockBuyerComments = (response.data.list || []).map(item => ({
@@ -757,52 +731,52 @@ export default {
 						like_count: 0,
 						dislike_count: 0,
 						user_like_status: null
-					}));
-					
+					}))
+
 					// 获取评论点赞统计信息
 					if (this.mockBuyerComments.length > 0) {
-						const commentIds = this.mockBuyerComments.map(item => item.id).join(',');
+						const commentIds = this.mockBuyerComments.map(item => item.id).join(',')
 						try {
-							const statsResponse = await getCommentLikeStats(commentIds);
+							const statsResponse = await getCommentLikeStats(commentIds)
 							if (statsResponse.status === 200 && statsResponse.data) {
 								// 如果返回的是数组
 								if (Array.isArray(statsResponse.data)) {
 									statsResponse.data.forEach(stat => {
-										const comment = this.mockBuyerComments.find(item => item.id === stat.comment_id);
+										const comment = this.mockBuyerComments.find(item => item.id === stat.comment_id)
 										if (comment) {
-											comment.like_count = stat.like_count || 0;
-											comment.dislike_count = stat.dislike_count || 0;
-											comment.user_like_status = stat.user_like_status;
+											comment.like_count = stat.like_count || 0
+											comment.dislike_count = stat.dislike_count || 0
+											comment.user_like_status = stat.user_like_status
 										}
-									});
-								} 
+									})
+								}
 								// 如果返回的是单个对象
 								else if (statsResponse.data.comment_id) {
-									const comment = this.mockBuyerComments.find(item => item.id === statsResponse.data.comment_id);
+									const comment = this.mockBuyerComments.find(item => item.id === statsResponse.data.comment_id)
 									if (comment) {
-										comment.like_count = statsResponse.data.like_count || 0;
-										comment.dislike_count = statsResponse.data.dislike_count || 0;
-										comment.user_like_status = statsResponse.data.user_like_status;
+										comment.like_count = statsResponse.data.like_count || 0
+										comment.dislike_count = statsResponse.data.dislike_count || 0
+										comment.user_like_status = statsResponse.data.user_like_status
 									}
 								}
 							}
 						} catch (statsError) {
-							console.error('获取评论点赞统计失败:', statsError);
+							console.error('获取评论点赞统计失败:', statsError)
 						}
 					}
-					
-					console.log('已加载评论数据用于弹窗展示:', this.mockBuyerComments);
+
+					console.log('已加载评论数据用于弹窗展示:', this.mockBuyerComments)
 				}
 			} catch (error) {
-				uni.hideLoading();
-				console.error('加载更多评论失败:', error);
-				
+				uni.hideLoading()
+				console.error('加载更多评论失败:', error)
+
 				// 检查是否是未登录错误
 				if (error && error.status === 110002 && error.msg && error.msg.includes('请登录')) {
 					uni.showToast({
 						title: '请先登录查看评论',
 						icon: 'none'
-					});
+					})
 				}
 			}
 		},
@@ -816,260 +790,99 @@ export default {
 
 		// 加入购物车
 		async addToCart() {
-			console.log('添加商品到购物车:', this.goodsInfo.id);
-			
+			console.log('添加商品到购物车:', this.goodsInfo.id)
+
 			// 检查商品ID是否有效
 			if (!this.goodsInfo || !this.goodsInfo.id) {
-				console.error('商品ID无效，无法添加到购物车');
+				console.error('商品ID无效，无法添加到购物车')
 				uni.showToast({
 					title: '商品信息不完整，请刷新页面',
 					icon: 'none'
-				});
-				return;
+				})
+				return
 			}
-			
+
 			// 检查登录状态
 			if (!this.isLogin) {
 				// 未登录，跳转到登录页面
 				uni.navigateTo({
 					url: '/pages/login/index'
-				});
-				return;
+				})
+				return
 			}
-			
+
 			// 显示加载提示
 			uni.showLoading({
 				title: '添加中...',
 				mask: true
-			});
-			
-			try {
-				// 直接调用API，不使用封装的方法，确保能够正确处理响应
-				const response = await updateGroupCart({
-					goods_id: this.goodsInfo.id.toString(),
-					quantity: '1'
-				});
-				
-				uni.hideLoading();
-				
-				// 详细记录响应，帮助调试
-				console.log('购物车API响应:', JSON.stringify(response));
-				
-				// 判断是否成功
-				let isSuccess = false;
-				let message = '已加入购物车';
-				
-				// 增强的响应处理逻辑，处理多种可能的成功响应格式
-				if (response && response.data) {
-					// 检查嵌套data对象
-					if (response.data.status === 200) {
-						isSuccess = true;
-						message = response.data.msg || message;
-					} 
-					// 检查data.data嵌套结构
-					else if (response.data.data && response.data.data.status === 200) {
-						isSuccess = true;
-						message = response.data.data.msg || message;
-					}
-					// 检查data.msg是否包含成功信息
-					else if (response.data.msg && (
-						response.data.msg.includes('已添加') || 
-						response.data.msg.includes('商品已添加') ||
-						response.data.msg.includes('成功')
-					)) {
-						isSuccess = true;
-						message = response.data.msg;
-					}
-					// 检查data.data.msg是否包含成功信息
-					else if (response.data.data && response.data.data.msg && (
-						response.data.data.msg.includes('已添加') || 
-						response.data.data.msg.includes('商品已添加') ||
-						response.data.data.msg.includes('成功')
-					)) {
-						isSuccess = true;
-						message = response.data.data.msg;
-					}
-				} 
-				// 检查顶层状态
-				else if (response && response.status === 200) {
-					isSuccess = true;
-					message = response.msg || message;
-				}
-				
-				// 显示成功提示
-				if (isSuccess) {
-					uni.showToast({
-						title: message,
-						icon: 'success',
-						duration: 2000,
-						// 使用简洁的提示信息
-						fontSize: '14px',
-						position: 'center',
-						mask: true
-					});
-					
-					// 更新购物车数量
-					this.$store.dispatch("indexData/setCartnumber", 1);
-				} else {
-					// 尝试从错误响应中提取有用信息
-					let errorMsg = '添加失败，请重试';
-					if (response && response.data && response.data.msg) {
-						errorMsg = response.data.msg;
-					} else if (response && response.msg) {
-						errorMsg = response.msg;
-					}
-					
-					uni.showToast({
-						title: errorMsg,
-						icon: 'none',
-						duration: 2000,
-						// 使用简洁的提示信息
-						fontSize: '14px',
-						position: 'center',
-						mask: true
-					});
-				}
-			} catch (error) {
-				uni.hideLoading();
-				console.log('添加购物车异常，尝试解析响应:', JSON.stringify(error));
-				
-				// 特殊处理：检查错误对象中是否包含成功响应
-				let isSuccess = false;
-				let message = '';
-				
-				// 检查各种可能的嵌套结构
-				if (error && error.data) {
-					// 检查error.data
-					if (error.data.status === 200) {
-						isSuccess = true;
-						message = error.data.msg || '已加入购物车';
-					} 
-					// 检查error.data.data
-					else if (error.data.data && error.data.data.status === 200) {
-						isSuccess = true;
-						message = error.data.data.msg || '已加入购物车';
-					}
-					// 检查error.data.msg是否包含成功信息
-					else if (error.data.msg && (
-						error.data.msg.includes('已添加') ||
-						error.data.msg.includes('更新') ||
-						error.data.msg.includes('已更新') ||
-						error.data.msg.includes('商品已添加') ||
-						error.data.msg.includes('成功')
-					)) {
-						isSuccess = true;
-						message = error.data.msg;
-					}
-					// 检查error.data.data.msg是否包含成功信息
-					else if (error.data.data && error.data.data.msg && (
-						error.data.data.msg.includes('已添加') ||
-						error.data.data.msg.includes('更新') ||
-						error.data.data.msg.includes('已更新') ||
-						error.data.data.msg.includes('商品已添加') ||
-						error.data.data.msg.includes('成功')
-					)) {
-						isSuccess = true;
-						message = error.data.data.msg;
-					}
-				} 
-				// 检查顶层状态
-				else if (error && error.status === 200) {
-					isSuccess = true;
-					message = error.msg || '已加入购物车';
-				}
-				
-				if (isSuccess) {
-					// 显示成功提示
-					uni.showToast({
-						title: message,
-						icon: 'success',
-						duration: 2000,
-						// 使用简洁的提示信息
-						fontSize: '14px',
-						position: 'center',
-						mask: true
-					});
-					
-					// 更新购物车数量
-					this.$store.dispatch("indexData/setCartnumber", 1);
-				} else {
-					// 处理真正的错误
-					let errorMsg = '添加失败，请重试';
-					
-					// 尝试从各种嵌套结构中提取错误信息
-					if (error && error.data && error.data.data && error.data.data.msg) {
-						errorMsg = error.data.data.msg;
-					} else if (error && error.data && error.data.msg) {
-						errorMsg = error.data.msg;
-					} else if (error && error.msg) {
-						errorMsg = error.msg;
-					} else if (error && error.message) {
-						errorMsg = error.message;
-					}
-					
-					uni.showToast({
-						title: errorMsg,
-						icon: 'none',
-						duration: 2000,
-						// 使用简洁的提示信息
-						fontSize: '14px',
-						position: 'center',
-						mask: true
-					});
-				}
+			})
+
+			const res = await updateGroupCart({
+				goods_id: this.goodsInfo.id.toString(),
+				quantity: '1'
+			})
+			if (res.data.status === 200) {
+				uni.showToast({
+					title: res.data?.msg,
+					icon: 'none'
+				})
 			}
+			uni.hideLoading()
+
+			// 更新购物车数量
+			this.$store.dispatch("indexData/setCartnumber", 1)
 		},
 
 		// 立即购买
 		buyNow() {
-			console.log('立即购买商品:', this.goodsInfo.id);
+			console.log('立即购买商品:', this.goodsInfo.id)
 
 			// 直接跳转到订单确认页面，让订单页面处理登录检查
 			uni.navigateTo({
 				url: '/pages/goods/order_confirm/new_order_confirm?id=' + this.goodsInfo.id,
 				fail: (err) => {
-					console.error('跳转订单页面失败:', err);
+					console.error('跳转订单页面失败:', err)
 					uni.showToast({
 						title: '页面跳转失败',
 						icon: 'none'
-					});
+					})
 				}
-			});
+			})
 		},
 
 		// 启动轮播
 		startCarousel() {
 			this.carouselTimer = setInterval(() => {
-				this.nextUser();
-			}, 2000); // 每2秒切换一次
+				this.nextUser()
+			}, 2000) // 每2秒切换一次
 		},
 
 		// 停止轮播
 		stopCarousel() {
 			if (this.carouselTimer) {
-				clearInterval(this.carouselTimer);
-				this.carouselTimer = null;
+				clearInterval(this.carouselTimer)
+				this.carouselTimer = null
 			}
 		},
 
 		// 切换到下一个用户
 		nextUser() {
-			this.centerIndex++;
+			this.centerIndex++
 			if (this.centerIndex >= this.extendedBuyersData.length - 1) {
 				// 重置到开始位置实现无缝轮播
-				this.centerIndex = this.groupBuyersData.length;
+				this.centerIndex = this.groupBuyersData.length
 			}
-			this.updateCarouselOffset();
+			this.updateCarouselOffset()
 		},
 
 		// 更新轮播偏移量
 		updateCarouselOffset() {
 			// 每个用户项高度约22px，居中显示
-			this.carouselOffset = -(this.centerIndex - 1) * 22;
+			this.carouselOffset = -(this.centerIndex - 1) * 22
 		},
 
 		closeReviewPopup() {
-			this.showReviewPopup = false;
+			this.showReviewPopup = false
 		},
 
 		// 切换"不想买"状态
@@ -1080,32 +893,32 @@ export default {
 					// 获取社区信息，确保有正确的community_id
 					if (!this.communityId) {
 						try {
-							const communityRes = await getMyCommunityInfo();
+							const communityRes = await getMyCommunityInfo()
 							if (communityRes.status === 200 && communityRes.data && communityRes.data.community) {
-								this.communityId = communityRes.data.community.id || 0;
-								console.log('获取到社区ID:', this.communityId);
+								this.communityId = communityRes.data.community.id || 0
+								console.log('获取到社区ID:', this.communityId)
 							}
 						} catch (err) {
-							console.error('获取社区信息失败:', err);
+							console.error('获取社区信息失败:', err)
 						}
 					}
-					
+
 					// 优化逻辑：先检查当前状态
 					if (this.goodsInfo.is_like === -1) {
 						// 如果当前已是不想买状态，则取消
 						const res = await cancelGoodsLike({
 							goods_id: this.goodsInfo.id
-						});
-						
+						})
+
 						if (res.status === 200) {
 							// 取消不想买
-							this.goodsInfo.is_like = 0;
-							this.noWantCount--;
-							
+							this.goodsInfo.is_like = 0
+							this.noWantCount = Math.max(0, this.noWantCount - 1)
+
 							uni.showToast({
 								title: '已取消标记',
 								icon: 'success'
-							});
+							})
 						}
 					} else {
 						// 如果当前是想买状态或无状态，先尝试取消任何现有操作
@@ -1113,68 +926,68 @@ export default {
 							try {
 								await cancelGoodsLike({
 									goods_id: this.goodsInfo.id
-								});
-								
+								})
+
 								// 如果之前是想买，更新计数
 								if (this.goodsInfo.is_like === 1) {
-									this.wantCount--;
+									this.wantCount = Math.max(0, this.wantCount - 1)
 								}
 							} catch (cancelError) {
 								// 忽略取消操作的错误，继续执行不想买
-								console.log('取消之前的操作时出错，继续执行不想买:', cancelError);
+								console.log('取消之前的操作时出错，继续执行不想买:', cancelError)
 							}
 						}
-						
+
 						// 设置为不想买状态
 						const res = await addGoodsLike({
 							goods_id: this.goodsInfo.id,
 							community_id: this.communityId || 0,
 							type: 0 // 0表示踩
-						});
-						
+						})
+
 						if (res.status === 200) {
-							this.goodsInfo.is_like = -1;
-							this.noWantCount++;
-							
+							this.goodsInfo.is_like = -1
+							this.noWantCount++
+
 							uni.showToast({
 								title: '已标记为不想买',
 								icon: 'success'
-							});
+							})
 						}
 					}
 				} catch (error) {
-					console.error('不想买操作失败:', error);
-					
+					console.error('不想买操作失败:', error)
+
 					// 处理"已经操作过该商品"的错误
 					if (error && error.msg && error.msg.includes('已经操作过')) {
 						uni.showToast({
 							title: '您已操作过该商品',
 							icon: 'none'
-						});
-						
+						})
+
 						// 尝试刷新商品状态
-						this.refreshGoodsLikeStatus();
+						this.refreshGoodsLikeStatus()
 					} else {
 						uni.showToast({
 							title: '操作失败',
 							icon: 'none'
-						});
+						})
 					}
 				}
 			} else {
 				// 拼团商品使用原来的本地逻辑
 				if (this.userWantStatus === 'noWant') {
-					this.noWantCount--;
-					this.userWantStatus = null;
+					this.noWantCount = Math.max(0, this.noWantCount - 1)
+					this.userWantStatus = null
 				} else {
 					if (this.userWantStatus === 'want') {
-						this.wantCount--;
+						this.wantCount = Math.max(0, this.wantCount - 1)
 					}
-					this.noWantCount++;
-					this.userWantStatus = 'noWant';
+					this.noWantCount++
+					this.userWantStatus = 'noWant'
 				}
-				
-				this.saveUserChoice();
+
+				this.saveUserChoice()
 			}
 		},
 
@@ -1186,32 +999,32 @@ export default {
 					// 获取社区信息，确保有正确的community_id
 					if (!this.communityId) {
 						try {
-							const communityRes = await getMyCommunityInfo();
+							const communityRes = await getMyCommunityInfo()
 							if (communityRes.status === 200 && communityRes.data && communityRes.data.community) {
-								this.communityId = communityRes.data.community.id || 0;
-								console.log('获取到社区ID:', this.communityId);
+								this.communityId = communityRes.data.community.id || 0
+								console.log('获取到社区ID:', this.communityId)
 							}
 						} catch (err) {
-							console.error('获取社区信息失败:', err);
+							console.error('获取社区信息失败:', err)
 						}
 					}
-					
+
 					// 优化逻辑：先检查当前状态
 					if (this.goodsInfo.is_like === 1) {
 						// 如果当前已是想买状态，则取消
 						const res = await cancelGoodsLike({
 							goods_id: this.goodsInfo.id
-						});
-						
+						})
+
 						if (res.status === 200) {
 							// 取消想买
-							this.goodsInfo.is_like = 0;
-							this.wantCount--;
-							
+							this.goodsInfo.is_like = 0
+							this.wantCount = Math.max(0, this.wantCount - 1)
+
 							uni.showToast({
 								title: '已取消点赞',
 								icon: 'success'
-							});
+							})
 						}
 					} else {
 						// 如果当前是不想买状态或无状态，先尝试取消任何现有操作
@@ -1219,115 +1032,129 @@ export default {
 							try {
 								await cancelGoodsLike({
 									goods_id: this.goodsInfo.id
-								});
-								
+								})
+
 								// 如果之前是不想买，更新计数
 								if (this.goodsInfo.is_like === -1) {
-									this.noWantCount--;
+									this.noWantCount = Math.max(0, this.noWantCount - 1)
 								}
 							} catch (cancelError) {
 								// 忽略取消操作的错误，继续执行点赞
-								console.log('取消之前的操作时出错，继续执行点赞:', cancelError);
+								console.log('取消之前的操作时出错，继续执行点赞:', cancelError)
 							}
 						}
-						
+
 						// 设置为想买状态
 						const res = await addGoodsLike({
 							goods_id: this.goodsInfo.id,
 							community_id: this.communityId || 0,
 							type: 1 // 1表示点赞
-						});
-						
+						})
+
 						if (res.status === 200) {
-							this.goodsInfo.is_like = 1;
-							this.wantCount++;
-							
+							this.goodsInfo.is_like = 1
+							this.wantCount++
+
 							uni.showToast({
 								title: '已点赞',
 								icon: 'success'
-							});
+							})
 						}
 					}
 				} catch (error) {
-					console.error('点赞操作失败:', error);
-					
+					console.error('点赞操作失败:', error)
+
 					// 处理"已经操作过该商品"的错误
 					if (error && error.msg && error.msg.includes('已经操作过')) {
 						uni.showToast({
 							title: '您已操作过该商品',
 							icon: 'none'
-						});
-						
+						})
+
 						// 尝试刷新商品状态
-						this.refreshGoodsLikeStatus();
+						this.refreshGoodsLikeStatus()
 					} else {
 						uni.showToast({
 							title: '操作失败',
 							icon: 'none'
-						});
+						})
 					}
 				}
 			} else {
 				// 拼团商品使用原来的本地逻辑
 				if (this.userWantStatus === 'want') {
-					this.wantCount--;
-					this.userWantStatus = null;
+					this.wantCount = Math.max(0, this.wantCount - 1)
+					this.userWantStatus = null
 				} else {
 					if (this.userWantStatus === 'noWant') {
-						this.noWantCount--;
+						this.noWantCount = Math.max(0, this.noWantCount - 1)
 					}
-					this.wantCount++;
-					this.userWantStatus = 'want';
+					this.wantCount++
+					this.userWantStatus = 'want'
 				}
-				this.saveUserChoice();
+				this.saveUserChoice()
 			}
 		},
 
 		// 保存用户选择到本地存储
 		saveUserChoice() {
 			// 使用商品ID作为key，保存用户选择
-			const key = `goods_intent_${this.goodsInfo.id}`;
-			uni.setStorageSync(key, this.userWantStatus);
+			const key = `goods_intent_${this.goodsInfo.id}`
+			uni.setStorageSync(key, this.userWantStatus)
 
 			// 这里可以添加向后端发送数据的逻辑
 			// 实际项目中应该将用户选择同步到服务器
 		},
+		async collectGoods() {
+			const res = await addCollect({
+				type: 3,
+				fav_id: this.goodsInfo.product_id || this.goodsInfo.id
+			})
+
+			if (res.data.status === 200) {
+				uni.showToast({
+					title: '收藏成功',
+					icon: 'none'
+				})
+			}
+
+		},
 
 		// 加载用户之前的选择
 		loadUserChoice() {
-			const key = `goods_intent_${this.goodsInfo.id}`;
-			const savedChoice = uni.getStorageSync(key);
+			const key = `goods_intent_${this.goodsInfo.id}`
+			const savedChoice = uni.getStorageSync(key)
 			if (savedChoice) {
-				this.userWantStatus = savedChoice;
+				this.userWantStatus = savedChoice
 			}
 		},
 
 		// 加载问答列表
 		async loadQAQuestions(goodsId, search = '') {
-			if (this.qaLoading) return;
+			if (this.qaLoading) return
 
-			this.qaLoading = true;
+			this.qaLoading = true
 			try {
 				const params = {
 					page: 1,
 					limit: 10
-				};
-				
+				}
+
 				// 如果有搜索关键词，添加到请求参数中
 				if (search) {
-					params.search = search;
+					params.search = search
 				}
-				
-				const response = await getGoodsQuestionList(goodsId, params);
+
+				const response = await getGoodsQuestionList(goodsId, params)
 
 				if (response.status === 200 && response.data) {
-					this.qaQuestions = response.data.list || [];
+					this.qaQuestions = response.data.list || []
 					// 同时更新首页显示的问答列表
 					this.qaList = (response.data.list || []).map(item => ({
 						question: item.content,
 						answerCount: item.answer_count || 0,
 						id: item.id
-					}));
+					}))
 					// 更新模拟问大家数据，用于弹窗显示
 					this.mockQaQuestions = (response.data.list || []).map(item => ({
 						id: item.id,
@@ -1336,13 +1163,13 @@ export default {
 						add_time: item.create_time || '刚刚',
 						content: item.content,
 						answers: []
-					}));
-					console.log('问答列表加载成功:', this.qaQuestions);
+					}))
+					console.log('问答列表加载成功:', this.qaQuestions)
 				}
 			} catch (error) {
-				console.error('加载问答列表失败:', error);
+				console.error('加载问答列表失败:', error)
 			} finally {
-				this.qaLoading = false;
+				this.qaLoading = false
 			}
 		},
 
@@ -1351,7 +1178,7 @@ export default {
 			// 跳转到问答列表页面
 			uni.navigateTo({
 				url: `/pages/goods/goods_qa_list/index?goodsId=${this.goodsInfo.product_id || this.goodsInfo.id}`
-			});
+			})
 		},
 
 		// 查看问题详情
@@ -1359,7 +1186,7 @@ export default {
 			// 跳转到问题详情页面
 			uni.navigateTo({
 				url: `/pages/goods/goods_qa_detail/index?questionId=${question.id}`
-			});
+			})
 		},
 
 		// 我要提问
@@ -1367,126 +1194,126 @@ export default {
 			// 跳转到提问页面，直接使用拼团ID
 			uni.navigateTo({
 				url: `/pages/goods/goods_ask_question/index?goodsId=${this.goodsInfo.id}`
-			});
+			})
 		},
 
 		// 加载商品评论
 		async loadGoodsComments(goodsId) {
-			if (this.commentLoading) return;
+			if (this.commentLoading) return
 
-			this.commentLoading = true;
+			this.commentLoading = true
 			try {
 				const response = await getGoodsCommentList(goodsId, {
 					page: 1,
 					limit: 10 // 获取更多评论以便提取足够的买家秀图片
-				});
+				})
 
 				if (response.status === 200 && response.data) {
-					this.commentList = response.data.list || [];
-					this.commentStats.total = response.data.count || 0;
+					this.commentList = response.data.list || []
+					this.commentStats.total = response.data.count || 0
 
 					// 计算好评率（假设评分4-5星为好评）
 					if (this.commentList.length > 0) {
 						const goodComments = this.commentList.filter(comment =>
 							comment.star_grade >= 4
-						).length;
+						).length
 						this.commentStats.goodRate = this.commentStats.total > 0
 							? Math.round((goodComments / this.commentStats.total) * 100)
-							: 0;
-							
+							: 0
+
 						// 为每条评论添加点赞相关字段
 						this.commentList.forEach(comment => {
-							comment.like_count = 0;
-							comment.dislike_count = 0;
-							comment.user_like_status = null;
-						});
-						
+							comment.like_count = 0
+							comment.dislike_count = 0
+							comment.user_like_status = null
+						})
+
 						// 获取评论点赞统计信息
-						const commentIds = this.commentList.map(item => item.id).join(',');
+						const commentIds = this.commentList.map(item => item.id).join(',')
 						if (commentIds) {
 							try {
-								const statsResponse = await getCommentLikeStats(commentIds);
+								const statsResponse = await getCommentLikeStats(commentIds)
 								if (statsResponse.status === 200 && statsResponse.data) {
 									// 如果返回的是数组
 									if (Array.isArray(statsResponse.data)) {
 										statsResponse.data.forEach(stat => {
-											const comment = this.commentList.find(item => item.id === stat.comment_id);
+											const comment = this.commentList.find(item => item.id === stat.comment_id)
 											if (comment) {
-												comment.like_count = stat.like_count || 0;
-												comment.dislike_count = stat.dislike_count || 0;
-												comment.user_like_status = stat.user_like_status;
+												comment.like_count = stat.like_count || 0
+												comment.dislike_count = stat.dislike_count || 0
+												comment.user_like_status = stat.user_like_status
 											}
-										});
-									} 
+										})
+									}
 									// 如果返回的是单个对象
 									else if (statsResponse.data.comment_id) {
-										const comment = this.commentList.find(item => item.id === statsResponse.data.comment_id);
+										const comment = this.commentList.find(item => item.id === statsResponse.data.comment_id)
 										if (comment) {
-											comment.like_count = statsResponse.data.like_count || 0;
-											comment.dislike_count = statsResponse.data.dislike_count || 0;
-											comment.user_like_status = statsResponse.data.user_like_status;
+											comment.like_count = statsResponse.data.like_count || 0
+											comment.dislike_count = statsResponse.data.dislike_count || 0
+											comment.user_like_status = statsResponse.data.user_like_status
 										}
 									}
 								}
 							} catch (statsError) {
-								console.error('获取评论点赞统计失败:', statsError);
+								console.error('获取评论点赞统计失败:', statsError)
 							}
 						}
 					}
 
 					// 处理买家秀图片
-					this.processBuyerShowImages();
+					this.processBuyerShowImages()
 
-					console.log('评论列表加载成功:', this.commentList);
+					console.log('评论列表加载成功:', this.commentList)
 				}
 			} catch (error) {
-				console.error('加载评论列表失败:', error);
+				console.error('加载评论列表失败:', error)
 				// 不显示错误提示，静默失败
 			} finally {
-				this.commentLoading = false;
+				this.commentLoading = false
 			}
 		},
 
 		// 处理买家秀图片
 		processBuyerShowImages() {
-			let message = '';
+			let message = ''
 			try {
 				// 重置买家秀图片数组
-				this.buyerShowImages = [];
-				
+				this.buyerShowImages = []
+
 				// 遍历所有评论，提取图片
 				this.commentList.forEach(comment => {
 					// 检查评论是否包含files字段
 					if (comment.files) {
 						// 分割多个图片路径
-						const fileArray = comment.files.split(',');
-						
+						const fileArray = comment.files.split(',')
+
 						// 处理每个图片路径
 						fileArray.forEach(file => {
 							// 去除可能的空格
-							file = file.trim();
-							
+							file = file.trim()
+
 							// 检查文件路径是否为空
 							if (file) {
 								// 拼接域名（如果需要）
-								const fullImageUrl = this.setDomain(file);
-								
+								const fullImageUrl = this.setDomain(file)
+
 								// 添加到买家秀图片数组
-								this.buyerShowImages.push(fullImageUrl);
+								this.buyerShowImages.push(fullImageUrl)
 							}
-						});
+						})
 					}
-				});
-				
+				})
+
 				// 限制最多显示4张图片
 				if (this.buyerShowImages.length > 4) {
-					this.buyerShowImages = this.buyerShowImages.slice(0, 4);
+					this.buyerShowImages = this.buyerShowImages.slice(0, 4)
 				}
-				
-				console.log('买家秀图片处理完成:', this.buyerShowImages);
+
+				console.log('买家秀图片处理完成:', this.buyerShowImages)
 			} catch (error) {
-				message = '处理买家秀图片时出错：' + error.message;
-				console.error(message, error);
+				message = '处理买家秀图片时出错：' + error.message
+				console.error(message, error)
 			}
 		},
 
@@ -1494,58 +1321,58 @@ export default {
 		async loadDeliveryInfo() {
 			// 优先获取我的社区信息
 			try {
-				const communityRes = await getMyCommunityInfo();
+				const communityRes = await getMyCommunityInfo()
 				if (communityRes.status === 200 && communityRes.data && communityRes.data.is_bind && communityRes.data.community) {
-					this.communityInfo = communityRes.data;
-					const community = communityRes.data.community;
-					console.log('获取社区信息成功:', this.communityInfo);
+					this.communityInfo = communityRes.data
+					const community = communityRes.data.community
+					console.log('获取社区信息成功:', this.communityInfo)
 
 					// 使用社区信息更新配送信息
 					// 自提点使用社区名称，但要控制长度保持显示效果一致
-					let pickupName = community.name;
+					let pickupName = community.name
 					// 参考原来的静态数据"北京尚德井小区菜鸟驿站"(11个字符)，控制在相似长度
 					if (pickupName.length > 10) {
-						pickupName = pickupName.substring(0, 10) + '...';
+						pickupName = pickupName.substring(0, 10) + '...'
 					}
 					// 如果社区名称太短，可以添加"自提点"后缀保持一致性
 					if (pickupName.length < 6 && !pickupName.includes('自提点')) {
-						pickupName = pickupName + '自提点';
+						pickupName = pickupName + '自提点'
 					}
-					this.deliveryInfo.pickupLocation = pickupName;
+					this.deliveryInfo.pickupLocation = pickupName
 
 					// 配送地址使用社区的完整地址（模板中已有"送至"，这里不需要重复）
 					// 控制配送地址长度，避免换行影响布局
-					let deliveryAddress = community.full_address;
+					let deliveryAddress = community.full_address
 					if (deliveryAddress.length > 20) {
-						deliveryAddress = deliveryAddress.substring(0, 20) + '...';
+						deliveryAddress = deliveryAddress.substring(0, 20) + '...'
 					}
-					this.deliveryInfo.deliveryAddress = deliveryAddress;
+					this.deliveryInfo.deliveryAddress = deliveryAddress
 
 					// 更新预计送达时间（使用接口返回的真实数据）
 					if (this.goodsInfo.receiving_time_text) {
-						this.deliveryInfo.deliveryTime = `预计${this.goodsInfo.receiving_time_text}送达`;
+						this.deliveryInfo.deliveryTime = `预计${this.goodsInfo.receiving_time_text}送达`
 					}
 
 					// 如果社区信息获取成功，就不需要再获取其他信息了
-					return;
+					return
 				} else if (communityRes.status === 200 && communityRes.data && !communityRes.data.is_bind) {
-					console.log('用户未绑定社区，使用默认配送信息');
+					console.log('用户未绑定社区，使用默认配送信息')
 				}
 			} catch (error) {
-				console.log('获取社区信息失败，尝试其他方式:', error);
+				console.log('获取社区信息失败，尝试其他方式:', error)
 			}
 
 			// 如果社区信息获取失败，尝试获取用户默认地址
 			try {
-				const addressRes = await getAddressDefault();
+				const addressRes = await getAddressDefault()
 				if (addressRes.status === 200 && addressRes.data && addressRes.data.length > 0) {
-					this.userDefaultAddress = addressRes.data;
+					this.userDefaultAddress = addressRes.data
 					// 使用用户默认地址更新配送信息（模板中已有"送至"，这里不需要重复）
-					const address = addressRes.data;
-					this.deliveryInfo.deliveryAddress = `${address.province}${address.city}${address.district}${address.detail}`;
+					const address = addressRes.data
+					this.deliveryInfo.deliveryAddress = `${address.province}${address.city}${address.district}${address.detail}`
 				}
 			} catch (error) {
-				console.log('获取用户地址失败，使用默认配送信息:', error);
+				console.log('获取用户地址失败，使用默认配送信息:', error)
 			}
 
 			// 尝试获取自提点列表
@@ -1553,48 +1380,48 @@ export default {
 				const storeRes = await storeListApi({
 					page: 1,
 					limit: 10
-				});
+				})
 				if (storeRes.status === 200 && storeRes.data && storeRes.data.list && storeRes.data.list.length > 0) {
-					this.storeList = storeRes.data.list;
+					this.storeList = storeRes.data.list
 					// 使用第一个自提点作为默认自提点
-					const firstStore = storeRes.data.list[0];
-					this.deliveryInfo.pickupLocation = `${firstStore.name || firstStore.address}`;
+					const firstStore = storeRes.data.list[0]
+					this.deliveryInfo.pickupLocation = `${firstStore.name || firstStore.address}`
 				}
 			} catch (error) {
-				console.log('获取自提点列表失败，使用默认自提点:', error);
+				console.log('获取自提点列表失败，使用默认自提点:', error)
 			}
 
 			// 根据接口返回的 receiving_time_text 更新预计送达时间
 			if (this.goodsInfo.receiving_time_text) {
-				this.deliveryInfo.deliveryTime = `预计${this.goodsInfo.receiving_time_text}送达`;
+				this.deliveryInfo.deliveryTime = `预计${this.goodsInfo.receiving_time_text}送达`
 			}
 		},
 
 		openCommentInput() {
-			this.showCommentInput = true;
+			this.showCommentInput = true
 		},
 
 		closeCommentInput() {
-			this.showCommentInput = false;
+			this.showCommentInput = false
 		},
 
 		// 更新handleCommentSubmit方法
 		async handleCommentSubmit(text, rating, files) {
-			console.log('提交评论:', text, '评分:', rating, '图片:', files);
-			
+			console.log('提交评论:', text, '评分:', rating, '图片:', files)
+
 			// 检查用户是否登录
 			if (!this.isLogin) {
 				uni.navigateTo({
 					url: '/pages/login/index'
-				});
-				return;
+				})
+				return
 			}
-			
+
 			// 显示加载提示
 			uni.showLoading({
 				title: '提交中...'
-			});
-			
+			})
+
 			try {
 				// 准备评论数据
 				const commentData = {
@@ -1602,70 +1429,70 @@ export default {
 					comment: text,
 					star_grade: rating || 5, // 使用传入的评分，默认5星
 					files: files || '' // 使用传入的图片路径
-				};
-				
+				}
+
 				// 调用API提交评论
-				const response = await createGoodsComment(commentData);
-				
-				uni.hideLoading();
-				
+				const response = await createGoodsComment(commentData)
+
+				uni.hideLoading()
+
 				if (response.status === 200) {
 					uni.showToast({
 						title: '评论成功',
 						icon: 'success'
-					});
-					
+					})
+
 					// 重新加载评论和买家秀数据
-					this.loadGoodsComments(this.goodsInfo.product_id || this.goodsInfo.id);
+					this.loadGoodsComments(this.goodsInfo.product_id || this.goodsInfo.id)
 				} else {
 					uni.showToast({
 						title: response.msg || '评论失败',
 						icon: 'none'
-					});
+					})
 				}
 			} catch (error) {
-				uni.hideLoading();
-				console.error('提交评论失败:', error);
-				
+				uni.hideLoading()
+				console.error('提交评论失败:', error)
+
 				// 处理错误
-				let errorMsg = '评论失败，请稍后再试';
+				let errorMsg = '评论失败，请稍后再试'
 				if (error.msg) {
-					errorMsg = error.msg;
+					errorMsg = error.msg
 				} else if (error.message) {
-					errorMsg = error.message;
+					errorMsg = error.message
 				}
-				
+
 				uni.showToast({
 					title: errorMsg,
 					icon: 'none'
-				});
+				})
 			}
 		},
 		closeSharePopup() {
-			this.showSharePopup = false;
+			this.showSharePopup = false
 		},
 		async showQaPopup() {
 			// 显示加载提示
 			uni.showLoading({
 				title: '加载中...'
-			});
-			
+			})
+
 			// 先加载问答数据
-			const goodsId = this.goodsInfo.product_id || this.goodsInfo.id;
-			await this.loadQAQuestions(goodsId);
-			
-			uni.hideLoading();
-			
+			const goodsId = this.goodsInfo.product_id || this.goodsInfo.id
+			await this.loadQAQuestions(goodsId)
+
+			uni.hideLoading()
+
 			// 显示评价弹窗并切换到问大家标签
-			this.showReviewPopup = true;
-			
+			this.showReviewPopup = true
+
 			// 通知子组件切换到问大家标签
 			this.$nextTick(() => {
 				// 如果ReviewPopup组件提供了切换tab的方法，直接调用
 				if (this.$refs.reviewPopup && this.$refs.reviewPopup.switchTab) {
-					this.$refs.reviewPopup.switchTab('qa');
+					this.$refs.reviewPopup.switchTab('qa')
 				}
-			});
+			})
 		},
 		// 预览买家秀图片
 		previewBuyerShowImage(index) {
@@ -1677,35 +1504,35 @@ export default {
 				longPressActions: {
 					itemList: ['保存图片', '分享'],
 					success: function (data) {
-						console.log('选中了第' + (data.tapIndex + 1) + '个按钮');
+						console.log('选中了第' + (data.tapIndex + 1) + '个按钮')
 						if (data.tapIndex === 0) {
 							// 保存图片操作可以在这里实现
 						}
 					},
 					fail: function (err) {
-						console.log(err.errMsg);
+						console.log(err.errMsg)
 					}
 				}
-			});
+			})
 		},
 		// 新增方法：刷新商品点赞状态
 		async refreshGoodsLikeStatus() {
 			try {
 				// 重新获取商品详情，以获取最新的点赞状态
-				const goodsId = this.goodsInfo.id;
+				const goodsId = this.goodsInfo.id
 				if (goodsId) {
-					const res = await getGoodsDetail(goodsId);
+					const res = await getGoodsDetail(goodsId)
 					if (res.status === 200 && res.data) {
 						// 更新点赞状态和计数
-						this.goodsInfo.is_like = res.data.is_like || 0;
-						this.wantCount = res.data.like || 0;
-						this.noWantCount = res.data.dislike || 0;
-						
-						console.log('已刷新商品点赞状态:', this.goodsInfo.is_like);
+						this.goodsInfo.is_like = res.data.is_like || 0
+						this.wantCount = res.data.like || 0
+						this.noWantCount = res.data.dislike || 0
+
+						console.log('已刷新商品点赞状态:', this.goodsInfo.is_like)
 					}
 				}
 			} catch (error) {
-				console.error('刷新商品点赞状态失败:', error);
+				console.error('刷新商品点赞状态失败:', error)
 			}
 		},
 		// 添加在methods对象中，在refreshGoodsLikeStatus方法之后
@@ -1715,27 +1542,27 @@ export default {
 			if (!this.isLogin) {
 				uni.navigateTo({
 					url: '/pages/login/index'
-				});
-				return;
+				})
+				return
 			}
-			
+
 			try {
 				// 根据当前点赞状态决定操作
 				if (comment.user_like_status === 1) {
 					// 已点赞，则取消
 					const res = await cancelCommentLike({
 						comment_id: comment.id
-					});
-					
+					})
+
 					if (res.status === 200) {
-						comment.user_like_status = null;
-						comment.like_count = Math.max(0, comment.like_count - 1);
-						
+						comment.user_like_status = null
+						comment.like_count = Math.max(0, comment.like_count - 1)
+
 						uni.showToast({
 							title: '已取消点赞',
 							icon: 'success',
 							duration: 1500
-						});
+						})
 					}
 				} else {
 					// 如果当前是踩或无状态，先尝试取消任何现有操作
@@ -1743,41 +1570,41 @@ export default {
 						try {
 							await cancelCommentLike({
 								comment_id: comment.id
-							});
-							
+							})
+
 							// 如果之前是踩，更新计数
 							if (comment.user_like_status === 0) {
-								comment.dislike_count = Math.max(0, comment.dislike_count - 1);
+								comment.dislike_count = Math.max(0, comment.dislike_count - 1)
 							}
 						} catch (cancelError) {
-							console.log('取消之前的操作时出错，继续执行点赞:', cancelError);
+							console.log('取消之前的操作时出错，继续执行点赞:', cancelError)
 						}
 					}
-					
+
 					// 执行点赞操作
 					const res = await addCommentLike({
 						comment_id: comment.id,
 						type: 1 // 1表示点赞
-					});
-					
+					})
+
 					if (res.status === 200) {
-						comment.user_like_status = 1;
-						comment.like_count++;
-						
+						comment.user_like_status = 1
+						comment.like_count++
+
 						uni.showToast({
 							title: '点赞成功',
 							icon: 'success',
 							duration: 1500
-						});
+						})
 					}
 				}
 			} catch (error) {
-				console.error('评论点赞操作失败:', error);
-				
+				console.error('评论点赞操作失败:', error)
+
 				uni.showToast({
 					title: error.msg || '操作失败',
 					icon: 'none'
-				});
+				})
 			}
 		},
 
@@ -1787,27 +1614,27 @@ export default {
 			if (!this.isLogin) {
 				uni.navigateTo({
 					url: '/pages/login/index'
-				});
-				return;
+				})
+				return
 			}
-			
+
 			try {
 				// 根据当前点赞状态决定操作
 				if (comment.user_like_status === 0) {
 					// 已踩，则取消
 					const res = await cancelCommentLike({
 						comment_id: comment.id
-					});
-					
+					})
+
 					if (res.status === 200) {
-						comment.user_like_status = null;
-						comment.dislike_count = Math.max(0, comment.dislike_count - 1);
-						
+						comment.user_like_status = null
+						comment.dislike_count = Math.max(0, comment.dislike_count - 1)
+
 						uni.showToast({
 							title: '已取消操作',
 							icon: 'success',
 							duration: 1500
-						});
+						})
 					}
 				} else {
 					// 如果当前是点赞或无状态，先尝试取消任何现有操作
@@ -1815,89 +1642,89 @@ export default {
 						try {
 							await cancelCommentLike({
 								comment_id: comment.id
-							});
-							
+							})
+
 							// 如果之前是点赞，更新计数
 							if (comment.user_like_status === 1) {
-								comment.like_count = Math.max(0, comment.like_count - 1);
+								comment.like_count = Math.max(0, comment.like_count - 1)
 							}
 						} catch (cancelError) {
-							console.log('取消之前的操作时出错，继续执行踩:', cancelError);
+							console.log('取消之前的操作时出错，继续执行踩:', cancelError)
 						}
 					}
-					
+
 					// 执行踩操作
 					const res = await addCommentLike({
 						comment_id: comment.id,
 						type: 0 // 0表示踩
-					});
-					
+					})
+
 					if (res.status === 200) {
-						comment.user_like_status = 0;
-						comment.dislike_count++;
-						
+						comment.user_like_status = 0
+						comment.dislike_count++
+
 						uni.showToast({
 							title: '操作成功',
 							icon: 'success',
 							duration: 1500
-						});
+						})
 					}
 				}
 			} catch (error) {
-				console.error('评论踩操作失败:', error);
-				
+				console.error('评论踩操作失败:', error)
+
 				uni.showToast({
 					title: error.msg || '操作失败',
 					icon: 'none'
-				});
+				})
 			}
 		},
 
 		// 处理问大家搜索
 		handleSearchChange(search) {
 			// 当搜索关键词变化时，重新加载问答列表
-			const goodsId = this.goodsInfo.product_id || this.goodsInfo.id;
+			const goodsId = this.goodsInfo.product_id || this.goodsInfo.id
 			if (goodsId) {
-				this.loadQAQuestions(goodsId, search);
+				this.loadQAQuestions(goodsId, search)
 			}
 		},
 		showShareGuidePopup() {
 			// 先关闭评价弹窗
-			this.showReviewPopup = false;
-			
+			this.showReviewPopup = false
+
 			// 方法一：使用uni.pageScrollTo
 			uni.pageScrollTo({
 				scrollTop: 0,
 				duration: 0 // 设置为0，立即滚动到顶部，不使用动画
-			});
-			
+			})
+
 			// 方法二：使用选择器查询，确保页面滚动到顶部
 			// #ifdef MP-WEIXIN
-			const query = wx.createSelectorQuery();
+			const query = wx.createSelectorQuery()
 			query.selectViewport().scrollOffset(res => {
 				if (res.scrollTop > 0) {
 					wx.pageScrollTo({
 						scrollTop: 0,
 						duration: 0
-					});
+					})
 				}
-				
+
 				// 确保滚动完成后再显示分享引导
 				setTimeout(() => {
-					this.showShareGuide = true;
-				}, 50);
-			}).exec();
+					this.showShareGuide = true
+				}, 50)
+			}).exec()
 			// #endif
-			
+
 			// #ifndef MP-WEIXIN
 			// 非微信小程序平台直接显示
 			setTimeout(() => {
-				this.showShareGuide = true;
-			}, 50);
+				this.showShareGuide = true
+			}, 50)
 			// #endif
 		},
 		closeShareGuide() {
-			this.showShareGuide = false;
+			this.showShareGuide = false
 		},
 	},
 	onLoad(options) {
@@ -1905,48 +1732,51 @@ export default {
 		if (options.type) {
 			// 将combination类型也视为category类型，以便使用API进行点赞/取消操作
 			if (options.type === 'combination') {
-				this.pageType = 'category';
+				this.pageType = 'category'
 			} else {
-				this.pageType = options.type; // 'category' 或 'group'
+				this.pageType = options.type // 'category' 或 'group'
 			}
 		} else {
-			this.pageType = 'category'; // 默认为分类页面类型
+			this.pageType = 'category' // 默认为分类页面类型
 		}
 
 		// 安全机制：只有明确传入canBuy=true时才允许购买
 		if (options.canBuy === 'true') {
-			this.canBuy = true;
+			this.canBuy = true
 		} else {
-			this.canBuy = false; // 默认不可购买，确保安全
+			this.canBuy = false // 默认不可购买，确保安全
 		}
 
 		// 获取商品详情数据
 		if (options.id) {
 			this.getGoodsDetails(options.id).then(() => {
+				// 调用添加足迹接口 传递goods_id
+				addFootprint(this.goodsInfo.product_id || this.goodsInfo.id)
 				// 如果需要显示评价弹窗
 				if (options.showReview === '1') {
 					// 延迟一下，确保商品详情加载完毕
 					setTimeout(async () => {
 						// 先加载评论数据
-						await this.loadMoreComments();
+						await this.loadMoreComments()
 						// 再显示弹窗
-						this.showReviewPopup = true;
-					}, 1000);
+						this.showReviewPopup = true
+					}, 1000)
 				}
-			});
+			})
 		}
 
 		// 只有不可购买时（显示团购用户区域）才启动轮播
 		if (!this.canBuy) {
-			this.startCarousel();
+			this.startCarousel()
 		}
 
 		// 加载用户之前的选择
-		this.loadUserChoice();
+		this.loadUserChoice()
+
 	},
 	onUnload() {
 		// 页面卸载时停止轮播
-		this.stopCarousel();
+		this.stopCarousel()
 	}
 }
 </script>
@@ -1997,7 +1827,8 @@ export default {
 		justify-content: center;
 
 		.back-icon-img {
-			width: 32rpx; /* 统一图标大小 */
+			width: 32rpx;
+			/* 统一图标大小 */
 			height: 32rpx;
 			filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 		}
@@ -2016,7 +1847,27 @@ export default {
 		justify-content: center;
 
 		.share-icon-img {
-			width: 32rpx; /* 统一图标大小 */
+			width: 32rpx;
+			/* 统一图标大小 */
+			height: 32rpx;
+			filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
+		}
+	}
+
+	.collect-icon {
+		position: absolute;
+		width: 35rpx;
+		height: 35rpx;
+		right: 80rpx;
+		top: 38rpx;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		.collect-icon-img {
+			width: 32rpx;
+			/* 统一图标大小 */
 			height: 32rpx;
 			filter: brightness(0) invert(1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.5));
 		}
@@ -2049,7 +1900,7 @@ export default {
 		font-style: normal;
 		font-weight: 400;
 		font-size: 28rpx;
-		line-height: 40rpx;	
+		line-height: 40rpx;
 		color: #FFFFFF;
 		z-index: 10;
 	}
@@ -2660,7 +2511,7 @@ export default {
 		display: flex;
 		align-items: center;
 	}
-	
+
 	/* 回答者头像 */
 	.answer-avatar {
 		width: 30px;
@@ -2668,7 +2519,7 @@ export default {
 		border-radius: 50%;
 		margin-right: 8px;
 	}
-	
+
 	/* 回答内容文本 */
 	.answer-text {
 		flex: 1;
@@ -3196,13 +3047,17 @@ export default {
 
 	.share-popup-mask {
 		position: fixed;
-		left: 0; top: 0; right: 0; bottom: 0;
-		background: rgba(0,0,0,0.3);
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.3);
 		z-index: 9999;
 		display: flex;
 		align-items: flex-end;
 		justify-content: center;
 	}
+
 	.share-popup {
 		width: 100vw;
 		background: #fff;
@@ -3211,30 +3066,41 @@ export default {
 		box-sizing: border-box;
 		animation: popupUp 0.2s;
 	}
+
 	@keyframes popupUp {
-		from { transform: translateY(100%); }
-		to { transform: translateY(0); }
+		from {
+			transform: translateY(100%);
+		}
+
+		to {
+			transform: translateY(0);
+		}
 	}
+
 	.share-popup-row {
 		display: flex;
 		justify-content: space-around;
 		padding: 0 0 40rpx 0;
 	}
+
 	.share-popup-item {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		flex: 1;
 	}
+
 	.share-popup-icon {
 		width: 80rpx;
 		height: 80rpx;
 		margin-bottom: 12rpx;
 	}
+
 	.share-popup-label {
 		font-size: 28rpx;
 		color: #333;
 	}
+
 	.share-popup-cancel {
 		width: 100vw;
 		text-align: center;
@@ -3244,19 +3110,25 @@ export default {
 		background: #fff;
 		border-top: 1rpx solid #eee;
 	}
+
 	.share-guide-mask {
 		position: fixed;
-		left: 0; top: 0; right: 0; bottom: 0;
-		background: rgba(0,0,0,0.7);
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.7);
 		z-index: 99999;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
+
 	.share-guide-image {
 		width: 100%;
 		height: 100%;
 	}
+
 	.share-guide-btn {
 		margin-top: 120rpx;
 		padding: 24rpx 80rpx;
@@ -3265,7 +3137,7 @@ export default {
 		color: #fff;
 		font-size: 36rpx;
 		text-align: center;
-		background: rgba(255,255,255,0.05);
+		background: rgba(255, 255, 255, 0.05);
 	}
 }
 

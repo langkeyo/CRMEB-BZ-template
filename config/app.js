@@ -2,14 +2,14 @@ module.exports = {
   // 小程序 / APP请求配置
   // #ifdef MP || APP-PLUS
   // 请求域名 格式： https://您的域名
-  HTTP_REQUEST_URL: `http://lzl.calf360.cn`,
+  HTTP_REQUEST_URL: `http://wx.laizhangluo.com`,
   // #endif
 
   // H5请求配置
   // #ifdef H5
   // H5接口是浏览器地址，非单独部署不用修改
   // HTTP_REQUEST_URL: window.location.protocol + "//" + window.location.host,
-  HTTP_REQUEST_URL: 'http://lzl.calf360.cn',
+  HTTP_REQUEST_URL: 'http://wx.laizhangluo.com',
   // #endif
 
   // 以下配置在不做二开的前提下,不需要做任何的修改

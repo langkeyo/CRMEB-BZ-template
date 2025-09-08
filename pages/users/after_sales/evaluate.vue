@@ -51,7 +51,7 @@
                             <view class="evaluate-input-box">
                                 <view class="input-placeholder-bg">
                                     <view class="input-placeholder" @click.stop="openReviewPopup(item)">{{ $t(`展开说说吧`)
-                                    }}
+                                        }}
                                     </view>
                                 </view>
                                 <view class="like-btn" :class="{ 'active': item.isLiked }"
@@ -115,8 +115,8 @@
         </view>
 
         <!-- 添加评价弹窗组件 -->
-        <ReviewPopup :visible="showReviewPopup" @close="closeReviewPopup" @search-change="handleSearchChange"
-            ref="reviewPopup">
+        <ReviewPopup :visible="showReviewPopup" :qa-content-count="qaList.length" @close="closeReviewPopup"
+            @search-change="handleSearchChange" @ask-question="handleAskQuestion" ref="reviewPopup">
             <template #buyer>
                 <view v-for="item in commentList" :key="item.id" class="buyer-comment">
                     <view style="display:flex;align-items:center;margin-bottom:8rpx;">
@@ -168,22 +168,27 @@
                     <!-- 提问者分割线 -->
                     <view class="qa-divider"></view>
 
+                    <!-- 回答列表 -->
                     <view class="qa-answers" v-if="qa.answers && qa.answers.length">
                         <view v-for="(answer, index) in qa.answers" :key="index" class="qa-answer">
-                            <image class="answer-avatar" src="/static/images/avatar.png"></image>
+                            <image class="answer-avatar" :src="answer.avatar || '/static/images/avatar.png'"></image>
                             <text class="answer-text">{{ answer.content }}</text>
                         </view>
                     </view>
+
+                    <!-- 回答按钮 -->
+                    <view class="answer-btn" @tap="openAnswerInput(qa)">
+                        <text class="answer-btn-text">我来回答</text>
+                        <text class="answer-btn-icon iconfont icon-bianji"></text>
+                    </view>
                 </view>
 
-                <!-- 添加提问按钮 -->
-                <view class="qa-ask-button" @tap="openCommentInput(currentItem)">
-                    <text class="qa-ask-text">我要提问</text>
-                </view>
             </template>
         </ReviewPopup>
 
-        <CommentInput :visible="showCommentInput" @close="closeCommentInput" @submit="handleCommentSubmit" />
+        <CommentInput :visible="showCommentInput" :placeholder="inputType === 'question' ? '请输入您的问题...' :
+            inputType === 'answer' ? '请输入您的回答...' : '说点什么吧...'" @close="closeCommentInput"
+            @submit="handleCommentSubmit" />
 
         <!-- 移除home组件 -->
     </view>
@@ -191,7 +196,7 @@
 
 <script>
 import emptyPage from '@/components/emptyPage'
-import { getGroupGoodsList, getGroupOrderList, getGoodsList, addGoodsLike, cancelGoodsLike, getMyGoodsLikeList, createGoodsComment } from '@/api/group.js' // Import correct API functions
+import { getGroupGoodsList, getGroupOrderList, getGoodsList, addGoodsLike, cancelGoodsLike, getMyGoodsLikeList, createGoodsComment, createGoodsQA, getGoodsQuestionList, getGoodsAnswerList } from '@/api/group.js' // Import correct API functions
 import { toLogin } from '@/libs/login.js'
 import { mapGetters } from "vuex"
 import colors from '@/mixins/color.js'
@@ -263,7 +268,9 @@ export default {
                     answers: []
                 }
             ], // 问答列表
-            currentItem: null // 当前正在评价的订单项
+            currentItem: null, // 当前正在评价的订单项
+            currentQaItem: null, // 当前正在回答的问题项
+            inputType: 'comment' // 输入类型：'comment' 评论 或 'question' 提问 或 'answer' 回答
         }
     },
     computed: mapGetters(['isLogin']),
@@ -373,6 +380,60 @@ export default {
             return result
         },
 
+        // 格式化时间
+        formatTime(timestamp) {
+            if (!timestamp) return ''
+
+            const date = new Date(timestamp * 1000)
+            const now = new Date()
+            const diff = now.getTime() - date.getTime()
+            const minutes = Math.floor(diff / (1000 * 60))
+            const hours = Math.floor(diff / (1000 * 60 * 60))
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+            if (minutes < 1) {
+                return '刚刚'
+            } else if (minutes < 60) {
+                return `${minutes}分钟前`
+            } else if (hours < 24) {
+                return `${hours}小时前`
+            } else if (days < 30) {
+                return `${days}天前`
+            } else {
+                const year = date.getFullYear()
+                const month = date.getMonth() + 1
+                const day = date.getDate()
+                return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+            }
+        },
+
+        // 从日期字符串格式化时间
+        formatTimeFromDateString(dateString) {
+            if (!dateString) return ''
+
+            const date = new Date(dateString)
+            const now = new Date()
+            const diff = now.getTime() - date.getTime()
+            const minutes = Math.floor(diff / (1000 * 60))
+            const hours = Math.floor(diff / (1000 * 60 * 60))
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+            if (minutes < 1) {
+                return '刚刚'
+            } else if (minutes < 60) {
+                return `${minutes}分钟前`
+            } else if (hours < 24) {
+                return `${hours}小时前`
+            } else if (days < 30) {
+                return `${days}天前`
+            } else {
+                const year = date.getFullYear()
+                const month = date.getMonth() + 1
+                const day = date.getDate()
+                return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+            }
+        },
+
         // 返回上一页
         goBack() {
             uni.navigateBack()
@@ -431,6 +492,12 @@ export default {
                         icon: 'none',
                         duration: 1500
                     })
+                    
+                    // 刷新数据
+                    this.page = 1
+                    this.orderList = []
+                    this.loadend = false
+                    this.getOrderList()
                 } else {
                     uni.showToast({
                         title: res.msg || this.$t('操作失败'),
@@ -454,6 +521,58 @@ export default {
         openReviewPopup(item) {
             this.currentItem = item // 保存当前商品信息
             this.showReviewPopup = true // 显示评论弹窗
+
+            // 获取商品问答列表
+            this.getGoodsQuestions(item.goods_id)
+        },
+
+        // 获取商品问答列表
+        getGoodsQuestions(goodsId) {
+            getGoodsQuestionList(goodsId, {
+                page: 1,
+                limit: 10
+            }).then(res => {
+                console.log('问答列表返回数据:', res)
+                // 处理标准格式: res.data.list
+                if (res.status === 200 && res.data && res.data.list) {
+                    // 处理数据以适配模板，并为每个问题获取回答列表
+                    const qaPromises = res.data.list.map(qa => {
+                        // 为每个问题获取回答列表
+                        return getGoodsAnswerList(qa.id, {
+                            page: 1,
+                            limit: 5
+                        }).then(answerRes => {
+                            let answers = []
+                            if (answerRes.status === 200 && answerRes.data && answerRes.data.list) {
+                                answers = answerRes.data.list
+                            }
+                            return {
+                                ...qa,
+                                add_time: this.formatTimeFromDateString(qa.create_time) + '提问',
+                                answers: answers
+                            }
+                        }).catch(err => {
+                            console.error('获取问题回答列表错误:', err)
+                            return {
+                                ...qa,
+                                add_time: this.formatTimeFromDateString(qa.create_time) + '提问',
+                                answers: []
+                            }
+                        })
+                    })
+
+                    // 等待所有问题的回答列表获取完成
+                    Promise.all(qaPromises).then(processedQaList => {
+                        this.qaList = processedQaList
+                        console.log('处理后的qaList:', this.qaList)
+                    })
+                } else {
+                    this.qaList = []
+                }
+            }).catch(err => {
+                console.error('获取商品问答列表错误:', err)
+                this.qaList = []
+            })
         },
 
         // 跳转到评价编辑页
@@ -472,6 +591,11 @@ export default {
             this.showReviewPopup = false
         },
 
+        // 处理提问按钮点击
+        handleAskQuestion() {
+            this.openCommentInput(this.currentItem, 'question')
+        },
+
         // 切换到问大家标签
         switchToQaTab() {
             this.$nextTick(() => {
@@ -482,10 +606,18 @@ export default {
         },
 
         // 打开评论输入框
-        openCommentInput(item) {
+        openCommentInput(item, type = 'comment') {
             if (item) {
                 this.currentItem = item
             }
+            this.inputType = type // 记录输入类型：'comment' 评论 或 'question' 提问
+            this.showCommentInput = true
+        },
+
+        // 打开回答输入框
+        openAnswerInput(qaItem) {
+            this.currentQaItem = qaItem
+            this.inputType = 'answer' // 设置输入类型为回答
             this.showCommentInput = true
         },
 
@@ -506,60 +638,136 @@ export default {
 
             if (!text.trim()) {
                 uni.showToast({
-                    title: '评论内容不能为空',
+                    title: this.inputType === 'question' ? '提问内容不能为空' :
+                        this.inputType === 'answer' ? '回答内容不能为空' : '评论内容不能为空',
                     icon: 'none'
                 })
                 return
             }
 
-            // 构造评论数据
-            const commentData = {
-                comment: text,
-                star_grade: rating,
-                files: files || '',
-                goods_id: this.currentItem.goods_id,
-                order_id: this.currentItem.order_id
-            }
+            // 如果是提问
+            if (this.inputType === 'question') {
+                // 构造提问数据
+                const questionData = {
+                    goods_id: this.currentItem.goods_id,
+                    qid: 0, // 提问时qid为0
+                    content: text
+                }
 
-            // 调用API提交评论
-            createGoodsComment(commentData).then(res => {
-                if (res.status === 200) {
-                    uni.showToast({
-                        title: '评论成功',
-                        icon: 'success'
-                    })
+                // 调用API提交提问
+                createGoodsQA(questionData).then(res => {
+                    if (res.status === 200) {
+                        // 关闭评论输入框
+                        this.closeCommentInput()
 
-                    // 关闭评论输入框
-                    this.closeCommentInput()
+                        // 显示发布成功提示
+                        this.showSuccessToast()
 
-                    // 显示发布成功提示
-                    this.showSuccessToast()
-
-                    // 从待评价列表中移除已评价的商品
-                    const index = this.orderList.findIndex(item => item.order_id === this.currentItem.order_id)
-                    if (index !== -1) {
-                        this.orderList.splice(index, 1)
+                        // 刷新问答列表
+                        if (this.currentItem && this.currentItem.goods_id) {
+                            this.getGoodsQuestions(this.currentItem.goods_id)
+                        }
+                    } else {
+                        uni.showToast({
+                            title: res.msg || '提问失败',
+                            icon: 'none'
+                        })
                     }
-
-                    // 如果列表为空，刷新页面显示空状态
-                    if (this.orderList.length === 0) {
-                        this.page = 1
-                        this.loadend = false
-                        this.getOrderList()
-                    }
-                } else {
+                }).catch(err => {
+                    console.error('提问提交失败:', err)
                     uni.showToast({
-                        title: res.msg || '评论失败',
+                        title: '提问提交失败',
                         icon: 'none'
                     })
-                }
-            }).catch(err => {
-                console.error('评论提交失败:', err)
-                uni.showToast({
-                    title: '评论提交失败',
-                    icon: 'none'
                 })
-            })
+            }
+            // 如果是回答
+            else if (this.inputType === 'answer') {
+                // 构造回答数据
+                const answerData = {
+                    goods_id: this.currentItem.goods_id,
+                    qid: this.currentQaItem.id, // 回答时qid为问题的id
+                    content: text
+                }
+
+                // 调用API提交回答
+                createGoodsQA(answerData).then(res => {
+                    if (res.status === 200) {
+                        // 关闭评论输入框
+                        this.closeCommentInput()
+
+                        // 显示发布成功提示
+                        this.showSuccessToast()
+
+                        // 刷新问答列表
+                        if (this.currentItem && this.currentItem.goods_id) {
+                            this.getGoodsQuestions(this.currentItem.goods_id)
+                        }
+                    } else {
+                        uni.showToast({
+                            title: res.msg || '回答失败',
+                            icon: 'none'
+                        })
+                    }
+                }).catch(err => {
+                    console.error('回答提交失败:', err)
+                    uni.showToast({
+                        title: '回答提交失败',
+                        icon: 'none'
+                    })
+                })
+            }
+            // 如果是评论
+            else {
+                // 构造评论数据
+                const commentData = {
+                    comment: text,
+                    star_grade: rating,
+                    files: files || '',
+                    goods_id: this.currentItem.goods_id,
+                    order_id: this.currentItem.order_id
+                }
+
+                // 调用API提交评论
+                createGoodsComment(commentData).then(res => {
+                    if (res.status === 200) {
+                        // 关闭评论输入框
+                        this.closeCommentInput()
+
+                        // 显示发布成功提示
+                        this.showSuccessToast()
+
+                        // 刷新问答列表
+                        if (this.currentItem && this.currentItem.goods_id) {
+                            this.getGoodsQuestions(this.currentItem.goods_id)
+                        }
+
+                        // 从待评价列表中移除已评价的商品
+                        const index = this.orderList.findIndex(item => item.order_id === this.currentItem.order_id)
+                        if (index !== -1) {
+                            this.orderList.splice(index, 1)
+                        }
+
+                        // 如果列表为空，刷新页面显示空状态
+                        if (this.orderList.length === 0) {
+                            this.page = 1
+                            this.loadend = false
+                            this.getOrderList()
+                        }
+                    } else {
+                        uni.showToast({
+                            title: res.msg || '评论失败',
+                            icon: 'none'
+                        })
+                    }
+                }).catch(err => {
+                    console.error('评论提交失败:', err)
+                    uni.showToast({
+                        title: '评论提交失败',
+                        icon: 'none'
+                    })
+                })
+            }
         },
 
         // 评论点赞切换
@@ -619,7 +827,7 @@ export default {
                     page: this.page,
                     limit: this.limit,
                     status: 2, // 已完成状态的订单可以评价
-                    keyword: this.keyword
+                    search: this.keyword
                 }).then(res => {
                     if (res.status === 200) {
                         const list = res.data.list || []
@@ -1041,8 +1249,15 @@ export default {
                 border-radius: 8rpx;
                 font-size: 28rpx;
                 font-family: 'PingFang SC';
-                font-weight: 400;
+                font-weight: 500;
                 margin-left: 0;
+                box-shadow: 0 4rpx 8rpx rgba(255, 140, 27, 0.3);
+                transition: all 0.3s ease;
+            }
+
+            .evaluate-btn:active {
+                transform: scale(0.95);
+                background-color: #e07a17;
             }
         }
 
@@ -1275,9 +1490,10 @@ export default {
 
 .qa-question {
     font-size: 28rpx;
-    color: #333;
+    color: #000;
     line-height: 1.5;
     margin-bottom: 16rpx;
+    font-family: 'PingFang SC';
 }
 
 .qa-answers {
@@ -1302,6 +1518,7 @@ export default {
     display: flex;
     align-items: center;
 }
+
 
 .answer-avatar {
     width: 40rpx;
@@ -1337,5 +1554,37 @@ export default {
 .buyer-comment {
     padding: 24rpx 0;
     border-bottom: 1px solid #f5f5f5;
+}
+
+/* 回答按钮样式 */
+.answer-btn {
+    height: 60rpx;
+    padding: 0 20rpx;
+    background-color: #FFA54E;
+    /* 降低饱和度的橙色 */
+    color: #FFFFFF;
+    border-radius: 30rpx;
+    /* 圆角矩形 */
+    font-size: 24rpx;
+    font-family: 'PingFang SC';
+    font-weight: 400;
+    margin: 20rpx 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.answer-btn:active {
+    transform: scale(0.95);
+    background-color: #e07a17;
+}
+
+.answer-btn-text {
+    margin-right: 8rpx;
+}
+
+.answer-btn-icon {
+    font-size: 24rpx;
 }
 </style>

@@ -29,7 +29,7 @@
       <!-- 步骤4 -->
       <view class="step-item">
         <view class="step-title">4. 加入我们</view>
-        <view class="step-desc">通过培训考核的申请人，与公司签署合作条款，明确岗位职责、分成比例等条款。开启职业新旅程。</view>
+        <view class="step-desc">通过培训考核的申请人，与公司签署合作条款，明确岗位职责。开启职业新旅程。</view>
         <image src="/static/images/join/step4.png" mode="widthFix" class="step-image"></image>
       </view>
     </scroll-view>
@@ -40,21 +40,21 @@
 </template>
 
 <script>
-import CommonHeader from '@/components/CommonHeader/index.vue';
+import CommonHeader from '@/components/CommonHeader/index.vue'
 
 export default {
   components: {
     CommonHeader
   },
-  data () {
+  data() {
     return {
     }
   },
   methods: {
-    goBack () {
+    goBack() {
       uni.navigateBack()
     },
-    goToApply () {
+    goToApply() {
       // 跳转到基本信息填写页面
       uni.navigateTo({
         url: '/pages/index/join/form'

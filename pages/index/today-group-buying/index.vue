@@ -118,7 +118,8 @@
             <text class="flash-product-name">{{ item.name }}</text>
             <text class="flash-product-desc">{{ item.desc }}</text>
             <view class="flash-price-row">
-              <text class="flash-current-price">¥{{ item.currentPrice }}</text>
+              <text class="flash-current-price">¥{{
+                item.currentPrice }}</text>
               <text class="flash-original-price">¥{{ item.originalPrice }}</text>
             </view>
           </view>
@@ -149,9 +150,10 @@
               <!-- Group 1138 价格内容组 - 242px × 44.25px -->
               <view class="price-content-group">
                 <!-- 第一行：价格信息 -->
-                <view class="price-row">
+                <view class="price-row" :class="{ 'noMyStation': isPreviewMode }">
                   <!-- ￥65 当前价格 - 41px × 25px -->
-                  <text class="current-price">¥{{ product.currentPrice }}</text>
+                  <text class="current-price">¥{{ product.currentPrice
+                  }}</text>
 
                   <!-- Group 1136 折扣标签组 - 20.4px × 15px -->
                   <view class="discount-group">
@@ -199,7 +201,8 @@
       <view class="dialog-mask" @click="closePickupDialog"></view>
       <view class="dialog-container">
         <view class="dialog-content">
-          <text class="dialog-text">{{ isPreviewMode ? '预览模式下无法下单，请返回绑定该社区' : '您非此取货站点用户无法下单' }}</text>
+          <text class="dialog-text">{{ isPreviewMode ? '非注册站点仅限预览，可在设置中更改站点，并注意取货地址距离。\n一个月限更改一次站点。' : '您非此取货站点用户无法下单'
+          }}</text>
         </view>
         <view class="dialog-footer">
           <view class="dialog-btn" @click="closePickupDialog">好的</view>
@@ -219,6 +222,7 @@ import {
   getGroupGoodsCategory
 } from '@/api/group.js'
 import { HTTP_REQUEST_URL } from '@/config/app.js'
+import dayjs from '@/plugin/dayjs/dayjs.min'
 
 export default {
   data() {
@@ -268,18 +272,22 @@ export default {
     // 检查是否有社区ID参数
     if (options.community_id) {
       this.communityId = options.community_id
-      this.isPreviewMode = true
+      // 根据is_my_station参数判断是否为预览模式
+      this.isPreviewMode = options.is_my_station !== '1'
 
       // 如果传递了距离参数，使用它
       if (options.distance) {
         this.stationDistance = decodeURIComponent(options.distance)
       }
+    } else {
+      // 没有社区ID参数，不是预览模式
+      this.isPreviewMode = false
     }
 
     // 创建必要的目录结构
     this.createRequiredDirectories()
     // 加载站点信息
-    await this.loadCurrentStation()
+    await this.loadCurrentStation(options)
     // 先获取分类映射，再加载拼团数据
     await this.loadCategoryMapping()
     // 加载拼团商品数据
@@ -425,9 +433,12 @@ export default {
     },
 
     // 加载当前站点信息
-    async loadCurrentStation() {
+    async loadCurrentStation(options) {
       try {
-        if (this.isPreviewMode && this.communityId) {
+        // 检查是否是我的站点
+        const isMyStation = options.is_my_station === '1'
+
+        if (!isMyStation && this.communityId) {
           // 如果是预览模式，从社区列表API中获取站点信息
           const response = await getCommunityList({
             page: 1,
@@ -569,6 +580,7 @@ export default {
 
     // 处理拼团商品数据 - 根据拼团API返回格式
     formatGroupTime(startTimeText, stopTimeText, statusText) {
+      return `${dayjs(startTimeText).format('M月D号')}起拼，${dayjs(stopTimeText).format('M月D号')}结束`
       if (!startTimeText || !stopTimeText) {
         return statusText || '拼团中'
       }
@@ -2183,5 +2195,11 @@ export default {
   height: 200rpx;
   /* 100px * 2 - 增加高度避免被tabbar挡住 */
   width: 100%;
+}
+
+.noMyStation {
+  filter: blur(6rpx);
+  /* 模糊程度，可调整数值 */
+  -webkit-filter: blur(6rpx);
 }
 </style>

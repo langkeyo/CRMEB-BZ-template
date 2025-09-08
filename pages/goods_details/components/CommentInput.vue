@@ -6,7 +6,7 @@
         <input 
           class="comment-input" 
           v-model="commentText" 
-          placeholder="说点什么吧..." 
+          :placeholder="placeholder" 
           focus 
           confirm-type="send"
           @confirm="submitComment"
@@ -65,7 +65,7 @@ export default {
     submitComment() {
       if (!this.commentText.trim()) {
         uni.showToast({
-          title: '评论内容不能为空',
+          title: this.placeholder === '说点什么吧...' ? '评论内容不能为空' : '提问内容不能为空',
           icon: 'none'
         });
         return;

@@ -2,7 +2,7 @@
   <view class="service-page">
     <!-- 使用通用头部导航组件 -->
     <CommonHeader title="居间服务" @back="goBack"></CommonHeader>
-    
+
     <!-- 服务列表 -->
     <scroll-view scroll-y class="service-list">
       <!-- 服务项1：免费投融咨询 -->
@@ -15,7 +15,7 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 服务项2：优惠中介服务 -->
       <view class="service-item">
         <image src="/static/images/intermediary/service2.jpg" mode="aspectFill" class="service-image"></image>
@@ -26,18 +26,19 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 服务项3：正规银行优质利率 -->
       <view class="service-item">
         <image src="/static/images/intermediary/service3.jpg" mode="aspectFill" class="service-image"></image>
         <view class="service-overlay">
           <view class="service-content">
             <text class="service-number">3.正规银行优质利率</text>
-            <text class="service-desc">专业团队在国内各家银行，长期合作积累，建议使用一手渠道，获取正规银行的贷款产品，综合利用与银行影响，解决"融资难"问题，解决"融资贵"问题，一站式服务。</text>
+            <text
+              class="service-desc">专业团队在国内各家银行，长期合作积累，建议使用一手渠道，获取正规银行的贷款产品，综合利用与银行影响，解决"融资难"问题，解决"融资贵"问题，一站式服务。</text>
           </view>
         </view>
       </view>
-      
+
       <!-- 服务项4：一对一约见服务 -->
       <view class="service-item">
         <image src="/static/images/intermediary/service4.jpg" mode="aspectFill" class="service-image"></image>
@@ -49,14 +50,15 @@
         </view>
       </view>
     </scroll-view>
-    
+
     <!-- 底部按钮 -->
-    <view class="bottom-button" @click="nextStep">下一步</view>
+    <!-- <view class="bottom-button" @click="nextStep">下一步</view> -->
+    <view class="bottom-button" @click="callSubmit">咨询热线</view>
   </view>
 </template>
 
 <script>
-import CommonHeader from '@/components/CommonHeader/index.vue';
+import CommonHeader from '@/components/CommonHeader/index.vue'
 
 export default {
   components: {
@@ -64,21 +66,41 @@ export default {
   },
   data() {
     return {
-      
-    };
+
+    }
   },
   methods: {
     goBack() {
-      uni.navigateBack();
+      uni.navigateBack()
     },
     nextStep() {
       // 跳转到下一个页面
       uni.navigateTo({
         url: '/pages/intermediary_service/apply'
-      });
+      })
+    },
+    callSubmit() {
+      // 咨询热线电话号码，这里以10086为例，你可以替换为实际的咨询电话
+      const phoneNumber = '10086'
+
+      // 调用UniApp的拨打电话API
+      uni.makePhoneCall({
+        phoneNumber: phoneNumber,
+        success: () => {
+          console.log('拨打电话成功')
+        },
+        fail: (err) => {
+          console.log('拨打电话失败：', err)
+          // 可以在这里添加失败提示
+          uni.showToast({
+            title: '拨打电话失败，请稍后重试',
+            icon: 'none'
+          })
+        }
+      })
     }
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -97,7 +119,7 @@ export default {
   height: 44px;
   padding: 0 15px;
   background-color: #FFFFFF;
-  
+
   .back-icon {
     width: 30px;
     height: 30px;
@@ -106,7 +128,7 @@ export default {
     justify-content: flex-start;
     position: relative;
     padding-left: 5px;
-    
+
     .back-arrow {
       width: 10px;
       height: 10px;
@@ -115,14 +137,14 @@ export default {
       transform: rotate(-45deg);
     }
   }
-  
+
   .title {
     font-size: 18px;
     color: #1A1A1A;
     font-weight: 400;
     font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
   }
-  
+
   .placeholder {
     width: 30px;
   }
@@ -139,12 +161,12 @@ export default {
   height: 200px;
   margin: 15px;
   border-radius: 2px;
-  
+
   .service-image {
     width: 100%;
     height: 100%;
   }
-  
+
   .service-overlay {
     position: absolute;
     left: 0;
@@ -156,11 +178,11 @@ export default {
     align-items: flex-end;
     padding: 15px;
   }
-  
+
   .service-content {
     max-width: 80%;
   }
-  
+
   .service-number {
     font-size: 16px;
     color: #FFFFFF;
@@ -169,7 +191,7 @@ export default {
     font-weight: 400;
     font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
   }
-  
+
   .service-desc {
     font-size: 14px;
     color: #FFFFFF;

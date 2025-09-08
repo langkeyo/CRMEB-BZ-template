@@ -3,7 +3,6 @@
 		<view class="after-sales-detail">
 			<!-- 顶部栏 -->
 			<view class="header">
-				<!-- 修改返回按钮点击事件 -->
 				<view class="back" @click="goBack">
 					<text class="iconfont icon-fanhui"></text>
 					<text class="back-text">返回</text>
@@ -14,86 +13,109 @@
 				<view class="header-right-space"></view>
 			</view>
 
-			<!-- 售后进度竖向步骤条（修复后） -->
-			<view class="step-card">
+			<!-- 加载状态 -->
+			<view class="loading-container" v-if="loading">
+				<text class="loading-text">加载中...</text>
+			</view>
+
+			<!-- 售后进度竖向步骤条 -->
+			<view class="step-card" v-if="detail">
 				<view class="step-line-container">
-					<!-- 使用computed的stepLineStyle，替代模板中的复杂三元 -->
 					<view class="step-line" :style="{ background: stepLineStyle }"></view>
 				</view>
 				<view class="step-list">
-					<!-- 步骤1：申请售后（不变） -->
+					<!-- 步骤1：申请售后 -->
 					<view class="step-item">
 						<view class="step-dot">
 							<view class="dot orange"></view>
 						</view>
 						<view class="step-content">
 							<view class="step-title orange">申请售后</view>
+							<view class="desc gray">申请时间: {{ detail.create_time_text || '-' }}</view>
 						</view>
 					</view>
 
-					<!-- 步骤2：处理中（使用computed属性） -->
+					<!-- 步骤2：处理中 -->
 					<view class="step-item">
 						<view class="step-dot">
-							<!-- 使用computed的step2DotClass，替代模板中的条件判断 -->
 							<view class="dot" :class="step2DotClass"></view>
 						</view>
 						<view class="step-content">
 							<view class="step-title" :class="step2TitleClass">处理中</view>
 
-							<!-- 使用computed的showStep2Countdown，替代detail?.status判断 -->
 							<view class="countdown" v-if="showStep2Countdown">{{ countdown }}</view>
 
-							<!-- 使用computed的step2Desc，替代模板中的条件文本 -->
 							<view class="desc orange" v-if="step <= 2">{{ step2Desc }}</view>
+
+							<view class="desc gray" v-if="detail.processed_at_text">
+								处理时间: {{ detail.processed_at_text }}
+							</view>
 						</view>
 					</view>
 
-					<!-- 步骤3：最终状态（使用computed属性） -->
+					<!-- 步骤3：最终状态 -->
 					<view class="step-item">
 						<view class="step-dot">
-							<!-- 使用computed的step3DotClass -->
 							<view class="dot" :class="step3DotClass"></view>
 						</view>
 						<view class="step-content">
 							<view class="step-title" :class="step3TitleClass">
-								<!-- 使用computed的step3Title，替代模板中的条件文本 -->
 								{{ step3Title }}
 							</view>
 
-							<!-- 使用computed的step3Desc，替代模板中的条件文本 -->
 							<view class="desc gray" v-if="step === 3">{{ step3Desc }}</view>
+
+							<view class="desc gray" v-if="detail.completed_at_text">
+								完成时间: {{ detail.completed_at_text }}
+							</view>
 						</view>
 					</view>
 				</view>
 			</view>
 
-			<!-- 商品卡片优化版 -->
+			<!-- 商品卡片 -->
 			<view class="goods-box" v-if="detail">
 				<view class="goods-title-row">售后商品</view>
-				<!-- 收货站点行优化，定位icon放最右 -->
+
 				<view class="site-row">
 					<text class="site-label">收货站点：</text>
 					<text class="site-value">{{ detail.community_name || '-' }}</text>
 					<view class="site-row-spacer"></view>
 					<text class="iconfont icon-dingwei"></text>
 				</view>
+
+				<view class="site-row">
+					<text class="site-label">售后单号：</text>
+					<text class="site-value">{{ detail.after_sales_no || '-' }}</text>
+				</view>
+
 				<view class="goods-item">
 					<image class="goods-img"
-						:src="detail.problem_images && detail.problem_images.length > 0 ? detail.problem_images[0] : ''"
+						:src="detail.problem_images && detail.problem_images.length > 0 ? detail.problem_images[0] : '/static/images/default-goods.png'"
 						mode="aspectFill"></image>
 					<view class="goods-info">
 						<view class="goods-info-top">
-							<text class="goods-name">{{ detail.product_title }}</text>
+							<text class="goods-name">{{ detail.product_title || '-' }}</text>
 							<text class="goods-qty">x1</text>
 						</view>
-						<view class="goods-desc">{{ detail.problem_description }}</view>
+						<view class="goods-desc">问题描述：{{ detail.problem_description || '无' }}</view>
 						<view class="goods-info-bottom">
 							<text class="goods-price">￥{{ detail.price || 35 }}</text>
 						</view>
 					</view>
 				</view>
+
+				<!-- 问题图片展示 -->
+				<view class="images-container" v-if="detail.problem_images && detail.problem_images.length > 0">
+					<view class="images-title">问题图片：</view>
+					<view class="images-list">
+						<image v-for="(img, index) in detail.problem_images" :key="index" :src="img"
+							class="problem-image" mode="aspectFill" @click="previewImage(img, detail.problem_images)">
+						</image>
+					</view>
+				</view>
 			</view>
-			<!-- 灰色提示按钮 -->
+
 			<view class="submit-tip-btn" v-if="step === 1 && showTip">
 				已经提交申请
 			</view>
@@ -119,14 +141,15 @@ export default {
 			detail: null,
 			loading: false,
 			step: 1, // 默认高亮第一步
-			countdown: '23时56分28秒', // 示例倒计时
+			countdown: '', // 倒计时显示
 			showTip: true, // 控制提示信息显示
-			remainingTime: null // 存储剩余时间
+			remainingTime: null, // 存储剩余时间
+			countdownTimer: null // 倒计时定时器
 		}
 	},
 	computed: {
 		...mapGetters(['isLogin']),
-		// 1. 步骤条线条样式（替代模板中的复杂三元）
+		// 步骤条线条样式
 		stepLineStyle() {
 			if (this.step === 1) {
 				return 'linear-gradient(to bottom, #ff9900 0%, #ff9900 30%, #cccccc 30%, #cccccc 100%)'
@@ -136,11 +159,11 @@ export default {
 				return 'linear-gradient(to bottom, #ff9900 0%, #ff9900 100%)'
 			}
 		},
-		// 2. 步骤2的显示条件（是否显示倒计时）
+		// 步骤2的显示条件（是否显示倒计时）
 		showStep2Countdown() {
 			return this.detail && [1, 2].includes(this.detail.status)
 		},
-		// 3. 步骤2的提示文本
+		// 步骤2的提示文本
 		step2Desc() {
 			if (this.step === 1) {
 				return '您已成功发起售后申请，请耐心等待团长响应'
@@ -149,24 +172,24 @@ export default {
 			}
 			return ''
 		},
-		// 4. 步骤3的状态文本（已解决/已关闭）
+		// 步骤3的状态文本（已解决/已关闭）
 		step3Title() {
 			if (!this.detail) return '售后已完成'
 			return this.detail.status === 3 ? '已解决' : this.detail.status === 4 ? '已关闭' : '售后已完成'
 		},
-		// 5. 步骤3的提示文本
+		// 步骤3的提示文本
 		step3Desc() {
 			if (!this.detail || this.step < 3) return ''
 			return this.detail.status === 3 ? '您的售后问题已解决' : '您的售后申请已关闭'
 		},
-		// 6. 步骤2/3的圆点样式（橙色/灰色）
+		// 步骤2/3的圆点样式（橙色/灰色）
 		step2DotClass() {
 			return this.step >= 2 ? 'orange' : 'gray'
 		},
 		step3DotClass() {
 			return this.step === 3 ? 'orange' : 'gray'
 		},
-		// 7. 步骤2/3的标题样式（橙色/灰色）
+		// 步骤2/3的标题样式（橙色/灰色）
 		step2TitleClass() {
 			return this.step >= 2 ? 'orange' : 'gray'
 		},
@@ -177,6 +200,8 @@ export default {
 	onLoad(options) {
 		if (options.id) {
 			this.aftersales_id = options.id
+			// 清除旧的倒计时缓存
+			this.clearCountdownCache()
 			if (this.isLogin) {
 				this.getDetail()
 			} else {
@@ -190,16 +215,25 @@ export default {
 			uni.navigateBack()
 		},
 
+		// 清除当前售后单的倒计时缓存
+		clearCountdownCache() {
+			if (this.aftersales_id) {
+				const storageKey = `afterSalesCountdown_${this.aftersales_id}`
+				uni.removeStorageSync(storageKey)
+				console.log('已清除倒计时缓存:', storageKey)
+			}
+		},
+
 		getDetail() {
 			this.loading = true
 			uni.showLoading({ title: this.$t(`加载中`) })
 			getAfterSalesDetail(this.aftersales_id).then(res => {
-				this.detail = res.data
+				this.detail = res.data || {} // 确保 detail 不为 null
 				this.loading = false
 				uni.hideLoading()
 
-				if (this.detail) {
-					// 关键：按新状态规则设置 step
+				if (this.detail && this.detail.status) {
+					// 设置步骤状态
 					switch (this.detail.status) {
 						case 1: // 待处理 → 高亮第一步
 							this.step = 1
@@ -215,72 +249,122 @@ export default {
 							this.step = 1
 					}
 
-					// 优化：仅“待处理/处理中”显示倒计时，最终状态不显示
+					// 处理倒计时
 					if ([1, 2].includes(this.detail.status) && this.detail.create_time_text) {
-						this.calculateCountdown(this.detail.create_time_text)
+						this.initCountdown()
 					} else {
 						this.countdown = '' // 清空倒计时
-						if (this.countdownTimer) clearInterval(this.countdownTimer) // 停止定时器
+						if (this.countdownTimer) clearInterval(this.countdownTimer)
 					}
 
-					// 3秒后隐藏“已提交申请”提示
+					// 3秒后隐藏"已提交申请"提示
 					setTimeout(() => { this.showTip = false }, 3000)
 				}
-			}).catch(() => { })
+			}).catch(error => {
+				this.loading = false
+				uni.hideLoading()
+				console.error('获取售后详情失败:', error)
+				// 可以添加错误提示
+				uni.showToast({
+					title: '加载失败',
+					icon: 'none'
+				})
+			})
 		},
 
-		calculateCountdown(createTimeText) {
-			// 额外判断：仅“待处理/处理中”计算倒计时
-			if (![1, 2].includes(this.detail.status)) return
+		// 初始化倒计时（强制24小时计算）
+		initCountdown() {
+			// 检查必要的数据
+			if (!this.detail || !this.detail.create_time_text) {
+				return
+			}
 
-			const createTimestamp = new Date(createTimeText.replace(/-/g, '/')).getTime()
-			const endTimestamp = createTimestamp + 48 * 60 * 60 * 1000 // 假设48小时时限
+			// 计算24小时倒计时（不使用缓存）
+			const createTimestamp = new Date(this.detail.create_time_text.replace(/-/g, '/')).getTime()
+			const endTimestamp = createTimestamp + 24 * 60 * 60 * 1000 // ⚠️ 改为24小时
 			const now = new Date().getTime()
-			const remaining = endTimestamp - now
+			this.remainingTime = endTimestamp - now
 
-			if (remaining <= 0) {
+			console.log('倒计时计算详情:', {
+				申请时间: this.detail.create_time_text,
+				申请时间戳: createTimestamp,
+				结束时间戳: endTimestamp,
+				当前时间戳: now,
+				剩余毫秒: this.remainingTime,
+				剩余小时: Math.floor(this.remainingTime / (60 * 60 * 1000))
+			})
+
+			if (this.remainingTime <= 0) {
 				this.countdown = '0时0分0秒'
 				return
 			}
 
-			// 计算时分秒（逻辑不变）
-			const hours = Math.floor(remaining / (60 * 60 * 1000))
-			const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
-			const seconds = Math.floor((remaining % (60 * 1000)) / 1000)
-			this.countdown = `${hours}时${minutes}分${seconds}秒`
-			this.remainingTime = remaining
-
+			this.updateCountdownDisplay()
 			this.startCountdown()
 		},
 
-		startCountdown() {
-			// 额外判断：仅“待处理/处理中”启动定时器
-			if (![1, 2].includes(this.detail.status)) {
-				if (this.countdownTimer) clearInterval(this.countdownTimer)
+		// 更新倒计时显示
+		updateCountdownDisplay() {
+			if (this.remainingTime <= 0) {
+				this.countdown = '0时0分0秒'
 				return
 			}
 
+			const hours = Math.floor(this.remainingTime / (60 * 60 * 1000))
+			const minutes = Math.floor((this.remainingTime % (60 * 60 * 1000)) / (60 * 1000))
+			const seconds = Math.floor((this.remainingTime % (60 * 1000)) / 1000)
+			this.countdown = `${hours}时${minutes}分${seconds}秒`
+		},
+
+		// 启动倒计时
+		startCountdown() {
+			// 清除已有定时器
 			if (this.countdownTimer) clearInterval(this.countdownTimer)
+
+			// 仅在待处理/处理中状态启动定时器
+			if (!this.detail || ![1, 2].includes(this.detail.status)) return
+
 			this.countdownTimer = setInterval(() => {
-				if (this.remainingTime <= 1000 || ![1, 2].includes(this.detail.status)) {
+				// 检查状态是否仍有效
+				if (!this.detail || ![1, 2].includes(this.detail.status)) {
 					clearInterval(this.countdownTimer)
-					this.countdown = '0时0分0秒'
 					return
 				}
 
+				// 更新剩余时间
 				this.remainingTime -= 1000
-				const hours = Math.floor(this.remainingTime / (60 * 60 * 1000))
-				const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
-				const seconds = Math.floor((remaining % (60 * 1000)) / 1000)
-				this.countdown = `${hours}时${minutes}分${seconds}秒`
+
+				// 保存到本地存储（24小时版本）
+				const storageKey = `afterSalesCountdown_${this.aftersales_id}`
+				uni.setStorageSync(storageKey, {
+					remainingTime: this.remainingTime,
+					expireTime: Date.now() + 24 * 60 * 60 * 1000, // 24小时有效期
+					version: '24h' // 添加版本标识
+				})
+
+				// 更新显示
+				this.updateCountdownDisplay()
+
+				// 倒计时结束
+				if (this.remainingTime <= 0) {
+					clearInterval(this.countdownTimer)
+					// 可以在这里添加倒计时结束后的逻辑
+				}
 			}, 1000)
 		},
 
-		// 在组件销毁时清除定时器
-		onUnload() {
-			if (this.countdownTimer) {
-				clearInterval(this.countdownTimer)
-			}
+		// 预览图片
+		previewImage(current, urls) {
+			uni.previewImage({
+				current,
+				urls
+			})
+		}
+	},
+	// 页面卸载时清除定时器
+	onUnload() {
+		if (this.countdownTimer) {
+			clearInterval(this.countdownTimer)
 		}
 	}
 }
@@ -290,7 +374,6 @@ export default {
 .after-sales-detail {
 	padding-bottom: 120rpx;
 	padding-top: 120rpx;
-	/* 添加顶部间距，避免与固定导航栏重叠 */
 }
 
 .header {
@@ -312,7 +395,6 @@ export default {
 		font-size: 28rpx;
 		color: #333;
 		width: 120rpx;
-		/* 固定宽度 */
 
 		.iconfont {
 			font-size: 36rpx;
@@ -332,7 +414,6 @@ export default {
 		display: flex;
 		justify-content: center;
 		pointer-events: none;
-		/* 防止标题阻挡返回按钮点击 */
 
 		.title {
 			font-size: 36rpx;
@@ -344,11 +425,21 @@ export default {
 
 	.header-right-space {
 		width: 120rpx;
-		/* 与左侧返回按钮宽度相同，保持平衡 */
 	}
 }
 
-// 修改步骤条样式
+.loading-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 100rpx 0;
+
+	.loading-text {
+		font-size: 28rpx;
+		color: #999;
+	}
+}
+
 .step-card {
 	background: #fff;
 	border-radius: 16rpx;
@@ -362,9 +453,7 @@ export default {
 	position: absolute;
 	left: 40rpx;
 	top: 56rpx;
-	/* 调整顶部位置，使线条与第一个圆点相切 */
 	bottom: 56rpx;
-	/* 调整底部位置，使线条与第三个圆点相切 */
 	width: 2rpx;
 	z-index: 1;
 }
@@ -443,19 +532,26 @@ export default {
 }
 
 .countdown {
-	color: #bcbcbc;
+	color: #ff6600;
 	font-size: 24rpx;
 	margin-top: 8rpx;
 	text-align: left;
 }
 
 .desc {
-	color: #ff9900;
 	font-size: 24rpx;
 	margin-top: 8rpx;
 	max-width: 500rpx;
 	line-height: 1.4;
 	text-align: left;
+}
+
+.desc.orange {
+	color: #ff9900;
+}
+
+.desc.gray {
+	color: #999;
 }
 
 .goods-box {
@@ -503,6 +599,7 @@ export default {
 	.goods-item {
 		display: flex;
 		align-items: flex-start;
+		margin-bottom: 20rpx;
 
 		.goods-img {
 			width: 100rpx;
@@ -543,10 +640,8 @@ export default {
 				font-size: 24rpx;
 				color: #999;
 				margin: 8rpx 0 0 0;
-				white-space: nowrap;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				max-width: 320rpx;
+				line-height: 1.4;
+				text-align: left;
 			}
 
 			.goods-info-bottom {
@@ -556,10 +651,34 @@ export default {
 
 				.goods-price {
 					font-size: 28rpx;
-					color: #222;
+					color: #ff6600;
 					font-weight: bold;
 				}
 			}
+		}
+	}
+
+	.images-container {
+		margin-top: 20rpx;
+
+		.images-title {
+			font-size: 26rpx;
+			color: #999;
+			margin-bottom: 10rpx;
+			text-align: left;
+		}
+
+		.images-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10rpx;
+		}
+
+		.problem-image {
+			width: 120rpx;
+			height: 120rpx;
+			border-radius: 8rpx;
+			background: #f7f7f7;
 		}
 	}
 }

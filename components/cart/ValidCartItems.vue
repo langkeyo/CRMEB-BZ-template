@@ -1,14 +1,14 @@
 <template>
   <view class="cart-list">
     <!-- 满减提示条 -->
-    <view class="notice-bar">
+    <!-- <view class="notice-bar">
       <view class="notice-tag">
         <text class="notice-tag-text">参与满减</text>
       </view>
       <text class="notice-text">以满99元，可换购1件</text>
       <text class="notice-action">再逛逛~</text>
-    </view>
-    
+    </view> -->
+
     <view class="product-card" v-for="(item, index) in cartItems" :key="index">
       <view class="card-body">
         <!-- 选择框始终显示 -->
@@ -18,7 +18,8 @@
         </view>
 
         <view class="product-img-wrap">
-          <image :src="setDomain(item.productInfo.image || item.goods.image)" mode="aspectFill" class="product-img-card"></image>
+          <image :src="setDomain(item.productInfo.image || item.goods.image)" mode="aspectFill"
+            class="product-img-card"></image>
         </view>
         <view class="product-info-wrap">
           <view class="product-title">{{ item.productInfo.title || item.goods.title }}</view>
@@ -33,7 +34,8 @@
             <view class="quantity-divider"></view>
             <view class="quantity-value">{{ item.cart_num }}</view>
             <view class="quantity-divider"></view>
-            <view class="quantity-btn-card plus" :class="{ 'disabled': item.cart_num >= 99 }" @click.stop="onAddCart(index)">
+            <view class="quantity-btn-card plus" :class="{ 'disabled': item.cart_num >= 99 }"
+              @click.stop="onAddCart(index)">
               <view class="plus-icon">
                 <view class="plus-h"></view>
                 <view class="plus-v"></view>
@@ -48,7 +50,7 @@
 </template>
 
 <script>
-import { HTTP_REQUEST_URL } from '@/config/app.js';
+import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
   name: 'ValidCartItems',
@@ -69,99 +71,99 @@ export default {
   methods: {
     toggleCheckbox(index) {
       // 切换选中状态
-      this.cartItems[index].checked = !this.cartItems[index].checked;
+      this.cartItems[index].checked = !this.cartItems[index].checked
 
       // 构造checkbox-group的change事件格式
       const checkedItems = this.cartItems
         .filter(item => item.checked)
-        .map(item => item.id.toString());
+        .map(item => item.id.toString())
 
       const event = {
         detail: {
           value: checkedItems
         }
-      };
+      }
 
-      this.$emit('checkbox-change', event);
+      this.$emit('checkbox-change', event)
     },
     onCheckboxChange(e) {
-      this.$emit('checkbox-change', e);
+      this.$emit('checkbox-change', e)
     },
     onReElection(item) {
-      this.$emit('re-election', item);
+      this.$emit('re-election', item)
     },
     onSubCart(index) {
-      this.$emit('sub-cart', index);
+      this.$emit('sub-cart', index)
     },
     onAddCart(index) {
-      this.$emit('add-cart', index);
+      this.$emit('add-cart', index)
     },
     onIptCartNum(index) {
-      this.$emit('ipt-cart-num', index);
+      this.$emit('ipt-cart-num', index)
     },
     onBlurInput(index) {
-      this.$emit('blur-input', index);
+      this.$emit('blur-input', index)
     },
 
     // 处理图片URL
     setDomain(url) {
-      if (!url) return '';
-      url = url.toString();
+      if (!url) return ''
+      url = url.toString()
 
       // 如果是相对路径，拼接域名
       if (url.indexOf('/') === 0) {
-        return HTTP_REQUEST_URL + url;
+        return HTTP_REQUEST_URL + url
       }
 
       // 如果已经是完整URL，直接返回
       if (url.indexOf("http") === 0) {
-        return url;
+        return url
       }
 
       // 其他情况拼接域名
-      return HTTP_REQUEST_URL + '/' + url;
+      return HTTP_REQUEST_URL + '/' + url
     },
     getItemPrice(item) {
       // 优先使用combination.group_price
       if (item.combination && item.combination.group_price) {
-        return item.combination.group_price;
+        return item.combination.group_price
       } else if (item.combination && item.combination.price) {
-        return item.combination.price;
+        return item.combination.price
       } else if (item.productInfo && item.productInfo.price) {
-        return item.productInfo.price;
+        return item.productInfo.price
       } else if (item.goods && item.goods.price) {
-        return item.goods.price;
+        return item.goods.price
       } else if (typeof item.truePrice === 'number' || typeof item.truePrice === 'string') {
-        return item.truePrice;
+        return item.truePrice
       } else if (typeof item.price === 'number' || typeof item.price === 'string') {
-        return item.price;
+        return item.price
       }
-      return '0.00'; // 如果没有价格，显示0.00
+      return '0.00' // 如果没有价格，显示0.00
     },
     getItemSubtotal(item) {
       // 获取单价
-      let price = 0;
+      let price = 0
       if (item.combination && item.combination.group_price) {
-        price = parseFloat(item.combination.group_price);
+        price = parseFloat(item.combination.group_price)
       } else if (item.combination && item.combination.price) {
-        price = parseFloat(item.combination.price);
+        price = parseFloat(item.combination.price)
       } else if (item.productInfo && item.productInfo.price) {
-        price = parseFloat(item.productInfo.price);
+        price = parseFloat(item.productInfo.price)
       } else if (item.goods && item.goods.price) {
-        price = parseFloat(item.goods.price);
+        price = parseFloat(item.goods.price)
       } else if (typeof item.truePrice === 'number' || typeof item.truePrice === 'string') {
-        price = parseFloat(item.truePrice);
+        price = parseFloat(item.truePrice)
       } else if (typeof item.price === 'number' || typeof item.price === 'string') {
-        price = parseFloat(item.price);
+        price = parseFloat(item.price)
       }
-      
+
       // 获取数量
-      const quantity = parseInt(item.cart_num || 1);
-      
+      const quantity = parseInt(item.cart_num || 1)
+
       // 计算小计并保留两位小数
-      const subtotal = (price * quantity).toFixed(2);
-      
-      return subtotal;
+      const subtotal = (price * quantity).toFixed(2)
+
+      return subtotal
     }
   }
 }
@@ -232,11 +234,12 @@ export default {
   margin: 12rpx auto 0 auto;
   background: #fff;
   border-radius: 8rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.03);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   padding: 16rpx 0;
 }
+
 /* 移除原有的card-header相关样式 */
 /* 移除店铺名称样式 */
 
@@ -246,7 +249,8 @@ export default {
   width: 40rpx;
   height: 40rpx;
   margin-right: 24rpx;
-  margin-top: 74rpx; /* (188rpx - 40rpx) / 2 = 74rpx，让选择框与图片垂直居中 */
+  margin-top: 74rpx;
+  /* (188rpx - 40rpx) / 2 = 74rpx，让选择框与图片垂直居中 */
   flex-shrink: 0;
 }
 
@@ -286,6 +290,7 @@ export default {
   padding: 0 0 0 24rpx;
   margin-top: 0;
 }
+
 .product-img-wrap {
   width: 188rpx;
   height: 188rpx;
@@ -298,12 +303,14 @@ export default {
   align-items: center;
   justify-content: center;
 }
+
 .product-img-card {
   width: 100%;
   height: 100%;
   border-radius: 14rpx;
   object-fit: cover;
 }
+
 .product-info-wrap {
   flex: 1;
   display: flex;
@@ -311,6 +318,7 @@ export default {
   justify-content: flex-start;
   padding-right: 24rpx;
 }
+
 .product-title {
   font-family: 'PingFang SC';
   font-weight: 400;
@@ -319,6 +327,7 @@ export default {
   color: #333;
   margin-bottom: 8rpx;
 }
+
 .product-desc-card {
   font-family: 'PingFang SC';
   font-weight: 400;
@@ -328,11 +337,13 @@ export default {
   opacity: 0.7;
   margin-bottom: 8rpx;
 }
+
 .promo-row {
   display: flex;
   align-items: center;
   margin-bottom: 8rpx;
 }
+
 .promo-tag-border {
   width: 70rpx;
   height: 32rpx;
@@ -343,6 +354,7 @@ export default {
   justify-content: center;
   margin-right: 16rpx;
 }
+
 .promo-tag {
   font-family: 'PingFang SC';
   font-weight: 400;
@@ -350,12 +362,14 @@ export default {
   line-height: 28rpx;
   color: #FF840B;
 }
+
 .price-quantity-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 12rpx;
 }
+
 .product-price-card {
   align-self: flex-start;
   font-family: 'PingFang SC';
@@ -366,6 +380,7 @@ export default {
   margin-top: 0;
   transform: translateY(-45rpx);
 }
+
 .quantity-bar {
   align-self: flex-end;
   margin-top: 0;
@@ -380,6 +395,7 @@ export default {
   background: #fff;
   box-sizing: border-box;
 }
+
 .quantity-btn-card {
   width: 50rpx;
   height: 50rpx;
@@ -398,6 +414,7 @@ export default {
 .quantity-btn-card.disabled .plus-v {
   background: #ccc;
 }
+
 .minus-icon {
   width: 26rpx;
   height: 28rpx;
@@ -405,6 +422,7 @@ export default {
   align-items: center;
   justify-content: center;
 }
+
 .minus-icon::before {
   content: '';
   display: block;
@@ -413,6 +431,7 @@ export default {
   background: #EDEDED;
   border-radius: 2rpx;
 }
+
 .plus-icon {
   width: 26rpx;
   height: 28rpx;
@@ -421,6 +440,7 @@ export default {
   align-items: center;
   justify-content: center;
 }
+
 .plus-h {
   position: absolute;
   left: 0;
@@ -432,6 +452,7 @@ export default {
   border-radius: 2rpx;
   transform: translateY(-50%);
 }
+
 .plus-v {
   position: absolute;
   top: 0;
@@ -443,6 +464,7 @@ export default {
   border-radius: 2rpx;
   transform: translateX(-50%);
 }
+
 .quantity-value {
   font-family: 'Inter';
   font-weight: 400;
@@ -456,6 +478,7 @@ export default {
   outline: none;
   padding: 0;
 }
+
 .quantity-divider {
   width: 2rpx;
   height: 44rpx;

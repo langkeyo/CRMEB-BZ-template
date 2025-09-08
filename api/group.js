@@ -208,6 +208,16 @@ export function receiveCoupon(data) {
 }
 
 /**
+ * 提交订单反馈
+ * @param {Object} data 反馈数据
+ * @param {string} data.order_goods_id 订单商品ID
+ * @param {string} data.feedback_information 反馈信息
+ */
+export function submitOrderFeedback(data) {
+  return request.post('group/order_feedback/submit', data)
+}
+
+/**
  * 获取收藏列表
  * @param object data 参数对象，包含收藏类型
  */
@@ -1047,6 +1057,119 @@ export function getCommentLikeStats(comment_ids) {
     { comment_ids },
     {
       noAuth: false
+    }
+  )
+}
+
+/**
+ * 获取商品点赞统计
+ * @param {number} goods_id 商品ID
+ */
+export function getGoodsLikeStats(goods_id) {
+  return request.get(
+    'group/goods_like/stats',
+    { goods_id },
+    {
+      noAuth: false
+    }
+  )
+}
+
+/**
+ * 获取足迹列表
+ * @param { page: integer , limit: integer } data
+ * @return {
+    "code": 200,
+    "msg": "success",
+    "data": {
+        "list": [
+            {
+                "id": 0,
+                "goods_id": 0,
+                "visit_count": 0,
+                "last_visit_time": 0,
+                "visit_time_text": "string",
+                "goods": {
+                    "id": 0,
+                    "title": "string",
+                    "image": "string",
+                    "min_price": 0,
+                    "max_price": 0
+                }
+            }
+        ],
+        "count": 0,
+        "total": 0
+    }
+}
+ */
+export function getFootprintList(data) {
+  return request.get('group/goods_visit/list', data)
+}
+
+/**
+ * 添加商品足迹
+ * @param {number} goods_id 商品ID
+ * @return {
+    "code": 200,
+    "msg": "success"
+}
+ */
+export function addFootprint(goods_id) {
+  return request.post('group/goods_visit/add', { goods_id })
+}
+
+/**
+ * 删除足迹
+ * @body { string } ids 商品ids
+ * @return {
+    "code": 200,
+    "msg": "success"
+}
+ */
+export function deleteFootprint(ids) {
+  return request.post('group/goods_visit/delete', { ids })
+}
+
+/**
+ * 获取轮播图列表
+ * @return {
+    "status": 200,
+    "msg": "获取成功",
+    "data": [
+        {
+            "id": 1,
+            "title": "新年特惠活动",
+            "image": "/uploads/banner/banner1.jpg",
+            "link_type": 0,
+            "link_value": "",
+            "sort": 100
+        },
+        {
+            "id": 2,
+            "title": "热销商品推荐",
+            "image": "/uploads/banner/banner2.jpg",
+            "link_type": 1,
+            "link_value": "123",
+            "sort": 90
+        },
+        {
+            "id": 3,
+            "title": "品牌专区",
+            "image": "/uploads/banner/banner3.jpg",
+            "link_type": 2,
+            "link_value": "https://example.com",
+            "sort": 80
+        }
+    ]
+}
+ */
+export function getBannerList() {
+  return request.get(
+    'group/banner/list',
+    {},
+    {
+      noAuth: true
     }
   )
 }

@@ -1,37 +1,34 @@
 <script>
 export default {
-  props: {
-    // 接受页面传递的滚动值
-    scrollTop: {
-      type: Number,
-      default: 0
-    }
-  },
-  computed: {
-    // 根据滚动值计算按钮是否显示
-    isVisible() {
-      return this.scrollTop > 200; // 滚动超过200px时显示按钮
+  data() {
+    return {
+      // 用于跟踪滚动位置
+      scrollPosition: 0,
+      // 控制按钮可见性
+      isVisible: false
     }
   },
   methods: {
     scrollToTop() {
+      console.log('点击回到顶部按钮')
       uni.pageScrollTo({
         scrollTop: 0,
         duration: 300,
         success: (e) => {
-          console.log('滚动到顶部成功:', e);
+          console.log('滚动到顶部成功:', e)
         },
         fail: (err) => {
-          console.error('滚动到顶部失败:', err);
+          console.error('滚动到顶部失败:', err)
         }
-      });
+      })
+    },
+    // 监听页面滚动的方法（需要在父组件中调用）
+    updateScrollPosition(scrollTop) {
+      console.log('更新滚动位置:', scrollTop)
+      this.scrollPosition = scrollTop
+      this.isVisible = scrollTop > 200
+      console.log('按钮可见性:', this.isVisible)
     }
-  },
-  // uni-app页面生命周期函数
-  onPageScroll(e) {
-    console.log('页面滚动:', e.scrollTop);
-    // 滚动超过200px时显示按钮
-    this.isVisible = e.scrollTop > 200;
   }
 }
 </script>

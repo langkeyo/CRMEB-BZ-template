@@ -1,27 +1,36 @@
 <template>
     <view class="banner-section">
         <!-- 轮播图部分 -->
-        <swiper class="banner-swiper" circular autoplay interval="3000" duration="500" @change="onSwiperChange">
-            <swiper-item>
-                <image class="banner-img" src="/static/images/banners/banner_carousel.png" mode="aspectFill"></image>
-            </swiper-item>
-            <swiper-item>
-                <image class="banner-img" src="/static/images/index/banner/banner1.png" mode="aspectFill"></image>
-            </swiper-item>
-            <swiper-item>
-                <image class="banner-img" src="/static/images/banners/banner_carousel.png" mode="aspectFill"></image>
-            </swiper-item>
-            <swiper-item>
-                <image class="banner-img" src="/static/images/index/banner/banner1.png" mode="aspectFill"></image>
+        <swiper class="banner-swiper" circular autoplay interval="3000" duration="500" @change="onSwiperChange"
+            v-if="bannerList.length > 0">
+            <swiper-item v-for="(banner, index) in bannerList" :key="banner.id">
+                <image class="banner-img" :src="banner.image" mode="aspectFill" @click="handleBannerClick(banner)">
+                </image>
             </swiper-item>
         </swiper>
+        <!-- 默认轮播图（无数据时显示） -->
+        <!-- <swiper class="banner-swiper" circular autoplay interval="3000" duration="500" v-else>
+            <swiper-item>
+                <image class="banner-img" src="/static/images/banners/banner_carousel.png" mode="aspectFill"></image>
+            </swiper-item>
+            <swiper-item>
+                <image class="banner-img" src="/static/images/index/banner/banner1.png" mode="aspectFill"></image>
+            </swiper-item>
+            <swiper-item>
+                <image class="banner-img" src="/static/images/banners/banner_carousel.png" mode="aspectFill"></image>
+            </swiper-item>
+            <swiper-item>
+                <image class="banner-img" src="/static/images/index/banner/banner1.png" mode="aspectFill"></image>
+            </swiper-item>
+        </swiper> -->
 
         <!-- 顶部信息栏 -->
         <view class="header-info">
             <view class="location-row">
                 <view class="location" @tap="openLocationPicker">
-                    <image class="location-icon" src="/static/images/index/icons/location_icon_complete.svg" mode="aspectFit"></image>
-                    <text class="location-text">{{locationName || '海淀区万霖大厦'}}</text>
+                    <image class="location-icon" src="/static/images/index/icons/location_icon_complete.svg"
+                        mode="aspectFit"></image>
+                    <text class="location-text">{{ locationName || '海淀区万霖大厦' }}</text>
                     <view class="location-arrow"></view>
                 </view>
             </view>
@@ -33,20 +42,18 @@
 
                 <view class="search-input-box">
                     <image class="search-icon" src="/static/common/icons/action/search.svg" mode="aspectFit"></image>
-                    <input class="search-input"
-                           placeholder="搜索"
-                           v-model="searchKeyword"
-                           @confirm="handleSearch"
-                           confirm-type="search" />
+                    <input class="search-input" placeholder="搜索" v-model="searchKeyword" @confirm="handleSearch"
+                        confirm-type="search" />
                     <view class="search-btn" @tap="handleSearch">
                         <text class="search-btn-text">搜索</text>
                     </view>
                 </view>
 
                 <view class="notification" @tap="goToMessages">
-                    <image class="notification-icon" src="/static/images/index/icons/notification_icon_white.svg" mode="aspectFit"></image>
-                    <view class="notification-badge">
-                        <text class="badge-text">2</text>
+                    <image class="notification-icon" src="/static/images/index/icons/notification_icon_white.svg"
+                        mode="aspectFit"></image>
+                    <view class="notification-badge" v-if="unreadCount > 0">
+                        <text class="badge-text">{{ unreadCount > 99 ? '99+' : unreadCount }}</text>
                     </view>
                 </view>
             </view>
@@ -54,17 +61,18 @@
 
         <!-- 自定义轮播图指示器 -->
         <view class="custom-indicators">
-            <view class="indicator-dot"
-                  v-for="(item, index) in 4"
-                  :key="index"
-                  :class="{ active: currentSwiperIndex === index }"></view>
+            <view class="indicator-dot" v-for="(item, index) in 4" :key="index"
+                :class="{ active: currentSwiperIndex === index }"></view>
         </view>
     </view>
 </template>
 
 <script>
-import Cache from '@/utils/cache';
-import util from '@/utils/util';
+import Cache from '@/utils/cache'
+import util from '@/utils/util'
+import tencentMapConfig from '@/config/tencent-map'
+import { messageSystem } from '@/api/user'
+import { getBannerList } from '@/api/group.js'
 
 export default {
     name: 'BannerSection',
@@ -74,17 +82,24 @@ export default {
             latitude: '',
             longitude: '',
             currentSwiperIndex: 0,
-            searchKeyword: ''  // 搜索关键词
-        };
+            searchKeyword: '',  // 搜索关键词
+            mapKey: tencentMapConfig.MAP_KEY,
+            unreadCount: 0,  // 未读消息数
+            bannerList: []   // 轮播图列表
+        }
     },
     mounted() {
         // 页面加载时获取缓存中的位置信息
-        this.getLocationFromCache();
+        this.getLocationFromCache()
+        // 获取未读消息数
+        this.getUnreadCount()
+        // 获取轮播图列表
+        this.getBannerList()
     },
     methods: {
         // 轮播图切换事件
         onSwiperChange(e) {
-            this.currentSwiperIndex = e.detail.current;
+            this.currentSwiperIndex = e.detail.current
         },
 
         // 处理搜索
@@ -93,40 +108,84 @@ export default {
                 uni.showToast({
                     title: '请输入搜索内容',
                     icon: 'none'
-                });
-                return;
+                })
+                return
             }
 
             // 跳转到搜索页面并传递搜索关键词
             uni.navigateTo({
                 url: `/pages/goods/goods_search/index?keyword=${encodeURIComponent(this.searchKeyword)}`
-            });
+            })
         },
 
         // 跳转到搜索页面（保留原方法，以防其他地方调用）
         goToSearch() {
             uni.navigateTo({
                 url: '/pages/goods/goods_search/index'
-            });
+            })
         },
 
         // 跳转到消息页面
         goToMessages() {
             uni.navigateTo({
-                url: '/pages/users/message_center/index'
-            });
+                url: '/pages/users/message_private/index'
+            })
         },
 
         // 打开位置选择器
         openLocationPicker() {
+            console.log('点击位置选择器')
+            // H5环境下优先使用原生定位，降级到默认选择器
+            this.h5LocationHandler()
+        },
+
+        // H5环境下的定位处理
+        h5LocationHandler() {
+            // 检测是否为H5环境
+            const isH5 = typeof window !== 'undefined' && navigator.geolocation
+
+            if (isH5) {
+                // H5环境下使用浏览器原生定位
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        this.latitude = position.coords.latitude
+                        this.longitude = position.coords.longitude
+                        this.locationName = '当前位置'
+                        this.saveLocationToCache()
+                    },
+                    (error) => {
+                        console.warn('浏览器定位失败，使用默认选择器:', error)
+                        // 定位失败时使用默认选择器
+                        this.getDefaultLocationPicker()
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                )
+            } else {
+                // 非H5环境使用默认选择器
+                this.getDefaultLocationPicker()
+            }
+        },
+
+        // 使用腾讯地图API获取地址信息 - 已禁用以避免网络请求问题
+        getAddressByCoordinate(latitude, longitude) {
+            // 为避免网络请求被阻止，直接使用默认位置名称
+            this.locationName = '当前位置'
+            this.saveLocationToCache()
+        },
+
+        // 默认的位置选择器（备选方案）
+        getDefaultLocationPicker() {
             uni.chooseLocation({
                 success: (res) => {
-                    this.locationName = res.name || '选定位置';
-                    this.latitude = res.latitude;
-                    this.longitude = res.longitude;
-
+                    this.locationName = res.name || '选定位置'
+                    this.latitude = res.latitude
+                    this.longitude = res.longitude
                     // 保存位置信息到缓存
-                    this.saveLocationToCache();
+                    this.saveLocationToCache()
                 },
                 fail: (err) => {
                     // 检查是否是因为用户拒绝授权导致
@@ -137,43 +196,43 @@ export default {
                             confirmText: '去设置',
                             success: (res) => {
                                 if (res.confirm) {
-                                    uni.openSetting();
+                                    uni.openSetting()
                                 }
                             }
-                        });
+                        })
                     } else {
                         uni.showToast({
                             title: '选择位置失败',
                             icon: 'none'
-                        });
+                        })
                     }
                 }
-            });
+            })
         },
 
         // 从缓存获取位置信息
         getLocationFromCache() {
             try {
                 // 使用项目现有的缓存方式
-                const longitude = uni.getStorageSync('CACHE_LONGITUDE');
-                const latitude = uni.getStorageSync('CACHE_LATITUDE');
+                const longitude = uni.getStorageSync('CACHE_LONGITUDE')
+                const latitude = uni.getStorageSync('CACHE_LATITUDE')
 
                 if (longitude && latitude) {
-                    this.latitude = latitude;
-                    this.longitude = longitude;
+                    this.latitude = latitude
+                    this.longitude = longitude
                     // 已有经纬度，直接使用简化名称
-                    this.locationName = '当前位置';
+                    this.locationName = '当前位置'
 
                     // 也可以尝试读取项目自定义存储
-                    const savedLocation = uni.getStorageSync('user_location');
+                    const savedLocation = uni.getStorageSync('user_location')
                     if (savedLocation) {
                         try {
-                            const location = JSON.parse(savedLocation);
+                            const location = JSON.parse(savedLocation)
                             if (location && location.name) {
-                                this.locationName = location.name;
+                                this.locationName = location.name
                             }
                         } catch (e) {
-                            console.error('解析位置信息失败', e);
+                            console.error('解析位置信息失败', e)
                         }
                     }
                 } else {
@@ -181,7 +240,7 @@ export default {
                     // 这里不主动获取当前位置，等待用户点击选择
                 }
             } catch (e) {
-                console.error('获取位置信息失败', e);
+                console.error('获取位置信息失败', e)
             }
         },
 
@@ -189,18 +248,81 @@ export default {
         saveLocationToCache() {
             try {
                 // 使用项目现有的缓存方式
-                uni.setStorageSync('CACHE_LONGITUDE', this.longitude);
-                uni.setStorageSync('CACHE_LATITUDE', this.latitude);
+                uni.setStorageSync('CACHE_LONGITUDE', this.longitude)
+                uni.setStorageSync('CACHE_LATITUDE', this.latitude)
 
                 // 同时保存名称到自定义存储中
                 const locationData = JSON.stringify({
                     name: this.locationName,
                     latitude: this.latitude,
                     longitude: this.longitude
-                });
-                uni.setStorageSync('user_location', locationData);
+                })
+                uni.setStorageSync('user_location', locationData)
             } catch (e) {
-                console.error('保存位置信息失败', e);
+                console.error('保存位置信息失败', e)
+            }
+        },
+
+        // 获取未读消息数
+        async getUnreadCount() {
+            try {
+                // 获取消息列表，然后统计未读消息数
+                const res = await messageSystem({ page: 1, limit: 20 })
+                if (res && res.data && res.data.list) {
+                    // 统计未读消息数量（look为0的项）
+                    const unreadCount = res.data.list.filter(item => item.look === 0).length
+                    this.unreadCount = unreadCount
+                }
+            } catch (error) {
+                console.error('获取未读消息数失败:', error)
+                // 出错时设为0
+                this.unreadCount = 0
+            }
+        },
+
+        // 获取轮播图列表
+        async getBannerList() {
+            try {
+                // 调用API获取轮播图列表，最多获取50条
+                const res = await getBannerList({ limit: 6 })
+                if (res && res.status === 200 && res.data) {
+                    // 将获取到的轮播图数据赋值给bannerList
+                    this.bannerList = res.data.map(item => ({ ...item, image: this.$util.getImageUrl(item.image) }))
+                    console.log(this.bannerList)
+
+                }
+            } catch (error) {
+                console.error('获取轮播图列表失败:', error)
+                // 出错时保持空数组，使用默认轮播图
+                this.bannerList = []
+            }
+        },
+
+        // 处理轮播图点击事件
+        handleBannerClick(banner) {
+            // 根据链接类型处理点击事件
+            switch (banner.link_type) {
+                case 0: // 无链接
+                    break
+                case 1: // 商品详情
+                    if (banner.link_value) {
+                        uni.navigateTo({
+                            url: `/pages/goods_details/index?id=${banner.link_value}`
+                        })
+                    }
+                    break
+                case 2: // 外部链接
+                    if (banner.link_value) {
+                        // 可以使用uni.openURL打开外部链接
+                        // 注意：在某些平台可能需要特殊处理
+                        uni.showToast({
+                            title: '跳转至外部链接',
+                            icon: 'none'
+                        })
+                    }
+                    break
+                default:
+                    break
             }
         }
     }
@@ -209,17 +331,26 @@ export default {
 
 <style scoped lang="scss">
 .banner-section {
-    width: 100vw;  /* 使用视口宽度确保完全覆盖 */
+    width: 100vw;
+    /* 使用视口宽度确保完全覆盖 */
     position: relative;
-    height: 516rpx;  /* 恢复原始高度 */
+    height: 516rpx;
+    /* 恢复原始高度 */
     box-sizing: border-box;
-    overflow: hidden;  /* 防止内容溢出 */
-    background-color: #FFFFFF;  /* 设置白色背景确保一致性 */
-    margin: 0;  /* 确保没有外边距 */
-    padding: 0;  /* 确保没有内边距 */
-    display: block;  /* 确保正确显示 */
-    left: 0;  /* 确保从左边开始 */
-    right: 0;  /* 确保到右边结束 */
+    overflow: hidden;
+    /* 防止内容溢出 */
+    background-color: #FFFFFF;
+    /* 设置白色背景确保一致性 */
+    margin: 0;
+    /* 确保没有外边距 */
+    padding: 0;
+    /* 确保没有内边距 */
+    display: block;
+    /* 确保正确显示 */
+    left: 0;
+    /* 确保从左边开始 */
+    right: 0;
+    /* 确保到右边结束 */
 
     .banner-swiper {
         position: absolute;
@@ -228,14 +359,17 @@ export default {
         width: 100%;
         height: 100%;
         z-index: 1;
-        background-color: #FFFFFF;  /* 确保轮播图有背景色 */
+        background-color: #FFFFFF;
+        /* 确保轮播图有背景色 */
 
         .banner-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: block;  /* 确保图片正确显示 */
-            background-color: #FFFFFF;  /* 图片加载前的背景色 */
+            display: block;
+            /* 确保图片正确显示 */
+            background-color: #FFFFFF;
+            /* 图片加载前的背景色 */
         }
     }
 
@@ -245,7 +379,8 @@ export default {
         position: absolute;
         top: 0;
         left: 0;
-        width: 260rpx;  /* 130px * 2 = 260rpx */
+        width: 260rpx;
+        /* 130px * 2 = 260rpx */
         height: 100%;
         background: linear-gradient(270deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 100%);
         z-index: 2;
@@ -276,66 +411,94 @@ export default {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 64rpx; /* 32px * 2 = 64rpx - 统一高度 */
+            height: 64rpx;
+            /* 32px * 2 = 64rpx - 统一高度 */
         }
 
         .search-input-box {
-            width: 554rpx;  /* 277px * 2 = 554rpx */
+            width: 554rpx;
+            /* 277px * 2 = 554rpx */
             display: flex;
             align-items: center;
             background: rgba(51, 51, 51, 0.4);
-            height: 64rpx;  /* 32px * 2 = 64rpx - 与整体高度一致 */
-            border-radius: 32rpx;  /* 16px * 2 = 32rpx */
-            padding: 0 22rpx;  /* 调整内边距 */
+            height: 64rpx;
+            /* 32px * 2 = 64rpx - 与整体高度一致 */
+            border-radius: 32rpx;
+            /* 16px * 2 = 32rpx */
+            padding: 0 22rpx;
+            /* 调整内边距 */
             position: relative;
-            margin: 0 15rpx 0 25rpx;  /* 左边距增加10rpx，让搜索框往右移 */
-            z-index: 100;  /* 提高层级 */
+            margin: 0 15rpx 0 25rpx;
+            /* 左边距增加10rpx，让搜索框往右移 */
+            z-index: 100;
+            /* 提高层级 */
 
             .search-icon {
-                width: 30rpx;  /* 15px * 2 = 30rpx */
-                height: 30rpx; /* 15px * 2 = 30rpx */
-                margin-right: 24rpx;  /* 调整图标与文字间距 */
-                opacity: 1 !important;  /* 强制不透明 */
+                width: 30rpx;
+                /* 15px * 2 = 30rpx */
+                height: 30rpx;
+                /* 15px * 2 = 30rpx */
+                margin-right: 24rpx;
+                /* 调整图标与文字间距 */
+                opacity: 1 !important;
+                /* 强制不透明 */
                 position: relative;
-                z-index: 150;  /* 提高层级 */
+                z-index: 150;
+                /* 提高层级 */
             }
 
             .search-input {
                 flex: 1;
-                height: 64rpx;  /* 与容器高度一致 */
-                font-size: 30rpx;  /* 15px * 2 = 30rpx */
-                color: #FFFFFF !important;  /* 强制白色文字 */
+                height: 64rpx;
+                /* 与容器高度一致 */
+                font-size: 30rpx;
+                /* 15px * 2 = 30rpx */
+                color: #FFFFFF !important;
+                /* 强制白色文字 */
                 font-family: 'PingFang SC', sans-serif;
                 font-weight: 400;
                 position: relative;
-                z-index: 150;  /* 提高层级 */
+                z-index: 150;
+                /* 提高层级 */
 
                 &::placeholder {
-                    color: #FFFFFF !important;  /* 强制白色placeholder */
-                    font-size: 30rpx;  /* 15px * 2 = 30rpx */
+                    color: #FFFFFF !important;
+                    /* 强制白色placeholder */
+                    font-size: 30rpx;
+                    /* 15px * 2 = 30rpx */
                     font-family: 'PingFang SC', sans-serif;
-                    opacity: 0.8 !important;  /* 强制透明度 */
+                    opacity: 0.8 !important;
+                    /* 强制透明度 */
                 }
             }
 
             .search-btn {
-                background-color: #EB5F2F !important;  /* 强制覆盖 */
-                width: 92rpx;   /* 46px * 2 = 92rpx */
-                height: 52rpx;  /* 26px * 2 = 52rpx */
-                border-radius: 27rpx;  /* 13.5px * 2 = 27rpx */
+                background-color: #EB5F2F !important;
+                /* 强制覆盖 */
+                width: 92rpx;
+                /* 46px * 2 = 92rpx */
+                height: 52rpx;
+                /* 26px * 2 = 52rpx */
+                border-radius: 27rpx;
+                /* 13.5px * 2 = 27rpx */
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                opacity: 1 !important;  /* 强制不透明 */
+                opacity: 1 !important;
+                /* 强制不透明 */
                 position: relative;
-                z-index: 200;  /* 更高层级 */
+                z-index: 200;
+                /* 更高层级 */
 
                 .search-btn-text {
-                    color: #FFFFFF !important;  /* 强制白色文字 */
-                    font-size: 24rpx;  /* 12px * 2 = 24rpx */
+                    color: #FFFFFF !important;
+                    /* 强制白色文字 */
+                    font-size: 24rpx;
+                    /* 12px * 2 = 24rpx */
                     font-weight: 400;
                     font-family: 'PingFang SC', sans-serif;
-                    opacity: 1 !important;  /* 强制不透明 */
+                    opacity: 1 !important;
+                    /* 强制不透明 */
                 }
             }
         }
@@ -351,11 +514,13 @@ export default {
             }
 
             .location-text {
-                font-size: 24rpx;  /* 12px * 2 = 24rpx */
+                font-size: 24rpx;
+                /* 12px * 2 = 24rpx */
                 color: #333333;
                 font-weight: 400;
                 font-family: 'PingFang SC', sans-serif;
-                line-height: 34rpx;  /* 17px * 2 = 34rpx */
+                line-height: 34rpx;
+                /* 17px * 2 = 34rpx */
             }
 
             .location-arrow {
@@ -369,18 +534,25 @@ export default {
         }
 
         .logo-box {
-            width: 64rpx;  /* 32px * 2 = 64rpx - 与统一高度一致 */
-            height: 64rpx; /* 32px * 2 = 64rpx - 与统一高度一致 */
+            width: 64rpx;
+            /* 32px * 2 = 64rpx - 与统一高度一致 */
+            height: 64rpx;
+            /* 32px * 2 = 64rpx - 与统一高度一致 */
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;  /* 确保logo始终在最顶层 */
-            position: relative;  /* 确保z-index生效 */
+            z-index: 9999;
+            /* 确保logo始终在最顶层 */
+            position: relative;
+            /* 确保z-index生效 */
 
             .logo-img {
-                width: 64rpx;  /* 32px * 2 = 64rpx - 与容器一致 */
-                height: 64rpx; /* 32px * 2 = 64rpx - 与容器一致 */
-                z-index: 10000;  /* logo图片的层级更高 */
+                width: 64rpx;
+                /* 32px * 2 = 64rpx - 与容器一致 */
+                height: 64rpx;
+                /* 32px * 2 = 64rpx - 与容器一致 */
+                z-index: 10000;
+                /* logo图片的层级更高 */
                 position: relative;
             }
         }
@@ -388,37 +560,52 @@ export default {
         /* 按照Figma精确设计的通知图标样式 */
         .notification {
             position: relative;
-            width: 67rpx;   /* 33.42px * 2 ≈ 67rpx */
-            height: 64rpx;  /* 32px * 2 = 64rpx */
+            width: 67rpx;
+            /* 33.42px * 2 ≈ 67rpx */
+            height: 64rpx;
+            /* 32px * 2 = 64rpx */
 
             .notification-icon {
                 position: absolute;
-                width: 42rpx;   /* 20.84px * 2 ≈ 42rpx */
-                height: 44rpx;  /* 22px * 2 = 44rpx */
-                left: 0rpx;     /* 相对于容器左侧对齐 */
-                top: 20rpx;     /* 63px - 53px = 10px，转换为20rpx */
+                width: 42rpx;
+                /* 20.84px * 2 ≈ 42rpx */
+                height: 44rpx;
+                /* 22px * 2 = 44rpx */
+                left: 0rpx;
+                /* 相对于容器左侧对齐 */
+                top: 20rpx;
+                /* 63px - 53px = 10px，转换为20rpx */
             }
 
             .notification-badge {
                 position: absolute;
-                width: 30rpx;   /* 15px * 2 = 30rpx */
-                height: 30rpx;  /* 15px * 2 = 30rpx */
-                left: 37rpx;    /* (348px - 329.58px) * 2 ≈ 37rpx */
-                top: 0rpx;      /* 与容器顶部对齐 (53px - 53px = 0) */
+                width: 30rpx;
+                /* 15px * 2 = 30rpx */
+                height: 30rpx;
+                /* 15px * 2 = 30rpx */
+                left: 37rpx;
+                /* (348px - 329.58px) * 2 ≈ 37rpx */
+                top: 0rpx;
+                /* 与容器顶部对齐 (53px - 53px = 0) */
                 background: #E10000;
-                border-radius: 60rpx 60rpx 60rpx 0;  /* 30px 30px 30px 0px */
+                border-radius: 60rpx 60rpx 60rpx 0;
+                /* 30px 30px 30px 0px */
                 display: flex;
                 align-items: center;
                 justify-content: center;
 
                 .badge-text {
-                    width: 100%;    /* 占满整个徽章宽度 */
-                    height: 100%;   /* 占满整个徽章高度 */
+                    width: 100%;
+                    /* 占满整个徽章宽度 */
+                    height: 100%;
+                    /* 占满整个徽章高度 */
                     font-family: 'PingFang SC';
                     font-style: normal;
                     font-weight: 400;
-                    font-size: 22rpx;  /* 11px * 2 = 22rpx */
-                    line-height: 30rpx; /* 15px * 2 = 30rpx */
+                    font-size: 22rpx;
+                    /* 11px * 2 = 22rpx */
+                    line-height: 30rpx;
+                    /* 15px * 2 = 30rpx */
                     color: #FFFFFF;
                     text-align: center;
                     display: flex;
@@ -440,15 +627,19 @@ export default {
         z-index: 10;
 
         .indicator-dot {
-            width: 10rpx;   /* 4.88px * 2 ≈ 10rpx */
-            height: 10rpx;  /* 4.88px * 2 ≈ 10rpx */
+            width: 10rpx;
+            /* 4.88px * 2 ≈ 10rpx */
+            height: 10rpx;
+            /* 4.88px * 2 ≈ 10rpx */
             border-radius: 8rpx;
             background-color: #FFFFFF;
             transition: all 0.3s ease;
 
             &.active {
-                width: 39rpx;  /* 19.5px * 2 = 39rpx */
-                height: 10rpx; /* 4.88px * 2 ≈ 10rpx */
+                width: 39rpx;
+                /* 19.5px * 2 = 39rpx */
+                height: 10rpx;
+                /* 4.88px * 2 ≈ 10rpx */
                 background-color: #EB5F2F;
             }
         }
@@ -461,7 +652,8 @@ export default {
     opacity: 1 !important;
     font-size: 30rpx !important;
     font-family: 'PingFang SC', sans-serif !important;
-    font-weight: 400 !important;  /* 恢复设计稿的字体粗细 */
+    font-weight: 400 !important;
+    /* 恢复设计稿的字体粗细 */
     line-height: 42rpx !important;
     -webkit-text-fill-color: #F4F4F4 !important;
 }

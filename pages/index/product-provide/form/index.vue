@@ -10,12 +10,8 @@
                 <view class="form-label">营业执照照片：</view>
                 <view class="upload-container">
                     <view class="upload-box" @tap="chooseImage('business')">
-                        <image
-                            v-if="formData.businessLicense"
-                            :src="formData.businessLicense"
-                            class="preview-image"
-                            mode="aspectFill"
-                        />
+                        <image v-if="formData.businessLicense" :src="formData.businessLicense" class="preview-image"
+                            mode="aspectFill" />
                         <template v-else>
                             <text class="upload-plus">+</text>
                             <text class="upload-text">营业执照照片</text>
@@ -37,24 +33,16 @@
                 </view>
                 <view class="upload-row">
                     <view class="upload-box half" @tap="chooseImage('idFront')">
-                        <image
-                            v-if="formData.idCardFront"
-                            :src="formData.idCardFront"
-                            class="preview-image half"
-                            mode="aspectFill"
-                        />
+                        <image v-if="formData.idCardFront" :src="formData.idCardFront" class="preview-image half"
+                            mode="aspectFill" />
                         <template v-else>
                             <text class="upload-plus">+</text>
                             <text class="upload-text">身份证正面照片</text>
                         </template>
                     </view>
                     <view class="upload-box half" @tap="chooseImage('idBack')">
-                        <image
-                            v-if="formData.idCardBack"
-                            :src="formData.idCardBack"
-                            class="preview-image half"
-                            mode="aspectFill"
-                        />
+                        <image v-if="formData.idCardBack" :src="formData.idCardBack" class="preview-image half"
+                            mode="aspectFill" />
                         <template v-else>
                             <text class="upload-plus">+</text>
                             <text class="upload-text">身份证背面照片</text>
@@ -68,12 +56,8 @@
                 <view class="form-label">产品照片：</view>
                 <view class="upload-container">
                     <view class="upload-box" @tap="chooseImage('product')">
-                        <image
-                            v-if="formData.productImage"
-                            :src="formData.productImage"
-                            class="preview-image"
-                            mode="aspectFill"
-                        />
+                        <image v-if="formData.productImage" :src="formData.productImage" class="preview-image"
+                            mode="aspectFill" />
                         <template v-else>
                             <text class="upload-plus">+</text>
                             <text class="upload-text">上传产品照片</text>
@@ -87,15 +71,11 @@
                 <view class="form-label">卫生许可证：</view>
                 <view class="upload-container">
                     <view class="upload-box" @tap="chooseImage('license')">
-                        <image
-                            v-if="formData.hygieneLicense"
-                            :src="formData.hygieneLicense"
-                            class="preview-image"
-                            mode="aspectFill"
-                        />
+                        <image v-if="formData.hygieneLicense" :src="formData.hygieneLicense" class="preview-image"
+                            mode="aspectFill" />
                         <template v-else>
                             <text class="upload-plus">+</text>
-                            <text class="upload-text">上传卫生许可证照片</text>
+                            <text class="upload-text">上传卫生许可证照片（选填）</text>
                         </template>
                     </view>
                 </view>
@@ -117,11 +97,8 @@
         </scroll-view>
 
         <!-- 提交按钮 -->
-        <view
-            class="submit-btn"
-            :style="{ background: isFormValid ? '#FE8D00' : '#FFC082' }"
-            @tap="submitForm"
-        >提交</view>
+        <view class="submit-btn" :style="{ background: isFormValid ? '#FE8D00' : '#FFC082' }" @tap="submitForm">提交
+        </view>
 
         <!-- 底部安全区占位 -->
         <view class="safe-area"></view>
@@ -130,10 +107,10 @@
 
 <script>
 import ArrowRight from '@/components/ArrowRight'
-import CommonHeader from '@/components/CommonHeader/index.vue';
-import { supplierApply } from '@/api/group.js';
-import { HTTP_REQUEST_URL, TOKENNAME } from '@/config/app.js';
-import store from '@/store';
+import CommonHeader from '@/components/CommonHeader/index.vue'
+import { supplierApply } from '@/api/group.js'
+import { HTTP_REQUEST_URL, TOKENNAME } from '@/config/app.js'
+import store from '@/store'
 
 export default {
     components: {
@@ -157,7 +134,7 @@ export default {
     computed: {
         isFormValid() {
             const f = this.formData
-            return f.businessLicense && f.productImage && f.hygieneLicense && f.productSource && f.idCardFront && f.idCardBack && f.productDesc
+            return f.businessLicense && f.productImage && f.productSource && f.idCardFront && f.idCardBack && f.productDesc
         }
     },
     onLoad() {
@@ -176,7 +153,7 @@ export default {
                 sourceType: ['album', 'camera'],
                 success: (res) => {
                     // 上传图片到服务器
-                    this.uploadImage(res.tempFilePaths[0], type);
+                    this.uploadImage(res.tempFilePaths[0], type)
                 }
             })
         },
@@ -185,7 +162,7 @@ export default {
         uploadImage(filePath, type) {
             uni.showLoading({
                 title: '上传中...'
-            });
+            })
 
             uni.uploadFile({
                 url: HTTP_REQUEST_URL + '/api/upload/image',
@@ -198,62 +175,62 @@ export default {
                     [TOKENNAME]: 'Bearer ' + store.state.app.token
                 },
                 success: (res) => {
-                    uni.hideLoading();
+                    uni.hideLoading()
 
                     try {
-                        const data = JSON.parse(res.data);
-                        console.log('上传接口返回数据:', data);
+                        const data = JSON.parse(res.data)
+                        console.log('上传接口返回数据:', data)
 
                         if (data.status === 200) {
                             // 获取上传后的图片URL
-                            const imageUrl = data.data.src || data.data.url || data.data;
+                            const imageUrl = data.data.src || data.data.url || data.data
 
                             // 根据类型设置不同的图片URL
                             switch (type) {
                                 case 'business':
-                                    this.formData.businessLicense = imageUrl;
-                                    break;
+                                    this.formData.businessLicense = imageUrl
+                                    break
                                 case 'product':
-                                    this.formData.productImage = imageUrl;
-                                    break;
+                                    this.formData.productImage = imageUrl
+                                    break
                                 case 'license':
-                                    this.formData.hygieneLicense = imageUrl;
-                                    break;
+                                    this.formData.hygieneLicense = imageUrl
+                                    break
                                 case 'idFront':
-                                    this.formData.idCardFront = imageUrl;
-                                    break;
+                                    this.formData.idCardFront = imageUrl
+                                    break
                                 case 'idBack':
-                                    this.formData.idCardBack = imageUrl;
-                                    break;
+                                    this.formData.idCardBack = imageUrl
+                                    break
                             }
 
                             uni.showToast({
                                 title: '上传成功',
                                 icon: 'success'
-                            });
+                            })
                         } else {
                             uni.showToast({
                                 title: data.msg || '上传失败',
                                 icon: 'none'
-                            });
+                            })
                         }
                     } catch (error) {
-                        console.error('解析上传结果失败:', error);
+                        console.error('解析上传结果失败:', error)
                         uni.showToast({
                             title: '上传失败',
                             icon: 'none'
-                        });
+                        })
                     }
                 },
                 fail: (error) => {
-                    uni.hideLoading();
-                    console.error('上传失败:', error);
+                    uni.hideLoading()
+                    console.error('上传失败:', error)
                     uni.showToast({
                         title: '上传失败，请重试',
                         icon: 'none'
-                    });
+                    })
                 }
-            });
+            })
         },
         // 提交表单
         submitForm() {
@@ -274,13 +251,13 @@ export default {
                 return
             }
 
-            if (!this.formData.hygieneLicense) {
-                uni.showToast({
-                    title: '请上传卫生许可证',
-                    icon: 'none'
-                })
-                return
-            }
+            // if (!this.formData.hygieneLicense) {
+            //     uni.showToast({
+            //         title: '请上传卫生许可证',
+            //         icon: 'none'
+            //     })
+            //     return
+            // }
 
             if (!this.formData.productSource) {
                 uni.showToast({
@@ -322,7 +299,7 @@ export default {
                 intro: this.formData.productDesc
             }
 
-            console.log('提交的数据:', submitData);
+            console.log('提交的数据:', submitData)
 
             supplierApply(submitData).then(res => {
                 uni.hideLoading()
@@ -412,6 +389,7 @@ export default {
             font-weight: 550;
             margin-bottom: 0;
         }
+
         .form-input {
             flex: 1;
             height: 80rpx;
@@ -435,11 +413,12 @@ export default {
 
         .right {
             display: flex;
+
             .identity-text {
                 margin-bottom: 10rpx;
                 transform: translateY(-8rpx);
                 color: #1A1A1A;
-                font-size: 28rpx!important;
+                font-size: 28rpx !important;
             }
         }
 

@@ -15,8 +15,8 @@
         <scroll-view scroll-y class="main-scroll">
             <!-- 社区团购引导区域 - 按照Figma设计 -->
             <view class="community-group-onboarding-section">
-                <image class="onboarding-poster" src="/static/images/index/community-group/long_poster.png" mode="aspectFill"
-                    @click="previewImage('/static/images/index/community-group/long_poster.png')" />
+                <image class="onboarding-poster" src="/static/images/index/community-group/long_poster.png"
+                    mode="aspectFill" @click="previewImage('/static/images/index/community-group/long_poster.png')" />
             </view>
 
             <!-- 注册指南区域 - 按照Figma设计 -->
@@ -32,19 +32,19 @@
                 <view class="registration-images">
                     <!-- 左侧图片 -->
                     <view class="signup-info-left">
-                        <image class="registration-img" src="/static/common/shared/banner5.png"
-                            mode="aspectFill" @click="previewImage('/static/common/shared/banner5.png')" />
+                        <image class="registration-img" src="/static/common/shared/banner5.png" mode="aspectFill"
+                            @click="previewImage('/static/common/shared/banner5.png')" />
                     </view>
 
                     <!-- 右侧图片 -->
                     <view class="signup-info-right">
-                        <image class="registration-img" src="/static/common/shared/banner4.png"
-                            mode="aspectFill" @click="previewImage('/static/common/shared/banner4.png')" />
+                        <image class="registration-img" src="/static/common/shared/banner4.png" mode="aspectFill"
+                            @click="previewImage('/static/common/shared/banner4.png')" />
                     </view>
                 </view>
 
-                <!-- 控制区域 -->
-                <view class="controller-section">
+                <!-- 控制区域 - 添加了点击事件 -->
+                <view class="controller-section" @click="previewRegistrationImages">
                     <text class="view-full-text">查看全图</text>
                     <view class="view-icon"></view>
                 </view>
@@ -68,13 +68,15 @@
                         <!-- 左上图片 -->
                         <view class="left-top-img">
                             <image class="rules-img" src="/static/images/index/community-group/2_left_top_img.png"
-                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_left_top_img.png')" />
+                                mode="aspectFill"
+                                @click="previewImage('/static/images/index/community-group/2_left_top_img.png')" />
                         </view>
 
                         <!-- 右上图片 -->
                         <view class="right-top-img">
                             <image class="rules-img" src="/static/images/index/community-group/2_right_top_img.png"
-                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_right_top_img.png')" />
+                                mode="aspectFill"
+                                @click="previewImage('/static/images/index/community-group/2_right_top_img.png')" />
                         </view>
                     </view>
 
@@ -83,19 +85,21 @@
                         <!-- 左下图片 -->
                         <view class="left-bottom-img">
                             <image class="rules-img" src="/static/images/index/community-group/2_left_bottom_img.png"
-                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_left_bottom_img.png')" />
+                                mode="aspectFill"
+                                @click="previewImage('/static/images/index/community-group/2_left_bottom_img.png')" />
                         </view>
 
                         <!-- 右下图片 -->
                         <view class="right-bottom-img">
                             <image class="rules-img" src="/static/images/index/community-group/2_right_bottom_img.png"
-                                mode="aspectFill" @click="previewImage('/static/images/index/community-group/2_right_bottom_img.png')" />
+                                mode="aspectFill"
+                                @click="previewImage('/static/images/index/community-group/2_right_bottom_img.png')" />
                         </view>
                     </view>
                 </view>
 
-                <!-- 控制区域 -->
-                <view class="controller-section">
+                <!-- 控制区域 - 添加了点击事件 -->
+                <view class="controller-section" @click="previewOrderingRulesImages">
                     <text class="view-full-text">查看全图</text>
                     <view class="view-icon"></view>
                 </view>
@@ -111,12 +115,12 @@
 
                 <!-- 大图区域 -->
                 <view class="threshold-image">
-                    <image class="threshold-img" src="/static/images/index/community-group/3_img.png"
-                        mode="aspectFill" @click="previewImage('/static/images/index/community-group/3_img.png')" />
+                    <image class="threshold-img" src="/static/images/index/community-group/3_img.png" mode="aspectFill"
+                        @click="previewImage('/static/images/index/community-group/3_img.png')" />
                 </view>
 
-                <!-- 控制区域 -->
-                <view class="controller-section">
+                <!-- 控制区域 - 添加了点击事件 -->
+                <view class="controller-section" @click="previewThresholdImage">
                     <text class="view-full-text">查看全图</text>
                     <view class="view-icon"></view>
                 </view>
@@ -136,31 +140,31 @@
                 <view class="interaction-images">
                     <!-- 左侧图片 -->
                     <view class="left-img">
-                        <image class="interaction-img" src="/static/common/shared/4_left_img.jpg"
-                            mode="aspectFill" @click="previewImage('/static/common/shared/4_left_img.jpg')" />
+                        <image class="interaction-img" src="/static/common/shared/4_left_img.jpg" mode="aspectFill"
+                            @click="previewImage('/static/common/shared/4_left_img.jpg')" />
                     </view>
 
                     <!-- 中间图片 -->
                     <view class="center-img">
                         <image class="interaction-img" src="/static/images/index/community-group/4_center_img.png"
-                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/4_center_img.png')" />
+                            mode="aspectFill"
+                            @click="previewImage('/static/images/index/community-group/4_center_img.png')" />
                     </view>
 
                     <!-- 右侧图片 -->
                     <view class="right-img">
                         <image class="interaction-img" src="/static/images/index/community-group/4_right_img.png"
-                            mode="aspectFill" @click="previewImage('/static/images/index/community-group/4_right_img.png')" />
+                            mode="aspectFill"
+                            @click="previewImage('/static/images/index/community-group/4_right_img.png')" />
                     </view>
                 </view>
 
-                <!-- 控制区域 -->
-                <view class="controller-section">
+                <!-- 控制区域 - 添加了点击事件 -->
+                <view class="controller-section" @click="previewInteractionImages">
                     <text class="view-full-text">查看全图</text>
                     <view class="view-icon"></view>
                 </view>
             </view>
-
-
 
             <!-- 页面底部大按钮 -->
             <view class="footer-btn-row">
@@ -175,7 +179,7 @@ import {
     getCommunityList,
     getMyCommunityInfo,
     bindCommunity
-} from '@/api/group.js';
+} from '@/api/group.js'
 
 export default {
     name: 'CommunityGroupPage',
@@ -184,61 +188,102 @@ export default {
             communityList: [],
             myCommunity: null,
             loading: false
-        };
+        }
     },
     onLoad() {
-        this.loadCommunityData();
+        this.loadCommunityData()
     },
     methods: {
-        goBack () {
+        goBack() {
             uni.navigateBack()
         },
-        goToGroupBuy () {
-            uni.switchTab({
-                url: '/pages/index/index'
+        goToGroupBuy() {
+            uni.navigateTo({
+                url: '/pages/index/today-group-buying/index'
             })
         },
-        previewImage (src) {
+        previewImage(src) {
             uni.previewImage({
                 urls: [src],
                 current: 0
             })
         },
 
+        // 注册信息部分的全图预览
+        previewRegistrationImages() {
+            uni.previewImage({
+                urls: [
+                    '/static/common/shared/banner5.png',
+                    '/static/common/shared/banner4.png'
+                ],
+                current: 0
+            })
+        },
+
+        // 开团与下单规则部分的全图预览
+        previewOrderingRulesImages() {
+            uni.previewImage({
+                urls: [
+                    '/static/images/index/community-group/2_left_top_img.png',
+                    '/static/images/index/community-group/2_right_top_img.png',
+                    '/static/images/index/community-group/2_left_bottom_img.png',
+                    '/static/images/index/community-group/2_right_bottom_img.png'
+                ],
+                current: 0
+            })
+        },
+
+        // 站点开团服务门槛部分的全图预览
+        previewThresholdImage() {
+            this.previewImage('/static/images/index/community-group/3_img.png')
+        },
+
+        // 用户互动部分的全图预览
+        previewInteractionImages() {
+            uni.previewImage({
+                urls: [
+                    '/static/common/shared/4_left_img.jpg',
+                    '/static/images/index/community-group/4_center_img.png',
+                    '/static/images/index/community-group/4_right_img.png'
+                ],
+                current: 0
+            })
+        },
+
         // 加载社区数据
         loadCommunityData() {
-            this.loadMyCommunity();
-            this.loadCommunityList();
+            this.loadMyCommunity()
+            this.loadCommunityList()
         },
 
         // 获取我的社区信息
         loadMyCommunity() {
             getMyCommunityInfo().then(res => {
                 if (res.status === 200 && res.data) {
-                    this.myCommunity = res.data;
+                    this.myCommunity = res.data
                 }
             }).catch(err => {
-                console.log('获取我的社区信息失败:', err);
-            });
+                console.log('获取我的社区信息失败:', err)
+            })
         },
 
         // 获取社区列表
         loadCommunityList() {
-            if (this.loading) return;
-            this.loading = true;
+            if (this.loading) return
+            this.loading = true
 
             getCommunityList({
                 page: 1,
                 limit: 20
             }).then(res => {
-                this.loading = false;
+                this.loading = false
                 if (res.status === 200 && res.data) {
-                    this.communityList = res.data.list || res.data;
+                    this.communityList = res.data.list || res.data
                 }
             }).catch(err => {
-                this.loading = false;
-                console.log('获取社区列表失败:', err);
-            });
+                this.loading = false
+                console.log('获取社区列表失败:', err)
+            })
         },
 
         // 绑定社区
@@ -250,21 +295,22 @@ export default {
                     uni.showToast({
                         title: '绑定成功',
                         icon: 'success'
-                    });
-                    this.loadMyCommunity(); // 重新加载我的社区信息
+                    })
+                    this.loadMyCommunity() // 重新加载我的社区信息
                 }
             }).catch(err => {
                 uni.showToast({
                     title: err.message || '绑定失败',
                     icon: 'none'
-                });
-            });
+                })
+            })
         }
     }
 }
 </script>
 
 <style lang="scss">
+/* 样式部分保持不变 */
 page {
     background: #F0F0F0;
 }
@@ -411,6 +457,8 @@ page {
             top: 223px;
             background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
             border-radius: 0px 0px 4px 4px;
+            /* 添加 cursor: pointer 提示可点击 */
+            cursor: pointer;
 
             .view-full-text {
                 position: absolute;
@@ -542,6 +590,7 @@ page {
             top: 540px;
             background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
             border-radius: 0px 0px 4px 4px;
+            cursor: pointer;
 
             .view-full-text {
                 position: absolute;
@@ -620,6 +669,7 @@ page {
             top: 186px;
             background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
             border-radius: 0px 0px 4px 4px;
+            cursor: pointer;
 
             .view-full-text {
                 position: absolute;
@@ -729,6 +779,7 @@ page {
             top: 181px;
             background: linear-gradient(0deg, #D9D9D9 0%, rgba(255, 255, 255, 0.1) 100%);
             border-radius: 0px 0px 4px 4px;
+            cursor: pointer;
 
             .view-full-text {
                 position: absolute;
@@ -758,8 +809,6 @@ page {
             }
         }
     }
-
-
 
     .footer-btn-row {
         padding: 20rpx 30rpx 80rpx;

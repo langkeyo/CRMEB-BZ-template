@@ -14,12 +14,12 @@
 				<view class="value">{{ orderInfo.station || '北京尚德井小区菜鸟驿站' }}</view>
 				<text class="iconfont icon-more"></text>
 			</view>
-			<view class="goods-card-item">
-				<image class="goods-img" :src="formatImage(goodsList[0] && goodsList[0].image)" mode="aspectFill" />
+			<view class="goods-card-item" v-for="(goods, index) in getSelectedGoodsList()" :key="index">
+				<image class="goods-img" :src="formatImage(goods.image)" mode="aspectFill" />
 				<view class="goods-content">
-					<view class="goods-title">{{ goodsList[0] && goodsList[0].title || '' }}</view>
-					<view class="goods-desc" v-if="goodsList[0] && goodsList[0].spec">{{ goodsList[0].spec }}</view>
-					<view class="goods-count">x{{ goodsList[0] && goodsList[0].quantity || 1 }}</view>
+					<view class="goods-title">{{ goods.title || '' }}</view>
+					<view class="goods-desc" v-if="goods.spec">{{ goods.spec }}</view>
+					<view class="goods-count">x{{ goods.quantity || 1 }}</view>
 				</view>
 			</view>
 			<view class="row gray">
@@ -29,13 +29,13 @@
 			<view class="row gray goods-total-row">
 				<view style="display: flex; align-items: center;">
 					<text class="label-text">商品总价</text>
-					<text style="margin-left: 8rpx; color: #bcbcbc;">共{{ goodsList.length }}件商品</text>
+					<text style="margin-left: 8rpx; color: #bcbcbc;">共{{ getSelectedGoodsCount() }}件商品</text>
 				</view>
-				<view class="price">￥{{ orderInfo.total_price || 0 }}</view>
+				<view class="price">￥{{ getSelectedGoodsTotalPrice() }}</view>
 			</view>
 			<view class="row total">
 				<view>合计</view>
-				<view class="price">￥{{ orderInfo.pay_price || 0 }}</view>
+				<view class="price">￥{{ getTotalPrice() }}</view>
 			</view>
 		</view>
 		<view class="main-card">
@@ -95,6 +95,10 @@ export default {
 	onLoad (options) {
 		if (options.order_id) {
 			this.order_id = options.order_id
+			// 如果有goods_id参数，保存到formData中
+			if (options.goods_id) {
+				this.formData.goods_id = options.goods_id
+			}
 			if (this.isLogin) {
 				this.getOrderDetail()
 			} else {
@@ -113,6 +117,60 @@ export default {
 		goBack() {
 			uni.navigateBack();
 		},
+		// 获取选中的商品列表
+		getSelectedGoodsList() {
+			// 如果有goods_id，只显示对应的单个商品
+			if (this.formData.goods_id && this.goodsList.length > 0) {
+				const selectedGoods = this.goodsList.filter(goods => {
+					// 确保goods_id匹配
+					return goods.goods_id == this.formData.goods_id;
+				});
+				return selectedGoods.length > 0 ? selectedGoods : this.goodsList.slice(0, 1);
+			}
+			// 如果没有goods_id，显示所有商品
+			return this.goodsList.length > 0 ? this.goodsList : [];
+		},
+		// 获取选中商品的数量
+		getSelectedGoodsCount() {
+			const selectedGoodsList = this.getSelectedGoodsList();
+			return selectedGoodsList.reduce((total, goods) => {
+				const quantity = parseInt(goods.quantity);
+				return total + (isNaN(quantity) ? 1 : quantity);
+			}, 0);
+		},
+		// 获取选中商品的总价
+		getSelectedGoodsTotalPrice() {
+			const selectedGoodsList = this.getSelectedGoodsList();
+			const totalPrice = selectedGoodsList.reduce((total, goods) => {
+				// 优先使用subtotal字段，如果没有则计算 price * quantity
+				if (goods.subtotal !== undefined) {
+					const subtotal = parseFloat(goods.subtotal);
+					if (!isNaN(subtotal)) {
+						return total + subtotal;
+					}
+				} else {
+					// 确保价格和数量是有效数字
+					const price = parseFloat(goods.price);
+					const quantity = parseInt(goods.quantity);
+					
+					// 只有当价格和数量都有效时才计算
+					if (!isNaN(price) && !isNaN(quantity) && quantity > 0) {
+						return total + (price * quantity);
+					}
+				}
+				return total;
+			}, 0);
+			return totalPrice.toFixed(2);
+		},
+		// 获取总价（单商品退款时显示商品总价，完整订单退款时显示订单总价）
+		getTotalPrice() {
+			// 如果是单商品退款（有goods_id），显示选中商品的总价
+			if (this.formData.goods_id) {
+				return this.getSelectedGoodsTotalPrice();
+			}
+			// 如果是完整订单退款（没有goods_id），显示订单总价
+			return (this.orderInfo.pay_price || 0).toFixed(2);
+		},
 		// 获取订单商品信息
 		getOrderDetail() {
 			// 显示加载提示
@@ -125,10 +183,7 @@ export default {
 					this.orderInfo = res.data
 					this.goodsList = res.data.goods || []
 					
-					// 如果有商品，默认选择第一个商品
-					if (this.goodsList.length > 0) {
-						this.formData.goods_id = this.goodsList[0].goods_id
-					}
+					// 如果有传入goods_id，保持原值；如果没有传入goods_id，则不设置默认值，显示所有商品
 					
 					// 获取用户手机号
 					if (this.orderInfo.user && this.orderInfo.user.phone) {

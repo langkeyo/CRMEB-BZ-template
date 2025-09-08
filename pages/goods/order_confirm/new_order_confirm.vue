@@ -4,34 +4,12 @@
 		<view class="payment-mask" v-if="showPaymentModal" @click.stop="closePaymentModal"></view>
 		<view class="payment-modal" v-if="showPaymentModal">
 			<view class="payment-options">
-				<view class="payment-option" @click="selectPayment('alipay')">
-					<view class="payment-icon alipay-icon">
-						<image src="/static/images/payment/alipay_icon.png" mode="widthFix"></image>
-					</view>
-					<view class="payment-name">支付宝支付</view>
-					<view class="payment-check" :class="{ active: selectedPayment === 'alipay' }"></view>
-				</view>
 				<view class="payment-option" @click="selectPayment('wechat')">
 					<view class="payment-icon wechat-icon">
 						<image src="/static/images/payment/wechat_icon.png" mode="widthFix"></image>
 					</view>
 					<view class="payment-name">微信支付</view>
 					<view class="payment-check" :class="{ active: selectedPayment === 'wechat' }"></view>
-				</view>
-				<view class="more-payment" @click="toggleMorePayment">
-					<text>更多支付方式</text>
-					<image :class="{ 'arrow-rotated': morePaymentExpanded }" src="/static/images/payment/arrow_down.png"
-						mode="widthFix"></image>
-				</view>
-				<view v-if="morePaymentExpanded" class="more-payment-list">
-					<view class="payment-option" @click="selectPayment('unionpay')">
-						<view class="payment-icon">
-							<image src="/static/images/payment/unionpay_icon.png" mode="widthFix"></image>
-						</view>
-						<view class="payment-name">银联支付</view>
-						<view class="payment-check" :class="{ active: selectedPayment === 'unionpay' }"></view>
-					</view>
-					<!-- 可继续添加更多支付方式 -->
 				</view>
 			</view>
 			<view class="payment-btn" @click="confirmPayment">
@@ -205,7 +183,6 @@ export default {
 				image: '/static/images/today-group-buying/order_confirm/lemon.png'
 			},
 			recommendProducts: [],
-			morePaymentExpanded: false,
 			combination_id: 0, // 拼团商品配置ID
 			orderData: null, // 订单数据
 			user_coupon_ids: [], // 用户优惠券ID数组
@@ -220,7 +197,6 @@ export default {
 	},
 	methods: {
 		goBack() {
-			console.log('hello')
 			if (getCurrentPages().length > 1) {
 				uni.navigateBack()
 			} else {
@@ -325,6 +301,24 @@ export default {
 					this.orderData = response.data
 					uni.hideLoading()
 					return response.data
+				} else if (response.msg && response.msg.includes("您有订单未结清")) {
+					// 处理订单未结清错误
+					uni.showModal({
+						title: '提示',
+						content: '您有订单未结清，请结清后再次下单',
+						showCancel: true,
+						cancelText: '取消',
+						confirmText: '查看未结清订单',
+						success: (res) => {
+							if (res.confirm) {
+								// 跳转到待支付订单页面
+								uni.navigateTo({
+									url: '/pages/goods/order_list/pending'
+								})
+							}
+						}
+					})
+					throw new Error(response.msg)
 				} else {
 					throw new Error(response.msg || '创建订单失败')
 				}
@@ -356,8 +350,8 @@ export default {
 			// })
 		},
 		confirmOrderFirst() {
+			this.showOrderConfirm = false
 			this.createOrder().then(() => {
-				this.showOrderConfirm = false
 				uni.navigateTo({
 					url: `/pages/goods/pending_payment/index?order_id=${this.orderId}`
 				})
@@ -396,9 +390,7 @@ export default {
 
 			// 根据选择的支付方式设置pay_type
 			const payTypeMap = {
-				'wechat': 1,
-				'alipay': 2,
-				'unionpay': 3
+				'wechat': 1
 			}
 
 			// 调用支付API
@@ -447,9 +439,6 @@ export default {
 
 			// 关闭弹窗
 			this.showPaymentModal = false
-		},
-		toggleMorePayment() {
-			this.morePaymentExpanded = !this.morePaymentExpanded
 		},
 		// 获取订单可用优惠券
 		async fetchAvailableCoupons() {
@@ -587,7 +576,6 @@ export default {
 				}
 
 				if (res.status === 200 && res.data) {
-					console.log(this)
 
 					const productData = res.data
 					// 更新商品信息
@@ -725,12 +713,10 @@ export default {
 		checkSiteInfo() {
 			// 检查是否有社区信息
 			if (this.siteInfo.community && this.siteInfo.community.id) {
-				console.log('使用社区信息创建订单:', this.siteInfo.community.id)
 				// 这里可以将社区ID添加到订单数据中
 				return true
 			} else {
 				// 如果没有社区信息，可以提示用户或使用默认值
-				console.log('未绑定社区，使用默认站点信息')
 				return true
 			}
 		}
@@ -1507,5 +1493,15 @@ export default {
 			font-weight: 500;
 		}
 	}
+
+}
+
+/* 修改 uni.showModal 的样式 */
+:deep(.uni-modal) {
+	border-radius: 10rpx !important;
+}
+
+:deep(.uni-modal__ft) {
+	font-size: 28rpx !important;
 }
 </style>

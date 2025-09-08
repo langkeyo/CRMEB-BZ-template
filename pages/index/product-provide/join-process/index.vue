@@ -44,7 +44,7 @@
                 <view class="step-item">
                     <view class="step-content">
                         <view class="step-title">4.签订合同</view>
-                        <view class="step-desc">双方确认合作条款（如分成比例、售后服务规则等），签署电子合同。商家需提供企业资质文件（如营业执照），确保法律合规性。</view>
+                        <view class="step-desc">双方确认合作条款，签署电子合同。商家需提供企业资质文件（如营业执照），确保法律合规性。</view>
                     </view>
                     <image src="/static/images/join-process/step4.png" mode="aspectFill" class="step-image">
                     </image>
@@ -71,21 +71,21 @@
 </template>
 
 <script>
-import CommonHeader from '@/components/CommonHeader/index.vue';
+import CommonHeader from '@/components/CommonHeader/index.vue'
 
 export default {
     components: {
         CommonHeader
     },
-    data () {
+    data() {
         return {
         }
     },
     methods: {
-        goBack () {
+        goBack() {
             uni.navigateBack()
         },
-        goToNext () {
+        goToNext() {
             // 跳转到基本信息填写页面
             uni.navigateTo({
                 url: '/pages/index/product-provide/form/index'

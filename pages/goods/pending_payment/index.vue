@@ -8,32 +8,12 @@
         <text class="close-x">×</text>
       </view>
       <view class="payment-options">
-        <view class="payment-option" @click="selectPayment('alipay')">
-          <view class="payment-icon alipay-icon">
-            <image src="/static/images/payment/alipay_icon.png" mode="widthFix"></image>
-          </view>
-          <view class="payment-name">支付宝支付</view>
-          <view class="payment-check" :class="{ active: selectedPayment === 'alipay' }"></view>
-        </view>
         <view class="payment-option" @click="selectPayment('wechat')">
           <view class="payment-icon wechat-icon">
             <image src="/static/images/payment/wechat_icon.png" mode="widthFix"></image>
           </view>
           <view class="payment-name">微信支付</view>
           <view class="payment-check" :class="{ active: selectedPayment === 'wechat' }"></view>
-        </view>
-        <view class="more-payment" @click="toggleMorePayment">
-          <text>更多支付方式</text>
-          <image :class="[morePaymentExpanded ? 'arrow-rotated' : '', 'arrow-icon']" src="/static/images/payment/arrow_down.png" mode="widthFix"></image>
-        </view>
-        <view v-if="morePaymentExpanded" class="more-payment-list">
-          <view class="payment-option" @click="selectPayment('unionpay')">
-            <view class="payment-icon">
-              <image src="/static/images/payment/unionpay_icon.png" mode="widthFix"></image>
-            </view>
-            <view class="payment-name">银联支付</view>
-            <view class="payment-check" :class="{ active: selectedPayment === 'unionpay' }"></view>
-          </view>
         </view>
       </view>
       <view class="payment-btn" @click="confirmPayment">
@@ -145,20 +125,30 @@
 
 <script>
 import { orderCancel, orderPay, groupOrderPay } from '@/api/order.js'
+import { getGroupOrderDetail } from '@/api/group.js'
 import colors from '@/mixins/color.js'
 import { navigateToCashier, navigateToPayStatus } from '@/utils/orderNavigation.js'
 
 export default {
   mixins: [colors],
+  computed: {
+    // 使用this.$store.getters获取全局信息
+    userInfo() {
+      return this.$store.getters.userInfo
+    },
+    siteInfo() {
+      return this.$store.getters.siteInfo
+    }
+  },
   data() {
     return {
       loading: false,
       orderId: '', // 订单ID
       // 地址信息
       addressInfo: {
-        name: '王小明',
-        phone: '185****3662',
-        address: '北京尚德井小区菜鸟驿站'
+        name: '',
+        phone: '',
+        address: ''
       },
       // 商品信息
       goodsInfo: {
@@ -190,13 +180,14 @@ export default {
       // 支付方式弹窗
       showPaymentModal: false,
       selectedPayment: 'wechat',
-      morePaymentExpanded: false,
     }
   },
   computed: {
     // 可以添加计算属性
   },
   onLoad(options) {
+    console.log(options)
+
     // 获取订单ID
     if (options && options.id) {
       this.orderId = options.id
@@ -205,6 +196,10 @@ export default {
 
     // 启动倒计时
     this.startCountdown()
+  },
+  mounted() {
+    // 页面加载完成后，使用全局信息更新地址信息
+    this.updateAddressFromGlobal()
   },
   onUnload() {
     // 清除倒计时
@@ -218,30 +213,96 @@ export default {
       uni.navigateBack()
     },
 
+    // 从全局信息更新地址信息
+    updateAddressFromGlobal() {
+      // 使用this.$store.getters获取全局信息
+      const userInfo = this.$store.getters.userInfo
+      const siteInfo = this.$store.getters.siteInfo
+      
+      console.log('userInfo:', userInfo)
+      console.log('siteInfo:', siteInfo)
+
+      // 使用全局用户信息更新地址信息
+      if (userInfo && userInfo.phone) {
+        console.log('使用用户信息更新地址')
+        this.addressInfo.name = userInfo.nickname || userInfo.username || '用户'
+        this.addressInfo.phone = userInfo.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+      }
+
+      // 使用全局站点信息更新地址
+      if (siteInfo && siteInfo.location) {
+        this.addressInfo.address = siteInfo.location
+      } else if (siteInfo && siteInfo.name) {
+        this.addressInfo.address = siteInfo.name
+      }
+
+      // 如果还没有地址信息，使用默认值
+      if (!this.addressInfo.name) {
+        this.addressInfo.name = '用户'
+      }
+      if (!this.addressInfo.phone) {
+        this.addressInfo.phone = '185****3662'
+      }
+      if (!this.addressInfo.address) {
+        this.addressInfo.address = '北京尚德井小区菜鸟驿站'
+      }
+      
+      console.log('最终地址信息:', this.addressInfo)
+    },
+
     // 获取订单详情
     getOrderDetail() {
-      // 这里应该调用API获取订单详情
-      // 示例代码：
-      /*
-      orderDetail(this.orderId).then(res => {
-        if (res.code === 200) {
+      getGroupOrderDetail(this.orderId).then(res => {
+        if (res.status === 200 && res.data) {
+          const data = res.data
           // 更新数据
-          const data = res.data;
-          this.addressInfo = {...};
-          this.goodsInfo = {...};
-          this.priceInfo = {...};
-          this.orderInfo = {...};
+          if (data.goods && data.goods.length > 0) {
+            const good = data.goods[0]
+            this.goodsInfo = {
+              id: good.combination_id || good.id,
+              title: good.goods_name || good.title || '商品名称',
+              spec: good.spec || good.sku || '',
+              price: good.price || '0',
+              quantity: good.quantity || 1,
+              image: this.$util.getImageUrl(good.image) || '/static/images/pending_payment/product_image.png'
+            }
+
+            // 更新价格信息
+            this.priceInfo = {
+              deliveryFee: 0, // 配送费用
+              goodsTotal: data.total_price || good.subtotal || '0', // 商品总价
+              totalPrice: data.pay_price || data.total_price || '0' // 合计
+            }
+          }
+
+          // 更新订单信息
+          this.orderInfo = {
+            orderNo: data.order_number || '',
+            payType: data.pay_type_text || '微信支付',
+            orderTime: data.create_time_text || data.create_time || '',
+            payTime: data.pay_time || '',
+            remark: data.remark || '-' // 备注，如果没有就显示'-'
+          }
+
+          // 使用全局信息更新地址信息
+          this.updateAddressFromGlobal()
+
           // 设置倒计时
-          this.countdownTime = data.remainPayTime || 30 * 60;
-          this.startCountdown();
+          this.countdownTime = 30 * 60 // 默认30分钟
+          this.startCountdown()
+        } else {
+          uni.showToast({
+            title: res.msg || '获取订单信息失败',
+            icon: 'none'
+          })
         }
       }).catch(err => {
+        console.error('获取订单详情失败:', err)
         uni.showToast({
           title: '获取订单信息失败',
           icon: 'none'
-        });
-      });
-      */
+        })
+      })
     },
 
     // 开始倒计时
@@ -327,20 +388,20 @@ export default {
     // 确认支付
     confirmPayment() {
       // 默认使用微信支付
-      const payType = 1;
-      
+      const payType = 1
+
       uni.showLoading({ title: '正在支付...' })
-      
+
       // 使用封装好的接口函数
       groupOrderPay(this.orderId, payType)
         .then(res => {
           uni.hideLoading()
           if (res.status === 200) {
-            uni.showToast({ 
-              title: '支付成功', 
-              icon: 'success' 
+            uni.showToast({
+              title: '支付成功',
+              icon: 'success'
             })
-            
+
             // 跳转到支付成功页面
             setTimeout(() => {
               uni.redirectTo({
@@ -348,25 +409,22 @@ export default {
               })
             }, 1500)
           } else {
-            uni.showToast({ 
-              title: res.msg || '支付失败', 
-              icon: 'none' 
+            uni.showToast({
+              title: res.msg || '支付失败',
+              icon: 'none'
             })
           }
         })
         .catch(err => {
           uni.hideLoading()
-          uni.showToast({ 
-            title: '支付失败，请重试', 
-            icon: 'none' 
+          uni.showToast({
+            title: '支付失败，请重试',
+            icon: 'none'
           })
           console.error('支付请求失败:', err)
         })
-      
+
       this.showPaymentModal = false
-    },
-    toggleMorePayment() {
-      this.morePaymentExpanded = !this.morePaymentExpanded
     },
 
     // 领取优惠券
@@ -553,6 +611,7 @@ export default {
         color: #222;
         font-weight: 500;
       }
+
       .address-value {
         font-size: 28rpx;
         color: #333;
@@ -563,6 +622,7 @@ export default {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
       .address-icon {
         width: 32rpx;
         height: 32rpx;
@@ -582,6 +642,7 @@ export default {
         margin-right: 20rpx;
         background: #f5f5f5;
       }
+
       .goods-info-col {
         flex: 1;
         display: flex;
@@ -603,6 +664,7 @@ export default {
             text-overflow: ellipsis;
             white-space: nowrap;
           }
+
           .goods-quantity {
             font-size: 26rpx;
             color: #999;
@@ -610,6 +672,7 @@ export default {
             flex-shrink: 0;
           }
         }
+
         .goods-spec {
           font-size: 26rpx;
           color: #999;
@@ -618,6 +681,7 @@ export default {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+
         .goods-price {
           font-size: 28rpx;
           color: #333;
@@ -645,6 +709,7 @@ export default {
             color: #222;
             font-weight: 500;
           }
+
           .goods-count {
             font-size: 26rpx;
             color: #bbb;
@@ -652,11 +717,13 @@ export default {
             font-weight: normal;
           }
         }
+
         .price-value {
           font-size: 28rpx;
           color: #333;
         }
       }
+
       .total {
         font-size: 28rpx;
         color: #333;
@@ -693,6 +760,7 @@ export default {
           color: #222;
           font-weight: 500;
         }
+
         .value {
           font-size: 28rpx;
           color: #bbb;
@@ -702,6 +770,7 @@ export default {
           word-break: break-all;
         }
       }
+
       .item:last-child {
         margin-bottom: 0;
       }
@@ -814,9 +883,11 @@ export default {
     z-index: 1000;
     padding-top: 0;
     padding-bottom: 0;
-    min-height: 420rpx;
-    max-height: 80vh;
+    // min-height: 420rpx;
+    // max-height: 80vh;
+    height: 300rpx;
     overflow-y: auto;
+
     .close-btn {
       position: absolute;
       top: 32rpx;
@@ -828,6 +899,7 @@ export default {
       align-items: center;
       justify-content: center;
       cursor: pointer;
+
       .close-x {
         font-size: 44rpx;
         color: #222;
@@ -836,14 +908,17 @@ export default {
         user-select: none;
         transition: color 0.2s;
       }
+
       &:active .close-x {
         color: #FF9900;
       }
     }
+
     .payment-options {
       padding: 0 32rpx 0 32rpx;
-      margin-top: 56rpx;
+      margin-top: 90rpx;
       margin-bottom: 32rpx;
+
       .payment-option {
         display: flex;
         align-items: center;
@@ -852,6 +927,7 @@ export default {
         border-radius: 12rpx;
         padding: 0 0 0 0;
         background: transparent;
+
         .payment-icon {
           width: 44rpx;
           height: 44rpx;
@@ -859,17 +935,20 @@ export default {
           display: flex;
           align-items: center;
           justify-content: center;
+
           image {
             width: 100%;
             height: 100%;
           }
         }
+
         .payment-name {
           flex: 1;
           font-size: 30rpx;
           color: #222;
           font-weight: 500;
         }
+
         .payment-check {
           width: 32rpx;
           height: 32rpx;
@@ -877,8 +956,10 @@ export default {
           border: 2rpx solid #DDDDDD;
           position: relative;
           background: #fff;
+
           &.active {
             border-color: #FF9900;
+
             &:after {
               content: '';
               position: absolute;
@@ -893,9 +974,11 @@ export default {
           }
         }
       }
+
       .payment-option:last-child {
         margin-bottom: 0;
       }
+
       .more-payment {
         margin: 32rpx 0 0 0;
         font-size: 26rpx;
@@ -905,19 +988,23 @@ export default {
         justify-content: flex-start;
         padding: 0;
         text-align: left;
+
         image {
           width: 24rpx;
           height: 24rpx;
           margin-left: 8rpx;
         }
       }
+
       .more-payment-list {
         margin-top: 16rpx;
+
         .payment-option {
           margin-bottom: 0;
         }
       }
     }
+
     .payment-btn {
       height: 96rpx;
       background: #FF9900;
@@ -928,6 +1015,7 @@ export default {
       justify-content: center;
       box-shadow: 0 4rpx 16rpx 0 rgba(255, 158, 0, 0.10);
       text-align: center;
+
       .pay-btn-text {
         color: #fff;
         font-size: 36rpx;
@@ -944,6 +1032,7 @@ export default {
     transition: transform 0.3s;
     display: inline-block;
   }
+
   .arrow-rotated {
     transform: rotate(180deg) !important;
   }

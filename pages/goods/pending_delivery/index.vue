@@ -17,38 +17,65 @@
         <view class="order-no">订单号: {{ order.order_number }}</view>
         <view class="order-status">{{ order.status_text }}</view>
       </view>
-      <view class="product-info" v-if="order.goods && order.goods.length > 0">
-        <view class="product-image">
-          <image :src="formatImage(order.goods[0].image)" mode="aspectFill"></image>
-        </view>
-        <view class="product-details">
-          <view class="product-name">{{ order.goods[0].title }}</view>
-          <view class="product-spec">
-            <view class="spec-tag">{{ order.goods[0].spec || '默认规格' }}</view>
-            <view class="product-quantity">×{{ order.goods[0].quantity }}</view>
+      <!-- 商品列表 -->
+      <view class="product-list" v-if="order.goods && order.goods.length > 0">
+        <view class="product-item" v-for="(product, idx) in order.goods" :key="idx">
+          <view class="product-image">
+            <image :src="formatImage(product.image)" mode="aspectFill"></image>
           </view>
-          <view class="product-price">￥{{ order.goods[0].price }}</view>
+          <view class="product-details">
+            <view class="product-name">{{ product.title }}</view>
+            <view class="product-spec">
+              <view class="spec-tag">{{ product.spec || '默认规格' }}</view>
+              <view class="product-quantity">×{{ product.quantity }}</view>
+            </view>
+            <view class="product-price">￥{{ product.price }}</view>
+          </view>
         </view>
       </view>
       <view class="divider"></view>
-      <view class="logistics-status">
-        <image src="/static/images/pending_delivery/road-haul-cargo.svg" mode="aspectFit"></image>
-        <text>司机正在路上~ 预计{{ formatDeliveryTime(order.create_time) }}送达</text>
+      <view class="logistics-status" :class="{ delivered: isOrderDelivered(order) || order.status !== 1 }">
+        <image :src="isOrderDelivered(order) && order.status !== 1
+          ? '/static/images/common/delivered-status.svg'
+          : '/static/images/pending_delivery/road-haul-cargo.svg'" mode="aspectFit"></image>
+        <text>{{ getLogisticsStatusText(order) }}</text>
       </view>
       <view class="button-group">
         <view class="not-found-btn" @click="showNotFoundNotice">未找到商品</view>
-        <view class="confirm-btn" @click="confirmDelivery(order)">确认收货</view>
+        <view class="confirm-btn" :class="{ received: isOrderDelivered(order) && order.status !== 1 }"
+          @click="confirmDelivery(order)">
+          {{ isOrderDelivered(order) && order.status !== 1 ? '已收货' : '确认收货' }}
+        </view>
       </view>
     </view>
 
     <!-- 空状态 -->
     <view v-if="orderList.length === 0" class="empty-state">
-      <image class="empty-image" src="/static/images//common/no-orders.png" mode="aspectFit"></image>
+      <image class="empty-image" src="/static/images/common/empty-image.png" mode="aspectFit"></image>
       <text class="empty-text">暂无待收货订单</text>
     </view>
 
     <!-- 弹窗 -->
-    <view v-if="showPopup" class="popup-text" @click="handlePopupConfirm">{{ popupText }}</view>
+    <!-- <view v-if="showPopup" class="popup-text" @click="handlePopupConfirm">{{ popupText }}</view> -->
+
+    <!-- 自定义输入框弹窗 -->
+    <view v-if="showCustomInput" class="custom-input-overlay" @click="closeCustomInput">
+      <view class="custom-input-popup" @click.stop>
+        <view class="popup-header">
+          <text>反馈商品缺失</text>
+          <text class="close-icon" @click="closeCustomInput">×</text>
+        </view>
+        <view class="popup-content">
+          <view class="input-container">
+            <CustomInput v-model="feedbackContent" placeholder="请输入您遇到的问题描述..." class="feedback-input" />
+          </view>
+        </view>
+        <view class="popup-footer">
+          <view class="cancel-btn" @click="closeCustomInput">取消</view>
+          <view class="submit-btn" @click="submitFeedbackFromInput">提交</view>
+        </view>
+      </view>
+    </view>
 
     <!-- 查找订单提示 -->
     <view class="find-order-tip">
@@ -88,10 +115,15 @@
 import colors from '@/mixins/color.js'
 import { navigateToOrderComplete } from '@/utils/orderNavigation.js'
 import { getGroupOrderList, confirmReceipt, getGoodsList } from '@/api/group.js'
+import { submitOrderFeedback } from '@/api/group.js'
 import { HTTP_REQUEST_URL } from '@/config/app.js'
+import CustomInput from '@/components/CustomInput.vue'
 
 export default {
   mixins: [colors],
+  components: {
+    CustomInput
+  },
   data() {
     return {
       status: 'onway', // 订单状态：在路上
@@ -101,7 +133,11 @@ export default {
       page: 1,
       limit: 10,
       loading: false,
-      likeList: []
+      likeList: [],
+      showCustomInput: false,
+      feedbackContent: '',
+      currentOrder: null,
+      currentProduct: null
     }
   },
   onLoad() {
@@ -109,53 +145,117 @@ export default {
     this.getRecommendProducts()
   },
   methods: {
+    // 判断订单是否已送达
+    isOrderDelivered(order) {
+      // 检查是否有商品的收货时间
+      if (order.goods && order.goods.length > 0) {
+        // 检查所有商品是否有收货时间
+        for (let i = 0; i < order.goods.length; i++) {
+          if (order.goods[i].receiving_time) {
+            const receivingTime = order.goods[i].receiving_time * 1000 // 转换为毫秒
+            const now = new Date().getTime() // 当前时间毫秒数
+            // 如果当前时间已超过预计送达时间，认为已送达
+            if (now > receivingTime) {
+              return true
+            }
+          }
+        }
+      }
+      return false
+    },
+
+    // 格式化预计送达时间显示
+    formatDeliveryTime(receivingTime) {
+      if (!receivingTime) return '今日'
+
+      const deliveryDate = new Date(receivingTime * 1000)
+      const now = new Date()
+      const diffTime = deliveryDate - now
+      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60))
+
+      // 今天内的时间显示
+      if (deliveryDate.toDateString() === now.toDateString()) {
+        if (diffHours <= 0) return '刚刚'
+        if (diffHours < 2) return '1小时内'
+        if (diffHours < 24) return `${diffHours}小时内`
+      }
+
+      // 跨天的时间显示
+      const hours = deliveryDate.getHours()
+      const minutes = deliveryDate.getMinutes()
+      return `${deliveryDate.getMonth() + 1}月${deliveryDate.getDate()}日 ${hours}:${minutes < 10 ? '0' + minutes : minutes}`
+    },
+
+    // 获取物流状态文本
+    getLogisticsStatusText(order) {
+      if (order.goods && order.goods.length > 0) {
+        // 检查是否有商品的收货时间
+        for (let i = 0; i < order.goods.length; i++) {
+          if (order.goods[i].receiving_time) {
+            const receivingTime = order.goods[i].receiving_time
+            const formattedTime = this.formatDeliveryTime(receivingTime)
+
+            if (this.isOrderDelivered(order) && order.status !== 1) {
+              return `商品已送达，送达时间：${formattedTime}`
+            } else {
+              return `司机正在路上~ 预计${formattedTime}送达`
+            }
+          }
+        }
+      }
+      return '正在配送中，请耐心等待'
+    },
     goBack() {
       uni.navigateBack()
     },
     formatImage(url) {
-      if (!url) return '/static/images/empty_product.png';
-      if (url.startsWith('http')) return url;
-      return HTTP_REQUEST_URL + url;
+      if (!url) return '/static/images/empty_product.png'
+      if (url.startsWith('http')) return url
+      return HTTP_REQUEST_URL + url
     },
     formatDeliveryTime(createTime) {
-      if (!createTime) return '今日';
+      if (!createTime) return '今日'
 
-      const orderDate = new Date(createTime * 1000);
-      const now = new Date();
+      const orderDate = new Date(createTime * 1000)
+      const now = new Date()
 
       // 如果是今天的订单
       if (orderDate.toDateString() === now.toDateString()) {
         // 预计2小时内送达
-        const deliveryTime = new Date(orderDate.getTime() + 2 * 60 * 60 * 1000);
-        const hours = deliveryTime.getHours();
-        const minutes = deliveryTime.getMinutes();
-        return `今日${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+        const deliveryTime = new Date(orderDate.getTime() + 2 * 60 * 60 * 1000)
+        const hours = deliveryTime.getHours()
+        const minutes = deliveryTime.getMinutes()
+        return `今日${hours}:${minutes < 10 ? '0' + minutes : minutes}`
       } else {
         // 如果不是今天的订单，显示日期
-        return `${orderDate.getMonth() + 1}月${orderDate.getDate()}日`;
+        return `${orderDate.getMonth() + 1}月${orderDate.getDate()}日`
       }
     },
     getOrderList() {
-      this.loading = true;
+      this.loading = true
       getGroupOrderList({
         page: this.page,
         limit: this.limit,
         status: 1 // 1=待收货
       }).then(res => {
-        this.loading = false;
+        this.loading = false
         if (res.status === 200 && res.data) {
-          this.orderList = res.data.list || [];
-          console.log('待收货订单列表:', this.orderList);
+          this.orderList = res.data.list || []
+          console.log('待收货订单列表:', this.orderList)
         } else {
-          this.orderList = [];
+          this.orderList = []
         }
       }).catch((err) => {
-        console.error('获取订单列表失败:', err);
-        this.loading = false;
-        this.orderList = [];
-      });
+        console.error('获取订单列表失败:', err)
+        this.loading = false
+        this.orderList = []
+      })
     },
     confirmDelivery(order) {
+      // 如果已送达，不执行操作
+      if (this.isOrderDelivered(order) && order.status !== 1) {
+        return
+      }
       // 显示确认弹窗
       uni.showModal({
         title: '确认收货',
@@ -182,7 +282,7 @@ export default {
             }).catch(err => {
               console.error('确认收货失败:', err)
               this.popupText = '确认收货失败，请稍后再试'
-              this.showPopup = true
+              // this.showPopup = true
               setTimeout(() => {
                 this.showPopup = false
               }, 2000)
@@ -192,11 +292,93 @@ export default {
       })
     },
     showNotFoundNotice() {
-      this.popupText = '未找到商品？已反馈平台管理员'
-      this.showPopup = true
-      setTimeout(() => {
-        this.showPopup = false
-      }, 2000)
+      // 获取当前订单信息
+      const order = this.orderList[0] // 假设只处理第一个订单
+      if (!order || !order.goods || order.goods.length === 0) {
+        uni.showToast({
+          title: '无法获取订单信息',
+          icon: 'none'
+        })
+        return
+      }
+
+      const product = order.goods[0]
+
+      // 设置当前订单和产品信息
+      this.currentOrder = order
+      this.currentProduct = product
+
+      // 显示自定义输入框
+      this.showCustomInput = true
+      this.feedbackContent = ''
+    },
+
+    // 提交反馈
+    async submitFeedback(data) {
+      try {
+        // 调用实际的订单反馈提交API
+        const res = await submitOrderFeedback(data)
+        if (res && res.status === 200) {
+          uni.showToast({
+            title: '反馈已提交',
+            icon: 'success'
+          })
+
+          // 显示成功提示
+          this.popupText = '反馈已提交给平台管理员'
+          this.showPopup = true
+          setTimeout(() => {
+            this.showPopup = false
+          }, 2000)
+        } else {
+          uni.showToast({
+            title: res.msg || '反馈提交失败',
+            icon: 'none'
+          })
+        }
+      } catch (error) {
+        console.error('提交反馈失败:', error)
+        uni.showToast({
+          title: '反馈提交失败',
+          icon: 'none'
+        })
+      }
+    },
+
+    // 提交反馈从自定义输入框
+    submitFeedbackFromInput() {
+      if (!this.feedbackContent || this.feedbackContent.trim() === '') {
+        uni.showToast({
+          title: '请输入反馈内容',
+          icon: 'none'
+        })
+        return
+      }
+
+      if (!this.currentProduct) {
+        uni.showToast({
+          title: '无法获取产品信息',
+          icon: 'none'
+        })
+        return
+      }
+
+      // 调用反馈API
+      this.submitFeedback({
+        order_goods_id: this.currentProduct.id || this.currentProduct.order_goods_id,
+        feedback_information: this.feedbackContent
+      })
+
+      // 关闭输入框
+      this.closeCustomInput()
+    },
+
+    // 关闭自定义输入框
+    closeCustomInput() {
+      this.showCustomInput = false
+      this.feedbackContent = ''
+      this.currentOrder = null
+      this.currentProduct = null
     },
     gotoOrderComplete() {
       uni.navigateTo({
@@ -220,19 +402,19 @@ export default {
               name: item.title,
               price: item.min_price,
               sales: item.fake_sales + '件'
-            };
-          }).slice(0, 4); // 只显示前4个商品
+            }
+          }).slice(0, 4) // 只显示前4个商品
         }
       }).catch(err => {
-        console.error('获取推荐商品失败:', err);
-      });
+        console.error('获取推荐商品失败:', err)
+      })
     },
     // 跳转到商品详情页
     goToProductDetail(item) {
       if (item && item.id) {
         uni.navigateTo({
           url: `/pages/goods_details/index?id=${item.id}`
-        });
+        })
       }
     }
   }
@@ -322,72 +504,81 @@ export default {
       }
     }
 
-    .product-info {
-      display: flex;
+    .product-list {
       margin: 30rpx 0;
       /* 15px * 2 */
 
-      .product-image {
-        width: 190rpx;
-        /* Make it square */
-        height: 190rpx;
-        /* Keep the same height */
-        border-radius: 8rpx;
-        /* 4px * 2 */
-        overflow: hidden;
-        margin-right: 30rpx;
+      .product-item {
+        display: flex;
+        margin-bottom: 30rpx;
         /* 15px * 2 */
 
-        image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+        &:last-child {
+          margin-bottom: 0;
         }
-      }
 
-      .product-details {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-
-        .product-name {
-          font-size: 30rpx;
+        .product-image {
+          width: 190rpx;
+          /* Make it square */
+          height: 190rpx;
+          /* Keep the same height */
+          border-radius: 8rpx;
+          /* 4px * 2 */
+          overflow: hidden;
+          margin-right: 30rpx;
           /* 15px * 2 */
-          color: #1A1A1A;
-          margin-bottom: 10rpx;
-          /* 5px * 2 */
+
+          image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
         }
 
-        .product-spec {
+        .product-details {
+          flex: 1;
           display: flex;
+          flex-direction: column;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10rpx;
-          /* 5px * 2 */
 
-          .spec-tag {
-            background: #F7F7F7;
-            color: #999999;
-            font-size: 28rpx;
-            /* 14px * 2 */
-            padding: 4rpx 16rpx;
-            /* 2px 8px * 2 */
-            border-radius: 12rpx;
-            /* 6px * 2 */
+          .product-name {
+            font-size: 30rpx;
+            /* 15px * 2 */
+            color: #1A1A1A;
+            margin-bottom: 10rpx;
+            /* 5px * 2 */
           }
 
-          .product-quantity {
-            color: #999999;
-            font-size: 28rpx;
-            /* 14px * 2 */
-          }
-        }
+          .product-spec {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10rpx;
+            /* 5px * 2 */
 
-        .product-price {
-          font-size: 30rpx;
-          /* 15px * 2 */
-          color: #1A1A1A;
+            .spec-tag {
+              background: #F7F7F7;
+              color: #999999;
+              font-size: 28rpx;
+              /* 14px * 2 */
+              padding: 4rpx 16rpx;
+              /* 2px 8px * 2 */
+              border-radius: 12rpx;
+              /* 6px * 2 */
+            }
+
+            .product-quantity {
+              color: #999999;
+              font-size: 28rpx;
+              /* 14px * 2 */
+            }
+          }
+
+          .product-price {
+            font-size: 30rpx;
+            /* 15px * 2 */
+            color: #1A1A1A;
+          }
         }
       }
     }
@@ -460,7 +651,7 @@ export default {
         /* 0 15px * 2 */
         border-radius: 30rpx;
         /* 15px * 2 */
-        background: #FFFFFF;
+        background: #F0F0F0;
         color: #4D4D4D;
         font-size: 30rpx;
         /* 15px * 2 */
@@ -667,6 +858,85 @@ export default {
       font-size: 28rpx;
       color: #999;
     }
+  }
+
+  // 自定义输入框弹窗样式
+  .custom-input-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+
+  .custom-input-popup {
+    width: 80%;
+    background-color: #fff;
+    border-radius: 16rpx;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .popup-header {
+    padding: 30rpx;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1rpx solid #eee;
+    font-size: 32rpx;
+    font-weight: bold;
+  }
+
+  .close-icon {
+    font-size: 40rpx;
+    color: #999;
+  }
+
+  .popup-content {
+    padding: 30rpx;
+    flex: 1;
+  }
+
+  .input-container {
+    margin-bottom: 30rpx;
+  }
+
+  .feedback-input {
+    width: 100%;
+    height: 120rpx;
+    padding: 20rpx;
+    // border: 1rpx solid #ddd;
+    border-radius: 8rpx;
+    font-size: 28rpx;
+  }
+
+  .popup-footer {
+    display: flex;
+    border-top: 1rpx solid #eee;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    flex: 1;
+    padding: 30rpx;
+    text-align: center;
+    font-size: 30rpx;
+  }
+
+  .cancel-btn {
+    color: #999;
+    border-right: 1rpx solid #eee;
+  }
+
+  .submit-btn {
+    color: #FF840B;
+    font-weight: bold;
   }
 }
 </style>

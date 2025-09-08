@@ -8,8 +8,8 @@
             <view class="search-box">
                 <view class="search-input" @click="focusSearch">
                     <text class="search-icon"></text>
-                    <input v-if="isSearchFocused" v-model="keyword" class="search-input-field"
-                           placeholder="搜索想要商品关键词" @confirm="searchProducts" @blur="blurSearch" />
+                    <input v-if="isSearchFocused" v-model="keyword" class="search-input-field" placeholder="搜索想要商品关键词"
+                        @confirm="searchProducts" @blur="blurSearch" />
                     <text v-else class="search-placeholder">搜索想要商品关键词</text>
                 </view>
             </view>
@@ -18,7 +18,7 @@
         <!-- 商品列表 -->
         <view class="goods-list">
             <!-- 调试信息 -->
-            <view v-if="goodsList.length === 0" style="text-align: center; padding: 40rpx; color: #999;">
+            <view v-if="goodsList.length === 0" style="text-align: center; padding: 40rpx; color: #999;margin: 0 auto;">
                 {{ isLoading ? '加载中...' : '暂无商品数据' }}
             </view>
             <view class="goods-item" v-for="(item, index) in goodsList" :key="index" @click="navigateToDetail(item)">
@@ -36,7 +36,7 @@
                 </view>
             </view>
         </view>
-        
+
         <!-- 加载中/无更多数据 -->
         <view class="loading-more" v-if="loadingStatus !== 0">
             <text v-if="loadingStatus === 1">加载中...</text>
@@ -47,16 +47,16 @@
 
 <script>
 import { getUserCombinationList } from '@/api/group.js'
-import errorHandler from '@/utils/errorHandler.js';
-import CommonHeader from '@/components/CommonHeader/index.vue';
-import { HTTP_REQUEST_URL } from '@/config/app.js';
+import errorHandler from '@/utils/errorHandler.js'
+import CommonHeader from '@/components/CommonHeader/index.vue'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
     components: {
         CommonHeader
     },
     name: 'HotGroupMore',
-    data () {
+    data() {
         return {
             goodsList: [],
             keyword: '',
@@ -68,7 +68,7 @@ export default {
             hasMore: true
         }
     },
-    onLoad () {
+    onLoad() {
         // 加载商品数据
         this.loadProducts()
     },
@@ -81,8 +81,12 @@ export default {
         // 加载商品列表
         loadProducts() {
             this.isLoading = true
-            this.loadingStatus = 1
-            
+            // this.loadingStatus = 1
+            // 只有非第一页加载时，才设置底部加载状态
+            if (this.page > 1) {
+                this.loadingStatus = 1
+            }
+
             getUserCombinationList({
                 page: this.page,
                 limit: this.limit,
@@ -101,7 +105,8 @@ export default {
 
                     // 判断是否有更多数据
                     this.hasMore = this.goodsList.length >= this.limit
-                    this.loadingStatus = this.hasMore ? 0 : 2
+                    // this.loadingStatus = this.hasMore ? 0 : 2
+                    this.loadingStatus = this.hasMore ? 0 : (this.page > 1 ? 2 : 0)
                 } else {
                     uni.showToast({
                         title: res.msg || '获取商品失败',
@@ -118,15 +123,15 @@ export default {
                 this.isLoading = false
             })
         },
-        
+
         // 加载更多商品
         loadMoreProducts() {
             if (!this.hasMore || this.isLoading) return
-            
+
             this.page++
             this.isLoading = true
             this.loadingStatus = 1
-            
+
             getUserCombinationList({
                 page: this.page,
                 limit: this.limit,
@@ -145,7 +150,9 @@ export default {
 
                     // 判断是否有更多数据
                     this.hasMore = newList.length >= this.limit
-                    this.loadingStatus = this.hasMore ? 0 : 2
+                    // this.loadingStatus = this.hasMore ? 0 : 2
+                    this.loadingStatus = this.hasMore ? 0 : (this.page > 1 ? 2 : 0)
+
 
                     // 将新数据添加到列表
                     if (newList.length > 0) {
@@ -167,7 +174,7 @@ export default {
                 this.isLoading = false
             })
         },
-        
+
         // 搜索商品
         searchProducts() {
             this.page = 1
@@ -176,23 +183,23 @@ export default {
             this.loadProducts()
             this.blurSearch()
         },
-        
+
         // 聚焦搜索框
         focusSearch() {
             this.isSearchFocused = true
         },
-        
+
         // 失去焦点
         blurSearch() {
             if (!this.keyword) {
                 this.isSearchFocused = false
             }
         },
-        
+
         goBack() {
             uni.navigateBack()
         },
-        
+
         navigateToDetail(item) {
             // 跳转到商品详情页面
             uni.navigateTo({
@@ -202,21 +209,21 @@ export default {
 
         // 处理图片URL
         setDomain(url) {
-            if (!url) return '';
-            url = url.toString();
+            if (!url) return ''
+            url = url.toString()
 
             // 如果是相对路径，拼接域名
             if (url.indexOf('/') === 0) {
-                return HTTP_REQUEST_URL + url;
+                return HTTP_REQUEST_URL + url
             }
 
             // 如果已经是完整URL，直接返回
             if (url.indexOf("http") === 0) {
-                return url;
+                return url
             }
 
             // 其他情况拼接域名
-            return HTTP_REQUEST_URL + '/' + url;
+            return HTTP_REQUEST_URL + '/' + url
         }
     }
 }
@@ -229,7 +236,8 @@ export default {
 
     .search-container {
         background-color: #FFFFFF;
-        padding: 24rpx; /* 与商品列表保持一致的左右边距 */
+        padding: 24rpx;
+        /* 与商品列表保持一致的左右边距 */
         box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
     }
 
@@ -253,7 +261,8 @@ export default {
                 margin-right: 16rpx;
             }
 
-            .search-placeholder, .search-input-field {
+            .search-placeholder,
+            .search-input-field {
                 font-size: 28rpx;
                 color: #999999;
             }
@@ -265,7 +274,7 @@ export default {
             }
         }
     }
-    
+
     .goods-list {
         display: flex;
         flex-wrap: wrap;
@@ -274,14 +283,18 @@ export default {
         position: relative;
 
         .goods-item {
-            width: 228rpx; /* 114px * 2 */
-            height: 346rpx; /* 173px * 2 */
+            width: 228rpx;
+            /* 114px * 2 */
+            height: 346rpx;
+            /* 173px * 2 */
             margin-bottom: 30rpx;
             background-color: #FFFFFF;
-            border-radius: 8rpx; /* 4px * 2 */
+            border-radius: 8rpx;
+            /* 4px * 2 */
             overflow: hidden;
             box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
-            padding: 16rpx; /* 统一的内边距，类似父级padding效果 */
+            padding: 16rpx;
+            /* 统一的内边距，类似父级padding效果 */
             display: flex;
             flex-direction: column;
 
@@ -292,11 +305,15 @@ export default {
                 flex-direction: column;
 
                 .product-image {
-                    width: 196rpx; /* 98px * 2 */
-                    height: 206rpx; /* 103px * 2 */
-                    border-radius: 8rpx; /* 4px * 2 */
+                    width: 196rpx;
+                    /* 98px * 2 */
+                    height: 206rpx;
+                    /* 103px * 2 */
+                    border-radius: 8rpx;
+                    /* 4px * 2 */
                     object-fit: cover;
-                    margin-bottom: 16rpx; /* 图片和文字间距 */
+                    margin-bottom: 16rpx;
+                    /* 图片和文字间距 */
                 }
 
                 .goods-info {
@@ -304,20 +321,23 @@ export default {
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
-                    
+
                     .goods-name {
                         font-family: 'PingFang SC';
                         font-style: normal;
                         font-weight: 400;
-                        font-size: 28rpx; /* 14px * 2 */
-                        line-height: 40rpx; /* 20px * 2 */
+                        font-size: 28rpx;
+                        /* 14px * 2 */
+                        line-height: 40rpx;
+                        /* 20px * 2 */
                         color: #333333;
                         overflow: hidden;
                         text-overflow: ellipsis;
                         display: -webkit-box;
                         -webkit-line-clamp: 1;
                         -webkit-box-orient: vertical;
-                        margin-bottom: 8rpx; /* 名称和价格间距 */
+                        margin-bottom: 8rpx;
+                        /* 名称和价格间距 */
                     }
 
                     .price-box {
@@ -326,8 +346,10 @@ export default {
                             font-family: 'PingFang SC';
                             font-style: normal;
                             font-weight: 400;
-                            font-size: 32rpx; /* 16px * 2 */
-                            line-height: 44rpx; /* 22px * 2 */
+                            font-size: 32rpx;
+                            /* 16px * 2 */
+                            line-height: 44rpx;
+                            /* 22px * 2 */
                             color: #333333;
                             display: flex;
                             align-items: baseline;
@@ -342,7 +364,8 @@ export default {
                                 font-size: 32rpx;
                                 color: #333333;
                                 font-weight: 400;
-                                margin-left: 4rpx; /* ￥符号和数字的间距 */
+                                margin-left: 4rpx;
+                                /* ￥符号和数字的间距 */
                             }
 
                             .original-price {
@@ -358,7 +381,7 @@ export default {
             }
         }
     }
-    
+
     .loading-more {
         text-align: center;
         padding: 32rpx 0;

@@ -142,12 +142,12 @@ export default {
     async getCollectListAPI() {
       const res = await getCollectList()
       // 给每个项目添加关注状态字段
-      this.rentalList = (res.data || []).map(item => ({
+      this.rentalList = (res.data.data || []).map(item => ({
         ...item,
         isFollowed: !!item.fav_id // 根据 fav_id 判断是否已关注
       }))
       const res1 = await getCollectList(2, '')
-      this.businessList = (res1.data || []).map(item => ({
+      this.businessList = (res1.data.data || []).map(item => ({
         ...item,
         isFollowed: !!item.fav_id // 根据 fav_id 判断是否已关注
       }))
@@ -187,7 +187,8 @@ export default {
           // 取消关注
           await deleteCollect({
             fav_id: item.fav_id, // 使用收藏记录的ID
-            type: type
+            type: type,
+            sub_type: item.sub_type
           })
 
           // 更新本地状态 - 只改变关注状态，保留所有数据

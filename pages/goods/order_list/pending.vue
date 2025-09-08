@@ -4,7 +4,7 @@
     <view class="page-header">
       <view class="header-left" @click="goBack">
         <image class="back-icon" src="/static/icons/back-arrow.svg"></image>
-        <text class="back-text">返回</text>
+        <text class="back-text" @click="goBack">返回</text>
       </view>
       <view class="header-title">待支付</view>
       <view class="header-right">领券</view>
@@ -47,8 +47,8 @@
 </template>
 
 <script>
-import { getGroupOrderList, payGroupOrder, cancelOrder } from '@/api/group.js';
-import { HTTP_REQUEST_URL } from '@/config/app.js';
+import { getGroupOrderList, payGroupOrder, cancelOrder } from '@/api/group.js'
+import { HTTP_REQUEST_URL } from '@/config/app.js'
 
 export default {
   data() {
@@ -58,76 +58,77 @@ export default {
       limit: 10,
       loading: false,
       timer: null
-    };
+    }
   },
   onLoad() {
-    this.getOrderList();
-    this.startTimer();
+    this.startTimer()
+  },
+  onShow() {
+    this.getOrderList()
   },
   onUnload() {
-    this.clearTimer();
+    this.clearTimer()
   },
   methods: {
     goBack() {
-      uni.navigateBack({ delta: 1 });
+      uni.navigateBack({ delta: 1 })
     },
     getOrderList() {
-      this.loading = true;
+      this.loading = true
       getGroupOrderList({
         page: this.page,
         limit: this.limit,
         status: 0 // 0=待支付
       }).then(res => {
-        this.loading = false;
+        this.loading = false
         if (res.status === 200 && res.data) {
-          this.orderList = res.data.list || [];
-          console.log('待支付订单列表:', this.orderList);
+          this.orderList = res.data.list || []
+          console.log('待支付订单列表:', this.orderList)
         } else {
-          this.orderList = [];
+          this.orderList = []
         }
       }).catch((err) => {
-        console.error('获取订单列表失败:', err);
-        this.loading = false;
-        this.orderList = [];
-      });
+        console.error('获取订单列表失败:', err)
+        this.loading = false
+        this.orderList = []
+      })
     },
     formatImage(url) {
-      if (!url) return '';
-      if (url.startsWith('http')) return url;
-      return HTTP_REQUEST_URL + url;
+      if (!url) return ''
+      return this.$util.getImageUrl(url)
     },
     // 倒计时格式化
     formatCountdown(item) {
       // 假设后端返回 create_time（秒），支付有效期30分钟
-      const expire = 30 * 60; // 30分钟
-      const now = Math.floor(Date.now() / 1000);
-      const left = Math.max(expire - (now - (parseInt(item.create_time) || 0)), 0);
-      const h = String(Math.floor(left / 3600)).padStart(2, '0');
-      const m = String(Math.floor((left % 3600) / 60)).padStart(2, '0');
-      const s = String(left % 60).padStart(2, '0');
-      return `${h}:${m}:${s}`;
+      const expire = 30 * 60 // 30分钟
+      const now = Math.floor(Date.now() / 1000)
+      const left = Math.max(expire - (now - (parseInt(item.create_time) || 0)), 0)
+      const h = String(Math.floor(left / 3600)).padStart(2, '0')
+      const m = String(Math.floor((left % 3600) / 60)).padStart(2, '0')
+      const s = String(left % 60).padStart(2, '0')
+      return `${h}:${m}:${s}`
     },
     startTimer() {
       this.timer = setInterval(() => {
-        this.$forceUpdate();
-      }, 1000);
+        this.$forceUpdate()
+      }, 1000)
     },
     clearTimer() {
-      if (this.timer) clearInterval(this.timer);
+      if (this.timer) clearInterval(this.timer)
     },
     goPay(item) {
       payGroupOrder(item.id || item.order_id || item.order_number).then(res => {
         if (res.status === 200) {
           uni.navigateTo({
             url: `/pages/goods/pending_payment/index?id=${item.id || item.order_id || item.order_number}`
-          });
+          })
         } else {
-          uni.showToast({ title: res.msg || '支付失败', icon: 'none' });
+          uni.showToast({ title: res.msg || '支付失败', icon: 'none' })
         }
       }).catch((err) => {
-        console.error('支付失败:', err);
-        uni.showToast({ title: '支付失败', icon: 'none' });
-      });
+        console.error('支付失败:', err)
+        uni.showToast({ title: '支付失败', icon: 'none' })
+      })
     },
     cancelOrder(item) {
       uni.showModal({
@@ -137,21 +138,21 @@ export default {
           if (res.confirm) {
             cancelOrder({ order_id: item.id || item.order_id || item.order_number }).then(resp => {
               if (resp.status === 200) {
-                uni.showToast({ title: '已取消', icon: 'success' });
-                this.getOrderList();
+                uni.showToast({ title: '已取消', icon: 'success' })
+                this.getOrderList()
               } else {
-                uni.showToast({ title: resp.msg || '取消失败', icon: 'none' });
+                uni.showToast({ title: resp.msg || '取消失败', icon: 'none' })
               }
             }).catch((err) => {
-              console.error('取消订单失败:', err);
-              uni.showToast({ title: '取消失败', icon: 'none' });
-            });
+              console.error('取消订单失败:', err)
+              uni.showToast({ title: '取消失败', icon: 'none' })
+            })
           }
         }
-      });
+      })
     }
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -173,6 +174,8 @@ export default {
   .header-left {
     display: flex;
     align-items: center;
+    height: 100%;
+    width: 17%;
 
     .back-icon {
       width: 28rpx;
